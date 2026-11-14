@@ -1,0 +1,1401 @@
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowUpRight, Sparkles, Zap, Brain, WandSparkles, Dice5, Menu,
+  X, Search, Share2, ChevronRight, RotateCcw, Copy, Check, Globe2
+} from "lucide-react";
+
+const experiences = [
+  { id:"hacker", title:"Fake Hacker", category:"Prank Lab", icon:"🖥️", tag:"Cinematic prank", description:"A dramatic fake terminal scan with a ridiculous reveal.", color:"purple", type:"prank" },
+  { id:"update", title:"Fake Software Update", category:"Prank Lab", icon:"📲", tag:"99% suspense", description:"A suspiciously dramatic update with a silly ending.", color:"blue", type:"prank" },
+  { id:"virus", title:"Virus Scanner", category:"Prank Lab", icon:"🦠", tag:"Harmless scan", description:"Scan your digital habits. Discover your scrolling virus.", color:"green", type:"prank" },
+  { id:"button", title:"Don't Touch the Button", category:"Prank Lab", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new ridiculous reaction.", color:"pink", type:"prank" },
+  { id:"iq", title:"Fake IQ Test", category:"Prank Lab", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
+  { id:"mind", title:"Mind Reader", category:"Mind Games", icon:"🧠", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
+  { id:"personality", title:"Your Secret Superpower", category:"Mind Games", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
+  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"What If?", icon:"💸", tag:"Fantasy simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
+  { id:"award", title:"Ridiculous Award", category:"Random Chaos", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
+  { id:"surprise", title:"Surprise Me", category:"Random Chaos", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
+];
+
+const categories = ["All", "Prank Lab", "Mind Games", "What If?", "Random Chaos"];
+
+const randomResults = [
+  "You have been promoted to Chief Nap Officer. Your first assignment: do absolutely nothing.",
+  "Breaking news: Local human successfully opened 14 browser tabs and forgot why.",
+  "Your hidden talent is making plans and then enthusiastically cancelling them.",
+  "A committee of penguins has reviewed your vibe. They have concerns. And respect.",
+  "Achievement unlocked: Professional Overthinker — 12,000 imaginary scenarios completed."
+];
+
+const mindPuzzles = [
+  {
+    id: "number-trap", title: "The Number Trap", icon: "🔢",
+    intro: "Think of any number. Keep it secret.",
+    instructions: ["Double your original number.", "Add 10 to your result.", "Divide the result by 2.", "Finally, subtract your original number."],
+    answer: "5", reveal: "No matter which number you started with, your answer is 5!",
+    explanation: "Let your number be X. (2X + 10) / 2 - X simplifies to 5. That's the mathematical secret!",
+    type: "steps"
+  },
+  {
+    id: "magic-9", title: "The Magic 9", icon: "9️⃣",
+    intro: "Think of any positive whole number.",
+    instructions: ["Multiply your number by 9.", "Add all the digits of your answer.", "If you get a two-digit number, add those digits again.", "Keep going until you get a single digit."],
+    answer: "9", reveal: "Your final answer is 9!",
+    explanation: "Every positive multiple of 9 has digits that eventually add up to 9.",
+    type: "steps"
+  },
+  {
+    id: "age-predictor", title: "The Age Predictor", icon: "🎯",
+    intro: "Think of your current age between 1 and 99.",
+    instructions: ["Double your age.", "Add 5 to the result.", "Multiply everything by 50.", "Now subtract 250."],
+    answer: "Your age", reveal: "ODDORA decoded your age from your final number!",
+    explanation: "The calculation simplifies to your original age multiplied by 100. Enter that final number and ODDORA divides it by 100 to reveal your age.",
+    type: "agecode"
+  },
+  {
+    id: "birthday-mystery", title: "The Birthday Mystery", icon: "🎂",
+    intro: "Think of your birth month as a number (January = 1) and your birthday date.",
+    instructions: ["Multiply your birth month by 5.", "Add 6.", "Multiply the result by 4.", "Add 9.", "Multiply everything by 5.", "Now add your birthday date and subtract 165."],
+    answer: "Your birthday", reveal: "ODDORA decoded your birthday from your final number!",
+    explanation: "The result is a code in MMDD format. For example, 1107 means November 7. For January 7, the result is 107.",
+    type: "birthdaycode"
+  },
+  {
+    id: "1089-mystery", title: "The 1089 Mystery", icon: "🔮",
+    intro: "Think of a three-digit number. Its first and last digits must differ by at least 2.",
+    instructions: ["Reverse the digits of your number.", "Subtract the smaller number from the larger number.", "Reverse the answer. If it has two digits, put a zero in front.", "Add the reversed answer to your subtraction result."],
+    answer: "1089", reveal: "Your answer is 1089!",
+    explanation: "Under the stated conditions, this classic number trick always produces 1089.",
+    type: "steps"
+  },
+  {
+    id: "birth-year", title: "Birth Year Decoder", icon: "🎂",
+    intro: "Let's discover your birth year.",
+    answer: "Your birth year",
+    explanation: "ODDORA uses your age and whether your birthday has happened this year to calculate your likely birth year.",
+    type: "birthyear"
+  },
+  {
+    id: "weekday", title: "Birthday Weekday Finder", icon: "📅",
+    intro: "Discover which day of the week you were born.",
+    answer: "Your birthday weekday",
+    explanation: "ODDORA calculates the weekday from the birth date you enter.",
+    type: "weekday"
+  }
+];
+
+function App() {
+  const [active, setActive] = useState("All");
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [surprise, setSurprise] = useState("");
+  const [language, setLanguage] = useState("EN");
+  const [copied, setCopied] = useState(false);
+  const [sharedPrank, setSharedPrank] = useState(null);
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const prankId = params.get("prank");
+  const mode = params.get("mode");
+  const sender = params.get("from");
+
+  if (mode !== "friend" || !prankId) return;
+
+  const prank = experiences.find(
+    item => item.id === prankId && item.category === "Prank Lab"
+  );
+
+  if (!prank) return;
+
+  setSelected(prank);
+  setSharedPrank({
+    mode: "friend",
+    sender: (sender || "Your friend").slice(0, 30)
+  });
+}, []);
+
+  const filtered = useMemo(() => experiences.filter(item =>
+    (active === "All" || item.category === active) &&
+    (item.title + item.description + item.category).toLowerCase().includes(search.toLowerCase())
+  ), [active, search]);
+
+  function openExperience(item) {
+    setSelected(item);
+    setSharedPrank(null);
+    setSurprise("");
+    setCopied(false);
+  }
+
+  function surpriseMe() {
+    const item = experiences[Math.floor(Math.random() * experiences.length)];
+    openExperience(item);
+  }
+
+  async function shareResult(text) {
+    const shareText = `${text}\nTry the fun at ODDORA — The Internet's Playground!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "ODDORA",
+          text: shareText,
+          url: window.location.href
+        });
+      } catch {}
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="#" onClick={() => setSelected(null)} aria-label="ODDORA home">
+          <span className="brand-mark">O</span>
+          <span>ODDORA<span className="brand-dot">.</span></span>
+        </a>
+
+        <nav className={menuOpen ? "nav-links open" : "nav-links"}>
+          <a href="#explore" onClick={() => setMenuOpen(false)}>Explore</a>
+          <a href="#zones" onClick={() => setMenuOpen(false)}>Play zones</a>
+          <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
+        </nav>
+
+        <div className="top-actions">
+          <button className="language-btn" onClick={() => setLanguage(language === "EN" ? "TA" : "EN")} title="Language preference">
+            <Globe2 size={15}/>{language}
+          </button>
+          <button className="menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            {menuOpen ? <X/> : <Menu/>}
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section className="hero">
+          <div className="hero-glow glow-one"></div>
+          <div className="hero-glow glow-two"></div>
+
+          <div className="hero-content">
+            <div className="eyebrow"><span className="pulse"></span> YOUR DAILY DOSE OF UNEXPECTED</div>
+            <h1>The internet's<br/><span className="gradient-text">playground.</span></h1>
+            <p className="hero-copy">
+              Prank yourself. Challenge your brain.<br className="desktop-break"/>
+              Experience things that shouldn't be possible.
+            </p>
+
+            <div className="hero-actions">
+              <a className="primary-btn" href="#explore">Explore the weird <ArrowUpRight size={18}/></a>
+              <button className="secondary-btn" onClick={surpriseMe}><Dice5 size={17}/> Surprise me</button>
+            </div>
+
+            <div className="hero-note"><Sparkles size={14}/> Free to explore · No account needed</div>
+          </div>
+
+          <div className="hero-art" aria-label="Abstract glowing ODDORA portal illustration">
+            <div className="orbit orbit-a"></div>
+            <div className="orbit orbit-b"></div>
+            <div className="portal"><div className="portal-inner"><span>O</span></div></div>
+            <div className="float-card card-top"><span>✨</span> Reality optional</div>
+            <div className="float-card card-bottom"><span>🎲</span> Expect the unexpected</div>
+            <div className="spark spark-a">✦</div>
+            <div className="spark spark-b">✧</div>
+          </div>
+
+          <div className="hero-bottom">
+            <span>SCROLL TO EXPLORE</span>
+            <div className="scroll-line"></div>
+            <span>01 / 04</span>
+          </div>
+        </section>
+
+        <section className="ticker" aria-label="ODDORA highlights">
+          <div>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> NO BORING MOMENTS <b>✳</b></div>
+        </section>
+
+        <section className="section zones-section" id="zones">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow muted">PICK YOUR KIND OF CHAOS</div>
+              <h2>Enter a <span className="gradient-text">play zone.</span></h2>
+            </div>
+            <p>Different doors. Different kinds of fun.<br/>Which one are you opening?</p>
+          </div>
+
+          <div className="zone-grid">
+            <button className="zone-card zone-purple" onClick={() => {
+              setActive("Prank Lab");
+              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
+            }}>
+              <span className="zone-icon">🃏</span>
+              <span className="zone-number">01 / PRANKS</span>
+              <strong>Prank Lab</strong>
+              <span className="zone-desc">Harmless chaos. Unexpected reveals.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+
+            <button className="zone-card zone-orange" onClick={() => {
+              setActive("Mind Games");
+              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
+            }}>
+              <span className="zone-icon">🧠</span>
+              <span className="zone-number">02 / THINK</span>
+              <strong>Mind Games</strong>
+              <span className="zone-desc">Puzzles, tricks and brain teasers.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+
+            <button className="zone-card zone-blue" onClick={() => {
+              setActive("What If?");
+              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
+            }}>
+              <span className="zone-icon">🪐</span>
+              <span className="zone-number">03 / IMAGINE</span>
+              <strong>What If?</strong>
+              <span className="zone-desc">Step into impossible scenarios.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+
+            <button className="zone-card zone-pink" onClick={() => {
+              setActive("Random Chaos");
+              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
+            }}>
+              <span className="zone-icon">🎲</span>
+              <span className="zone-number">04 / RANDOM</span>
+              <strong>Random Chaos</strong>
+              <span className="zone-desc">You don't choose. The weird chooses.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+          </div>
+        </section>
+
+        <section className="section explore-section" id="explore">
+          <div className="section-heading explore-heading">
+            <div>
+              <div className="eyebrow muted">THE FUN STARTS HERE</div>
+              <h2>Find your <span className="gradient-text">next obsession.</span></h2>
+            </div>
+            <div className="search-wrap">
+              <Search size={17}/>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search experiences..." aria-label="Search experiences"/>
+            </div>
+          </div>
+
+          <div className="filter-row">
+            {categories.map(category => (
+              <button key={category} className={active === category ? "filter-chip active" : "filter-chip"} onClick={() => setActive(category)}>
+                {category}
+              </button>
+            ))}
+          </div>
+
+          <div className="experience-grid">
+            {filtered.map((item, index) => (
+              <ExperienceCard key={item.id} item={item} index={index} onClick={() => openExperience(item)}/>
+            ))}
+            {filtered.length === 0 && <div className="empty-state">No weirdness found. Try another search. 👀</div>}
+          </div>
+        </section>
+
+        <section className="surprise-banner">
+          <div className="banner-orb">?</div>
+          <div>
+            <div className="eyebrow">CAN'T DECIDE?</div>
+            <h2>Let chaos <span className="gradient-text">choose.</span></h2>
+            <p>One click. One random experience. Zero expectations.</p>
+          </div>
+          <button className="primary-btn" onClick={surpriseMe}>Surprise me <Dice5 size={18}/></button>
+        </section>
+
+        <section className="section about-section" id="about">
+          <div className="about-icon"><WandSparkles size={26}/></div>
+          <div>
+            <div className="eyebrow muted">A LITTLE DIFFERENT BY DESIGN</div>
+            <h2>Ordinary is <span className="gradient-text">overrated.</span></h2>
+            <p>ODDORA is a playful corner of the internet for harmless pranks, curious minds and impossible ideas. No pressure. No sign-up. Just explore.</p>
+          </div>
+        </section>
+      </main>
+
+      <footer className="footer">
+        <a className="brand" href="#"><span className="brand-mark">O</span><span>ODDORA<span className="brand-dot">.</span></span></a>
+        <span>Enter ordinary. Leave extraordinary.</span>
+        <span>© {new Date().getFullYear()} ODDORA · Made for fun.</span>
+      </footer>
+
+      {selected && (
+        <ExperienceModal
+          item={selected}
+          onClose={() => {
+  setSelected(null);
+  setSharedPrank(null);
+  window.history.replaceState({}, "", window.location.pathname);
+}}
+          onShare={shareResult}
+          copied={copied}
+          sharedPrank={sharedPrank}
+        />
+      )}
+    </div>
+  );
+}
+
+function ExperienceCard({ item, index, onClick }) {
+  return (
+    <button className={`experience-card ${item.color}`} onClick={onClick} style={{"--delay": `${index * 65}ms`}}>
+      <div className="experience-card-top">
+        <span className="experience-emoji">{item.icon}</span>
+        <span className="card-open"><ArrowUpRight size={17}/></span>
+      </div>
+      <span className="card-category">{item.category}</span>
+      <strong>{item.title}</strong>
+      <p>{item.description}</p>
+      <span className="card-tag"><span></span>{item.tag}</span>
+    </button>
+  );
+}
+
+function ExperienceModal({ item, onClose, onShare, copied, sharedPrank }) {
+  const [step, setStep] = useState(0);
+  const [prankMode, setPrankMode] = useState(
+  sharedPrank?.mode === "friend" ? "friend" : "self"
+);
+const [senderName, setSenderName] = useState("");
+const [linkCopied, setLinkCopied] = useState(false);
+  const [choice, setChoice] = useState("");
+  const [mindPuzzleIndex, setMindPuzzleIndex] = useState(0);
+  const [mindInstructionIndex, setMindInstructionIndex] = useState(0);
+  const [result, setResult] = useState("");
+  const [terminalLines, setTerminalLines] = useState([]);
+  const [showMagicPopup, setShowMagicPopup] = useState(false);
+  const [birthAge, setBirthAge] = useState("");
+  const [birthdayPassed, setBirthdayPassed] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [puzzleCode, setPuzzleCode] = useState("");
+  const [error, setError] = useState("");
+  const [buttonClicks, setButtonClicks] = useState(0);
+  const [iqQuestion, setIqQuestion] = useState(0);
+  const [iqAnswers, setIqAnswers] = useState([]);
+  const [hackerElapsed, setHackerElapsed] = useState(0);
+  const [updateElapsed, setUpdateElapsed] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioContextRef = useRef(null);
+  const soundEnabledRef = useRef(true);
+  const lastHackerToneRef = useRef(-1);
+
+  // All sounds are generated locally with Web Audio. No audio files or network calls.
+  async function playSound(kind = "tap") {
+    if (!soundEnabledRef.current) return;
+
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      if (!audioContextRef.current) audioContextRef.current = new AudioContextClass();
+      const ctx = audioContextRef.current;
+      if (ctx.state === "suspended") await ctx.resume();
+
+      const patterns = {
+        tap:     [{ f: 620, d: 0.055, v: 0.035, w: "sine" }],
+        step:    [{ f: 440, d: 0.08, v: 0.045, w: "triangle" }, { f: 660, d: 0.10, v: 0.035, w: "triangle", delay: 0.07 }],
+        magic:   [{ f: 523, d: 0.13, v: 0.045, w: "sine" }, { f: 659, d: 0.13, v: 0.04, w: "sine", delay: 0.11 }, { f: 784, d: 0.22, v: 0.04, w: "sine", delay: 0.22 }],
+        reveal:  [{ f: 523, d: 0.16, v: 0.06, w: "triangle" }, { f: 659, d: 0.18, v: 0.06, w: "triangle", delay: 0.13 }, { f: 784, d: 0.34, v: 0.07, w: "sine", delay: 0.27 }],
+        wrong:   [{ f: 220, d: 0.15, v: 0.05, w: "sawtooth" }, { f: 165, d: 0.22, v: 0.045, w: "sawtooth", delay: 0.13 }],
+        boot:    [{ f: 75, d: 0.55, v: 0.10, w: "sawtooth" }, { f: 150, d: 0.42, v: 0.045, w: "sine", delay: 0.22 }],
+        key:     [{ f: 760, d: 0.035, v: 0.018, w: "square" }],
+        alert:   [{ f: 190, d: 0.22, v: 0.07, w: "sawtooth" }, { f: 145, d: 0.25, v: 0.06, w: "sawtooth", delay: 0.2 }],
+        suspense:[{ f: 110, d: 0.5, v: 0.045, w: "sine" }, { f: 116, d: 0.5, v: 0.035, w: "sine", delay: 0.45 }],
+      };
+      const notes = patterns[kind] || patterns.tap;
+      const startAt = ctx.currentTime + 0.015;
+
+      notes.forEach(note => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const at = startAt + (note.delay || 0);
+        osc.type = note.w;
+        osc.frequency.setValueAtTime(note.f, at);
+        if (kind === "reveal" && note.f === 784) {
+          osc.frequency.exponentialRampToValueAtTime(1046, at + note.d);
+        }
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.linearRampToValueAtTime(note.v, at + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + note.d);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(at);
+        osc.stop(at + note.d + 0.02);
+      });
+    } catch (error) {
+      console.warn("ODDORA sound could not play:", error);
+    }
+  }
+
+  function toggleSound() {
+    setSoundEnabled(current => {
+      const next = !current;
+      soundEnabledRef.current = next;
+      if (next) playSound("reveal");
+      return next;
+    });
+  }
+
+  useEffect(() => () => {
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (item.id !== "hacker" || step !== 1) return;
+
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      const seconds = Math.min((Date.now() - startedAt) / 1000, 18);
+      setHackerElapsed(seconds);
+
+      const wholeSecond = Math.floor(seconds);
+      if ([3, 5, 7, 9, 11, 13, 15].includes(wholeSecond) &&
+          lastHackerToneRef.current !== wholeSecond) {
+        lastHackerToneRef.current = wholeSecond;
+        playSound(wholeSecond === 9 || wholeSecond === 13 ? "alert" : "key");
+      }
+
+      if (seconds >= 18) {
+        clearInterval(timer);
+        setResult("SYSTEM BREACHED! 😂 Just kidding. Your biggest vulnerability is opening one more tab when you already have 47 tabs open.");
+        setStep(2);
+        playSound("reveal");
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [item.id, step]);
+  const currentPuzzle = mindPuzzles[mindPuzzleIndex];
+  const isCodePuzzle = ["agecode", "birthdaycode"].includes(currentPuzzle.type);
+  const prediction = currentPuzzle.type === "steps" ? currentPuzzle.answer : result;
+
+  function resetMind() {
+    setMindInstructionIndex(0);
+    setBirthAge("");
+    setBirthdayPassed("");
+    setBirthDate("");
+    setPuzzleCode("");
+    setResult("");
+    setError("");
+    setShowMagicPopup(false);
+  }
+
+  function choosePuzzle(index) {
+    playSound("magic");
+    setMindPuzzleIndex(index);
+    resetMind();
+    setStep(5);
+  }
+
+  function chooseRandomPuzzle() {
+    let index = Math.floor(Math.random() * mindPuzzles.length);
+    if (mindPuzzles.length > 1 && index === mindPuzzleIndex) {
+      index = (index + 1) % mindPuzzles.length;
+    }
+    choosePuzzle(index);
+  }
+
+  function runHacker() {
+    setHackerElapsed(0);
+    lastHackerToneRef.current = -1;
+    setResult("");
+    setStep(1);
+    playSound("boot");
+  }
+
+  function getRandomAward() {
+    const awards = [
+      "World's Most Talented Tab Opener 🏅",
+      "Supreme Commander of Snooze Buttons 🏆",
+      "International Procrastination Champion 🥇",
+      "Certified Professional Daydreamer 🌟",
+      "CEO of 'I'll Do It Tomorrow' 👑"
+    ];
+    setResult(awards[Math.floor(Math.random() * awards.length)]);
+    setStep(2);
+  }
+
+  function getWhatIf() {
+    const endings = [
+      "You buy a private island, then spend the week looking for the Wi-Fi password. 🏝️",
+      "You fund a space mission, but insist on taking your favourite snacks. 🚀",
+      "You build a dream home with a room dedicated entirely to naps. 🛌"
+    ];
+    setResult(endings[Math.floor(Math.random() * endings.length)]);
+    setStep(2);
+  }
+useEffect(() => {
+  if (item.id !== "update" || step !== 9) return;
+
+  const startedAt = Date.now();
+
+  const timer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+    setUpdateElapsed(elapsed);
+
+    if (elapsed >= 23) {
+      clearInterval(timer);
+      setResult("Update complete! 😂 Your device is completely safe. This was just an ODDORA prank!");
+      setStep(2);
+      playSound("reveal");
+    }
+  }, 250);
+
+  return () => clearInterval(timer);
+}, [item.id, step]);
+async function createFriendLink() {
+  const cleanName = senderName.trim().slice(0, 30);
+
+  if (!cleanName) {
+    alert("Please enter your name first.");
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("prank", item.id);
+  url.searchParams.set("mode", "friend");
+  url.searchParams.set("from", cleanName);
+
+  const shareUrl = url.toString();
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "A little prank for you!",
+        text: `${cleanName} sent you an ODDORA prank. Open it if you dare! 😂`,
+        url: shareUrl
+      });
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setLinkCopied(true);
+      } catch {
+        alert("Unable to copy the link. Please try again.");
+      }
+    }
+  }
+}
+  function startExperience() {
+    if (item.id === "hacker") return runHacker();
+    if (item.id === "update") {
+  setUpdateElapsed(0);
+  setStep(9);
+  return;
+}
+    if (item.id === "virus") return setStep(10);
+    if (item.id === "button") {
+      setButtonClicks(0);
+      return setStep(11);
+    }
+    if (item.id === "iq") {
+      setIqQuestion(0);
+      setIqAnswers([]);
+      return setStep(12);
+    }
+    if (item.id === "mind") return setStep(0);
+    if (item.id === "award") return getRandomAward();
+    if (item.id === "whatif") return getWhatIf();
+
+    if (item.id === "surprise") {
+      setResult(randomResults[Math.floor(Math.random() * randomResults.length)]);
+      return setStep(2);
+    }
+
+    if (item.id === "personality") return setStep(4);
+  }
+
+  function revealBirthYear() {
+    const age = Number(birthAge);
+    if (!Number.isInteger(age) || age < 1 || age > 120 || !birthdayPassed) return;
+
+    const today = new Date();
+    const year = today.getFullYear() - age - (birthdayPassed === "no" ? 1 : 0);
+    setResult(`Your likely birth year is ${year}!`);
+    playSound("reveal");
+    setStep(6);
+  }
+
+  function revealWeekday() {
+    if (!birthDate) return;
+    const [year, month, day] = birthDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) return;
+
+    const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+    setResult(`You were born on a ${weekday}!`);
+    playSound("reveal");
+    setStep(6);
+  }
+
+  function decodePuzzleCode() {
+    const value = Number(puzzleCode);
+    if (!Number.isInteger(value) || value <= 0) {
+      setError("Please enter a valid number.");
+      return;
+    }
+
+    if (currentPuzzle.type === "agecode") {
+      if (value % 100 !== 0 || value / 100 < 1 || value / 100 > 120) {
+        setError("That number doesn't match the trick. Check your calculation!");
+        return;
+      }
+      setResult(`Your age is ${value / 100}!`);
+      setError("");
+      playSound("reveal");
+      setStep(6);
+      return;
+    }
+
+    if (currentPuzzle.type === "birthdaycode") {
+      const month = Math.floor(value / 100);
+      const day = value % 100;
+      const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+      if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
+        setError("That doesn't look like a valid birthday. Check your calculation!");
+        return;
+      }
+      setResult(`Your birthday is ${months[month - 1]} ${day}!`);
+      setError("");
+      playSound("reveal");
+      setStep(6);
+    }
+  }
+
+  function revealMagic() {
+    setShowMagicPopup(false);
+    setStep(7);
+  }
+
+  const fieldStyle = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "13px 14px",
+    marginTop: "8px",
+    borderRadius: "12px",
+    border: "1px solid rgba(190,160,255,.25)",
+    background: "#100d1b",
+    color: "#f7f3ff",
+    font: "inherit"
+  };
+
+  function sharePrediction() {
+    onShare(`${currentPuzzle.title}: ${prediction}\nTry ODDORA!`);
+  }
+  if (item.id === "hacker" && step >= 1) {
+    const phase = hackerElapsed < 3
+      ? "boot"
+      : hackerElapsed < 8
+        ? "connect"
+        : hackerElapsed < 13
+          ? "intrusion"
+          : hackerElapsed < 18
+            ? "final"
+            : "reveal";
+
+    const terminalMessages = [
+      { time: 3, text: "INITIALIZING VIRTUAL ENVIRONMENT...", type: "normal" },
+      { time: 4, text: "Establishing encrypted tunnel [SIMULATED]", type: "normal" },
+      { time: 5, text: "Connecting to ODDORA mainframe...", type: "normal" },
+      { time: 6, text: "Handshake protocol: VERIFIED", type: "success" },
+      { time: 7, text: "Loading virtual access modules...", type: "normal" },
+      { time: 8, text: "UNUSUAL ACTIVITY DETECTED", type: "warning" },
+      { time: 9, text: "Running fictional security diagnostics...", type: "normal" },
+      { time: 10, text: "Decrypting imaginary data blocks...", type: "normal" },
+      { time: 11, text: "ACCESS LEVEL: MAXIMUM (SIMULATION)", type: "success" },
+      { time: 12, text: "Preparing final system report...", type: "normal" }
+    ];
+
+    const visibleMessages = terminalMessages.filter(message => hackerElapsed >= message.time);
+    const progress = hackerElapsed < 13 ? 0 : Math.min(99, Math.round(((hackerElapsed - 13) / 5) * 99));
+
+    return (
+      <div className="hacker-fullscreen">
+        <div className="hacker-topbar">
+          <div className="hacker-brand"><span>◈</span> ODDORA <small>CYBER LAB</small></div>
+          <div className="hacker-top-actions">
+            <button onClick={toggleSound}>{soundEnabled ? "🔊 SOUND ON" : "🔇 SOUND OFF"}</button>
+            <button onClick={onClose}>EXIT ✕</button>
+          </div>
+        </div>
+
+        {step === 2 ? (
+          <div className="hacker-reveal-screen">
+            <div className="hacker-reveal-icon">😂</div>
+            <div className="hacker-kicker">SYSTEM REPORT · ODDORA CLASSIFIED</div>
+            {sharedPrank?.mode === "friend" && (
+  <p className="hacker-reveal-message">
+    Don't worry! Your friend {sharedPrank.sender} pranked you! 😂
+  </p>
+)}
+            <h1>YOU GOT <span>HACKED.</span></h1>
+            <p className="hacker-reveal-message">{result}</p>
+            <div className="hacker-stamp">100% HARMLESS PRANK</div>
+            <div className="hacker-reveal-actions">
+              <button className="hacker-launch-again" onClick={() => {
+                setHackerElapsed(0);
+                setResult("");
+                setStep(0);
+              }}>↻ RUN IT AGAIN</button>
+              <button className="hacker-exit" onClick={onClose}>BACK TO ODDORA</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="hacker-status-row">
+              <span><i className="hacker-live-dot"></i> LIVE SIMULATION</span>
+              <span>SESSION: OD-{Math.floor(Date.now() / 1000).toString().slice(-6)}</span>
+              <span>SECURE MODE: ON</span>
+            </div>
+
+            <div className="hacker-main">
+              {phase === "boot" && (
+                <div className="hacker-boot">
+                  <div className="hacker-emblem">◈</div>
+                  <div className="hacker-kicker">ODDORA CYBER SYSTEMS</div>
+                  <h1>INITIALIZING<span className="hacker-cursor">_</span></h1>
+                  <p>Preparing secure virtual environment</p>
+                  <div className="hacker-boot-line"><span /></div>
+                </div>
+              )}
+
+              {(phase === "connect" || phase === "intrusion") && (
+                <div className="hacker-console-layout">
+                  <div className="hacker-console-main">
+                    <div className="hacker-panel-heading">
+                      <span>TERMINAL / ROOT SESSION</span>
+                      <span className="hacker-live-label">● ACTIVE</span>
+                    </div>
+                    <div className="hacker-terminal-body">
+                      <div className="hacker-terminal-intro">ODDORA VIRTUAL TERMINAL v4.09</div>
+                      <div className="hacker-terminal-intro">Copyright © ODDORA Cyber Lab</div>
+                      <div className="hacker-terminal-gap" />
+                      {visibleMessages.map((message, index) => (
+                        <div className={`hacker-line ${message.type}`} key={message.time}>
+                          <span className="hacker-prompt">root@oddora:~$</span> {message.text}
+                        </div>
+                      ))}
+                      <div className="hacker-typing-line"><span>root@oddora:~$</span> <i /></div>
+                    </div>
+                  </div>
+
+                  <div className="hacker-side-panels">
+                    <div className="hacker-info-panel">
+                      <span>NETWORK STATUS</span><strong className="green-text">● ENCRYPTED</strong>
+                      <small>Virtual connection only</small>
+                    </div>
+                    <div className="hacker-info-panel">
+                      <span>FIREWALL</span><strong className="green-text">ACTIVE</strong>
+                      <small>Simulation shield enabled</small>
+                    </div>
+                    <div className="hacker-info-panel">
+                      <span>ACCESS ATTEMPTS</span><strong>{Math.min(12, visibleMessages.length + 2).toString().padStart(2, "0")}</strong>
+                      <small>Fictional operations</small>
+                    </div>
+                    <div className="hacker-radar"><div className="hacker-radar-sweep" /><span>SCANNING</span></div>
+                  </div>
+                </div>
+              )}
+
+              {phase === "final" && (
+                <div className="hacker-final-loading">
+                  <div className="hacker-warning-symbol">!</div>
+                  <div className="hacker-kicker">FINAL OPERATION</div>
+                  <h1>FINALIZING <span>ACCESS</span></h1>
+                  <p>Do not interrupt the simulation...</p>
+                  <div className="hacker-big-progress">
+                    <div style={{ width: `${progress}%` }} />
+                  </div>
+                  <div className="hacker-progress-meta">
+                    <strong>{progress}%</strong><span>VIRTUAL ACCESS VERIFICATION</span>
+                  </div>
+                  <div className="hacker-glitch-note">PLEASE WAIT — SYSTEM RESPONSE PENDING</div>
+                </div>
+              )}
+            </div>
+
+            <div className="hacker-bottom-note">
+              ODDORA SIMULATION ENVIRONMENT · NO REAL DEVICE OR ACCOUNT ACCESS
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="modal-backdrop" onMouseDown={e => {
+      if (e.target === e.currentTarget) onClose();
+    }}>
+      <div className="experience-modal" role="dialog" aria-modal="true"
+        aria-labelledby="modal-title" style={{ position: "relative" }}>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          <X size={20}/>
+        </button>
+
+        <div className="modal-topline">
+          <span className="modal-icon">{item.icon}</span>
+          <span className="card-category">{item.category}</span>
+          <button className="modal-sound-toggle" onClick={toggleSound} type="button">
+            {soundEnabled ? "🔊 SOUND ON" : "🔇 SOUND OFF"}
+          </button>
+        </div>
+
+        <h2 id="modal-title">{item.id === "mind" ? "Mind Lab" : item.title}</h2>
+        <p className="modal-description">
+          {item.id === "mind" ? "Choose a mystery, or let ODDORA surprise you." : item.description}
+        </p>
+
+        {/* MIND LAB SELECTION */}
+        {step === 0 && item.id === "mind" && (
+          <div className="result-stage" style={{ gap: 14 }}>
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}
+              onClick={chooseRandomPuzzle}>
+              🎲 Surprise me with a random puzzle
+            </button>
+            <div className="eyebrow muted" style={{ marginTop: 8 }}>OR PICK YOUR MYSTERY</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              {mindPuzzles.map((puzzle, index) => (
+                <button key={puzzle.id} className="choice" onClick={() => choosePuzzle(index)}
+                  style={{
+                    minHeight: 88, padding: 12, display: "flex", flexDirection: "column",
+                    alignItems: "flex-start", justifyContent: "center", gap: 7,
+                    textAlign: "left", border: "1px solid rgba(190,160,255,.2)",
+                    background: "rgba(255,255,255,.035)"
+                  }}>
+                  <span style={{ fontSize: 22 }}>{puzzle.icon}</span>
+                  <strong style={{ fontSize: 13 }}>{puzzle.title}</strong>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* INTRO FOR OTHER EXPERIENCES */}
+{step === 0 && item.id !== "mind" && (
+  <div className="modal-stage intro-stage">
+    <div className="stage-orb">{item.icon}</div>
+
+    {item.category === "Prank Lab" ? (
+      <>
+        {sharedPrank?.mode === "friend" ? (
+          <>
+            <div className="eyebrow muted">A PRANK FROM YOUR FRIEND</div>
+            <h3>{sharedPrank.sender} has a surprise for you!</h3>
+            <p>Ready to see what they sent you?</p>
+            <button className="primary-btn" onClick={startExperience}>
+              Start the prank <Zap size={17}/>
+            </button>
+          </>
+        ) : (
+          <>
+            <p>How do you want to enjoy this prank?</p>
+
+            <div className="prank-mode-options">
+              <button
+                type="button"
+                className={prankMode === "self" ? "prank-mode-card active" : "prank-mode-card"}
+                onClick={() => setPrankMode("self")}
+              >
+                <span>😈</span>
+                <strong>Prank Myself</strong>
+                <small>Experience the prank yourself</small>
+              </button>
+
+              <button
+                type="button"
+                className={prankMode === "friend" ? "prank-mode-card active" : "prank-mode-card"}
+                onClick={() => setPrankMode("friend")}
+              >
+                <span>🫣</span>
+                <strong>Prank a Friend</strong>
+                <small>Send a surprise link to someone</small>
+              </button>
+            </div>
+
+            {prankMode === "self" ? (
+              <button className="primary-btn" onClick={startExperience}>
+                Let's do this <Zap size={17}/>
+              </button>
+            ) : (
+              <div className="friend-link-form">
+                <input
+                  type="text"
+                  maxLength={30}
+                  value={senderName}
+                  onChange={e => setSenderName(e.target.value)}
+                  placeholder="Enter your name"
+                  aria-label="Your name"
+                />
+                <button
+                  className="primary-btn"
+                  onClick={createFriendLink}
+                  disabled={!senderName.trim()}
+                >
+                  <Share2 size={17}/>
+                  {linkCopied ? "Link copied!" : "Create prank link"}
+                </button>
+                <small>Share the link with your friend. The prank starts when they open it.</small>
+              </div>
+            )}
+          </>
+        )}
+      </>
+    ) : (
+      <>
+        <p>{item.id === "hacker"
+          ? "A suspicious terminal is waiting. Ready to see what it finds?"
+          : "Ready? This is a harmless visual experience."}</p>
+        <button className="primary-btn" onClick={startExperience}>
+          Let's do this <Zap size={17}/>
+        </button>
+      </>
+    )}
+  </div>
+)}
+
+        {/* FAKE HACKER */}
+        {step === 1 && (
+          <div className="terminal">
+            <div className="terminal-head"><span></span><span></span><span></span><label>ODDORA_TERMINAL.exe</label></div>
+            {terminalLines.map((line, i) => (
+              <p key={i} style={{ animationDelay: `${i * .35}s` }}><span>›</span> {line}</p>
+            ))}
+            <button className="terminal-reveal" onClick={() => {
+              setResult("Relax! 😂 Your only crime is spending too much time online.");
+              setStep(2);
+            }}>Reveal the truth</button>
+          </div>
+        )}
+
+        {/* FAKE SOFTWARE UPDATE */}
+{step === 9 && item.id === "update" && (() => {
+  const progress = updateElapsed < 4
+    ? 12
+    : updateElapsed < 9
+      ? 38
+      : updateElapsed < 15
+        ? 67
+        : updateElapsed < 20
+          ? 99
+          : 100;
+
+  const restarting = updateElapsed >= 20;
+
+  return (
+    <div className="software-update-screen">
+      {!restarting ? (
+        <>
+          <div className="windows-update-logo">◈</div>
+
+          <h2>Working on updates</h2>
+
+          <p className="update-subtitle">
+            Your device is installing important updates
+          </p>
+
+          <div className="software-update-percent">
+            {progress}%
+          </div>
+
+          <div className="software-update-track">
+            <span style={{ width: `${progress}%` }} />
+          </div>
+
+          <p className="software-update-message">
+            {progress === 99
+              ? "Almost there. Please don't turn off your device."
+              : "Please keep your device turned on."}
+          </p>
+
+          <p className="software-update-warning">
+            Do not turn off your device
+          </p>
+        </>
+      ) : (
+        <div className="fake-restart">
+          <div className="restart-spinner"></div>
+          <h2>Restarting...</h2>
+          <p>Preparing your device</p>
+        </div>
+      )}
+    </div>
+  );
+})()}
+
+        {/* HARMLESS VIRUS SCANNER */}
+        {step === 10 && item.id === "virus" && (
+          <div className="prank-stage scanner-stage">
+            <div className="scanner-orb"><span>⌁</span></div>
+            <div className="eyebrow muted">ODDORA SECURITY SIMULATOR</div>
+            <h3>Scanning your digital habits...</h3>
+            <div className="scan-lines"><span /></div>
+            <div className="scan-checks">
+              <span>✓ Checking scroll history</span>
+              <span>✓ Analysing snack searches</span>
+              <span>✓ Detecting procrastination</span>
+            </div>
+            <button className="primary-btn" onClick={() => {
+              setResult("THREAT DETECTED: Excessive scrolling. Recommended action: touch grass for 5 minutes. 🌱");
+              playSound("alert");
+              setStep(2);
+            }}>Reveal scan result</button>
+            <p className="prank-disclaimer">This is a fictional scan. It does not access your phone or files.</p>
+          </div>
+        )}
+
+        {/* DON'T TOUCH THE BUTTON */}
+        {step === 11 && item.id === "button" && (
+          <div className="prank-stage forbidden-stage">
+            <div className="eyebrow muted">THE FORBIDDEN BUTTON</div>
+            <h3>{buttonClicks === 0 ? "Whatever you do..." : "You really did it?!"}</h3>
+            <p className="result-text">{buttonClicks === 0 ? "Don't press the button. Seriously." : [
+              "The button has noticed you.",
+              "A tiny committee is discussing your decision.",
+              "Button status: emotionally unavailable.",
+              "Achievement unlocked: Professional button presser.",
+              "The button requests a day off."
+            ][(buttonClicks - 1) % 5]}</p>
+            <button className="forbidden-button" onClick={() => { playSound("tap"); setButtonClicks(c => c + 1); }}>
+              {buttonClicks === 0 ? "DO NOT PRESS" : "PRESS AGAIN"}
+            </button>
+            <span className="tap-counter">Button presses: {buttonClicks}</span>
+            <button className="secondary-btn dark" onClick={() => {
+              setResult(`You pressed the forbidden button ${buttonClicks} times. The button will remember. 🔴`);
+              setStep(2);
+            }}>I'm done causing trouble</button>
+          </div>
+        )}
+
+        {/* FAKE IQ TEST */}
+        {step === 12 && item.id === "iq" && (
+          <div className="prank-stage iq-stage">
+            <div className="eyebrow muted">TOTALLY UNOFFICIAL IQ TEST</div>
+            <div className="iq-count">QUESTION {Math.min(iqQuestion + 1, 3)} / 3</div>
+            {[
+              { q:"What has many keys but can't open a door?", a:["A piano","A secret agent","Your keyboard"], correct:0 },
+              { q:"What gets wetter the more it dries?", a:["A towel","A cloud","Your phone"], correct:0 },
+              { q:"Which month has 28 days?", a:["February","All of them","None"], correct:1 }
+            ][iqQuestion] && (
+              <>
+                <h3>{[
+                  "What has many keys but can't open a door?",
+                  "What gets wetter the more it dries?",
+                  "Which month has 28 days?"
+                ][iqQuestion]}</h3>
+                <div className="iq-options">
+                  {[
+                    ["A piano","A secret agent","Your keyboard"],
+                    ["A towel","A cloud","Your phone"],
+                    ["February","All of them","None"]
+                  ][iqQuestion].map((answer, index) => (
+                    <button key={answer} className="choice" onClick={() => {
+                      playSound("tap");
+                      const nextAnswers = [...iqAnswers, index];
+                      setIqAnswers(nextAnswers);
+                      if (iqQuestion === 2) {
+                        const score = nextAnswers.reduce((total, value, qIndex) =>
+                          total + (value === [0, 0, 1][qIndex] ? 1 : 0), 0);
+                        playSound("reveal");
+                        setResult(`Your completely unofficial ODDORA IQ score: ${82 + score * 17}. ${score === 3 ? "Genius energy detected!" : "The test is confused. You are probably too powerful."} 😂`);
+                        setStep(2);
+                      } else {
+                        setIqQuestion(q => q + 1);
+                      }
+                    }}>{answer}</button>
+                  ))}
+                </div>
+              </>
+            )}
+            <p className="prank-disclaimer">Just a silly quiz, not a real IQ assessment.</p>
+          </div>
+        )}
+
+        {/* GENERAL RESULT */}
+        {step === 2 && (
+          <div className="result-stage">
+            <div className="result-spark">✨</div>
+            <div className="eyebrow muted">YOUR OFFICIAL RESULT</div>
+            {item.category === "Prank Lab" && (
+  <div className="prank-final-reveal">
+    {sharedPrank?.mode === "friend" ? (
+      <>
+        <span>😂</span>
+        <h3>YOU GOT PRANKED!</h3>
+        <p>Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you!</p>
+      </>
+    ) : (
+      <>
+        <span>😄</span>
+        <h3>JUST A PRANK!</h3>
+        <p>Your device is safe. Nothing was accessed or changed.</p>
+      </>
+    )}
+  </div>
+)}
+            <p className="result-text">{result}</p>
+            <div className="result-actions">
+              <button className="primary-btn" onClick={() => { playSound("tap"); onShare(result); }}>
+                <Share2 size={17}/>{copied ? "Copied!" : "Share result"}
+              </button>
+              <button className="secondary-btn dark" onClick={() => { playSound("tap"); setStep(0); setResult(""); }}>
+                <RotateCcw size={16}/> Play again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ENDLESS LOADING */}
+        {step === 3 && (
+          <div className="result-stage">
+            <div className="loader-ring"></div>
+            <div className="eyebrow muted">LOADING YOUR PATIENCE...</div>
+            <p className="result-text">Still loading. Still loading. Okay, we admit it. We just wanted you to take a tiny break. 😅</p>
+            <button className="primary-btn" onClick={() => {
+              setResult("You passed the patience test. Your reward: absolutely nothing. 😂");
+              setStep(2);
+            }}>I'm done waiting</button>
+          </div>
+        )}
+
+        {/* PERSONALITY QUIZ */}
+        {step === 4 && (
+          <div className="result-stage">
+            <div className="eyebrow muted">CHOOSE YOUR VIBE</div>
+            <div className="choice-grid">
+              {["Curious 🧐", "Fearless 🦁", "Creative 🎨", "Chill 😎"].map(v => (
+                <button className={choice === v ? "choice active" : "choice"} key={v}
+                  onClick={() => { playSound("tap"); setChoice(v); }}>{v}</button>
+              ))}
+            </div>
+            <button className="primary-btn" disabled={!choice} onClick={() => {
+              setResult(`Your secret superpower is ${choice.split(" ")[0]} energy. Use it wisely. Or don't. 😄`);
+              playSound("reveal");
+              setStep(2);
+            }}>Reveal my power</button>
+          </div>
+        )}
+
+        {/* STEP-BY-STEP NUMBER PUZZLES */}
+        {step === 5 && item.id === "mind" &&
+          ["steps", "agecode", "birthdaycode"].includes(currentPuzzle.type) && (
+          <div className="result-stage">
+            <div className="eyebrow muted">
+              STEP {String(mindInstructionIndex + 1).padStart(2, "0")} / {String(currentPuzzle.instructions.length).padStart(2, "0")}
+            </div>
+            <div className="result-spark">{currentPuzzle.icon}</div>
+            <h3>{currentPuzzle.title}</h3>
+            <p className="result-text">
+              {mindInstructionIndex === 0
+                ? currentPuzzle.intro
+                : currentPuzzle.instructions[mindInstructionIndex - 1]}
+            </p>
+            <div className="result-actions">
+              {mindInstructionIndex > 0 && (
+                <button className="secondary-btn dark" onClick={() => { playSound("step"); setMindInstructionIndex(i => i - 1); }}>Back</button>
+              )}
+              <button className="primary-btn" onClick={() => {
+                playSound(mindInstructionIndex < currentPuzzle.instructions.length ? "step" : "reveal");
+                if (mindInstructionIndex < currentPuzzle.instructions.length) {
+                  setMindInstructionIndex(i => i + 1);
+                } else if (isCodePuzzle) {
+                  setStep(8);
+                } else {
+                  setStep(6);
+                }
+              }}>
+                {mindInstructionIndex < currentPuzzle.instructions.length ? "Next Step" : "I'm ready!"}
+                <ChevronRight size={17}/>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* BIRTH YEAR DECODER */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "birthyear" && (
+          <div className="result-stage" style={{ textAlign: "left" }}>
+            <div className="result-spark" style={{ textAlign: "center" }}>🎂</div>
+            <h3 style={{ textAlign: "center" }}>Let's decode your birth year</h3>
+            <label style={{ display: "block", marginTop: 14 }}>
+              How old are you today?
+              <input type="number" min="1" max="120" value={birthAge}
+                onChange={e => setBirthAge(e.target.value)} placeholder="Enter your age" style={fieldStyle}/>
+            </label>
+            <label style={{ display: "block", marginTop: 14 }}>
+              Has your birthday happened already this year?
+              <select value={birthdayPassed} onChange={e => setBirthdayPassed(e.target.value)} style={fieldStyle}>
+                <option value="">Choose one</option>
+                <option value="yes">Yes, it has</option>
+                <option value="no">No, not yet</option>
+              </select>
+            </label>
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+              disabled={!birthAge || !birthdayPassed || Number(birthAge) < 1 || Number(birthAge) > 120}
+              onClick={revealBirthYear}>Reveal my birth year ✨</button>
+            <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
+              Calculated in your browser. Nothing is saved.
+            </p>
+          </div>
+        )}
+
+        {/* BIRTHDAY WEEKDAY FINDER */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "weekday" && (
+          <div className="result-stage" style={{ textAlign: "left" }}>
+            <div className="result-spark" style={{ textAlign: "center" }}>📅</div>
+            <h3 style={{ textAlign: "center" }}>When were you born?</h3>
+            <label style={{ display: "block", marginTop: 14 }}>
+              Your date of birth
+              <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={fieldStyle}/>
+            </label>
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+              disabled={!birthDate} onClick={revealWeekday}>Find my birthday weekday ✨</button>
+            <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
+              Your date is processed in this browser and is not saved.
+            </p>
+          </div>
+        )}
+
+        {/* ENTER THE FINAL NUMBER */}
+        {step === 8 && item.id === "mind" && (
+          <div className="result-stage" style={{ textAlign: "left" }}>
+            <div className="result-spark" style={{ textAlign: "center" }}>
+              {currentPuzzle.type === "agecode" ? "🎯" : "🎂"}
+            </div>
+            <h3 style={{ textAlign: "center" }}>
+              {currentPuzzle.type === "agecode" ? "What final number did you get?" : "Enter your final birthday code"}
+            </h3>
+            <p className="modal-description" style={{ textAlign: "center" }}>
+              Enter only the final number from your calculation.
+            </p>
+            <label style={{ display: "block", marginTop: 14 }}>
+              Your final number
+              <input type="number" inputMode="numeric" value={puzzleCode}
+                onChange={e => { setPuzzleCode(e.target.value); setError(""); }}
+                placeholder={currentPuzzle.type === "agecode" ? "Example: 2500" : "Example: 1107"}
+                style={fieldStyle}/>
+            </label>
+            {error && <p style={{ color: "#ffb6b6", marginTop: 10 }}>{error}</p>}
+            <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+              disabled={!puzzleCode.trim()} onClick={decodePuzzleCode}>Decode my answer 🔮</button>
+            <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
+              Your entry is processed locally and is not saved.
+            </p>
+          </div>
+        )}
+
+        {/* PREDICTION RESULT - SHARE BEFORE REVEAL */}
+        {step === 6 && item.id === "mind" && (
+          <div className="result-stage">
+            <div className="result-spark">🔮</div>
+            <div className="eyebrow muted">ODDORA'S PREDICTION</div>
+            <h3>I've got your answer...</h3>
+            <h2 className="gradient-text" style={{ fontSize: "clamp(30px, 8vw, 48px)", margin: "12px 0" }}>
+              {prediction}
+            </h2>
+            <p className="result-text">
+              {currentPuzzle.type === "steps" ? currentPuzzle.reveal : "That's what the mystery reveals. Did ODDORA get it right?"}
+            </p>
+            <div className="result-actions" style={{ flexWrap: "wrap" }}>
+              <button className="primary-btn" onClick={sharePrediction}>
+                <Share2 size={17}/>{copied ? "Copied!" : "Share my result"}
+              </button>
+              <button className="secondary-btn dark" onClick={() => setShowMagicPopup(true)}>
+                💡 How did I know?
+              </button>
+            </div>
+            <p className="modal-description" style={{ marginTop: 14 }}>
+              Share your prediction first. The secret is waiting if you're curious.
+            </p>
+          </div>
+        )}
+
+        {/* SECRET EXPLANATION */}
+        {step === 7 && item.id === "mind" && (
+          <div className="result-stage">
+            <div className="result-spark">✨</div>
+            <div className="eyebrow muted">THE MAGIC EXPLAINED</div>
+            <h2 className="gradient-text">{prediction}</h2>
+            <p className="result-text">
+              {currentPuzzle.type === "steps" ? currentPuzzle.reveal : result}
+            </p>
+            <div style={{
+              width: "100%", padding: 16, marginTop: 8, borderRadius: 16,
+              textAlign: "left", background: "rgba(255,255,255,.045)",
+              border: "1px solid rgba(190,160,255,.2)"
+            }}>
+              <div className="eyebrow muted">WHY IT WORKS</div>
+              <p className="modal-description" style={{ marginTop: 8 }}>{currentPuzzle.explanation}</p>
+            </div>
+            <div className="result-actions" style={{ flexWrap: "wrap" }}>
+              <button className="primary-btn" onClick={sharePrediction}>
+                <Share2 size={17}/>{copied ? "Copied!" : "Share result"}
+              </button>
+              <button className="secondary-btn dark" onClick={() => { resetMind(); setStep(0); }}>
+                <RotateCcw size={16}/> Back to Mind Lab
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MAGIC REVEAL POPUP */}
+        {showMagicPopup && step === 6 && (
+          <div onMouseDown={e => {
+            if (e.target === e.currentTarget) setShowMagicPopup(false);
+          }} style={{
+            position: "absolute", inset: 0, zIndex: 20, display: "grid",
+            placeItems: "center", padding: 20, borderRadius: "inherit",
+            background: "rgba(5,3,14,.88)", backdropFilter: "blur(9px)"
+          }}>
+            <div style={{
+              width: "100%", maxWidth: 340, padding: 24, borderRadius: 20,
+              textAlign: "center", background: "#191528",
+              border: "1px solid rgba(190,160,255,.3)",
+              boxShadow: "0 20px 70px rgba(0,0,0,.5)"
+            }}>
+              <div style={{ fontSize: 42, marginBottom: 12 }}>💡</div>
+              <div className="eyebrow muted">THE MAGIC BEHIND THE MYSTERY</div>
+              <h3>Want to know the magic trick?</h3>
+              <p className="result-text">
+                Your prediction is ready. Want ODDORA to show you exactly how it works?
+              </p>
+              <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }}
+                onClick={revealMagic}>Show me the magic ✨</button>
+              <button className="secondary-btn dark" style={{ marginTop: 10 }}
+                onClick={() => setShowMagicPopup(false)}>Not yet</button>
+            </div>
+          </div>
+        )}
+
+        <div className="modal-foot">
+          <span><Sparkles size={13}/> Harmless fun. Nothing is really hacked.</span>
+          <span>ODDORA</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+export default App;
