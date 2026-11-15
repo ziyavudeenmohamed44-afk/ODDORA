@@ -15,6 +15,7 @@ const experiences = [
   { id:"iq", title:"Fake IQ Test", category:"OD PRANKS", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
   { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🧠", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
   { id:"xo", title:"XO Multiplayer", category:"OD GAMES", icon:"❎", tag:"Play with a friend", description:"Create a room, invite a friend and play Tic-Tac-Toe live.", color:"blue", type:"game" },
+  { id:"catch-heart", title:"Catch My Heart", category:"OD GAMES", icon:"💘", tag:"A two-player heart match", description:"Pick a heart at the same time and reveal your playful match score.", color:"pink", type:"game" },
   { id:"personality", title:"Your Secret Superpower", category:"OD MIND", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
   { id:"whatif", title:"What If You Had ₹100 Crore?", category:"OD FUN", icon:"💸", tag:"Fantasy simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
   { id:"award", title:"Ridiculous Award", category:"OD FUN", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
@@ -88,6 +89,113 @@ const mindPuzzles = [
   }
 ];
 
+
+async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, url }) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is unavailable");
+
+  const bg = ctx.createLinearGradient(0, 0, 1080, 1350);
+  bg.addColorStop(0, "#211936");
+  bg.addColorStop(1, "#090812");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 1080, 1350);
+
+  const glow = ctx.createRadialGradient(540, 360, 30, 540, 360, 560);
+  glow.addColorStop(0, "rgba(145, 86, 255, .34)");
+  glow.addColorStop(1, "rgba(145, 86, 255, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, 1080, 900);
+
+  ctx.strokeStyle = "rgba(190, 145, 255, .48)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(48, 48, 984, 1254, 42);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#c5a4ff";
+  ctx.font = "700 30px Arial";
+  ctx.fillText("ODDORA", 540, 145);
+  ctx.fillStyle = "#9d91b5";
+  ctx.font = "700 20px Arial";
+  ctx.fillText(game.toUpperCase(), 540, 215);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 66px Arial";
+  const headlineWords = String(headline || "").split(" ");
+  let lines = [""];
+  for (const word of headlineWords) {
+    const candidate = `${lines[lines.length - 1]} ${word}`.trim();
+    if (ctx.measureText(candidate).width > 850) lines.push(word);
+    else lines[lines.length - 1] = candidate;
+  }
+  let y = 390 - (lines.length - 1) * 42;
+  for (const line of lines) {
+    ctx.fillText(line, 540, y);
+    y += 88;
+  }
+
+  ctx.fillStyle = "#d5cce6";
+  ctx.font = "500 34px Arial";
+  const drawWrapped = (text, startY, maxWidth, lineHeight, font) => {
+    ctx.font = font;
+    const words = String(text || "").split(" ");
+    let line = "";
+    let yy = startY;
+    for (const word of words) {
+      const test = `${line} ${word}`.trim();
+      if (ctx.measureText(test).width > maxWidth && line) {
+        ctx.fillText(line, 540, yy);
+        line = word;
+        yy += lineHeight;
+      } else line = test;
+    }
+    if (line) ctx.fillText(line, 540, yy);
+    return yy;
+  };
+  let textY = drawWrapped(subtitle, y + 30, 850, 52, "500 34px Arial");
+
+  if (detail) {
+    const cardY = Math.max(textY + 80, 690);
+    const cardGrad = ctx.createLinearGradient(120, cardY, 960, cardY + 210);
+    cardGrad.addColorStop(0, "rgba(151, 83, 221, .30)");
+    cardGrad.addColorStop(1, "rgba(225, 95, 182, .16)");
+    ctx.fillStyle = cardGrad;
+    ctx.strokeStyle = "rgba(218, 135, 226, .45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(120, cardY, 840, 210, 28);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#f3a7db";
+    ctx.font = "800 54px Arial";
+    ctx.fillText(detail, 540, cardY + 115);
+    textY = cardY + 210;
+  }
+
+  if (quote) {
+    ctx.fillStyle = "#ead7f0";
+    drawWrapped(`“${quote}”`, Math.max(textY + 105, 1010), 820, 48, "600 30px Arial");
+  }
+
+  ctx.fillStyle = "#b7a8d0";
+  ctx.font = "600 24px Arial";
+  ctx.fillText("PLAY. CREATE. DISCOVER.", 540, 1210);
+  ctx.fillStyle = "#8f82a8";
+  ctx.font = "500 22px Arial";
+  ctx.fillText("Play your own challenge:", 540, 1255);
+  ctx.fillStyle = "#c6a5ff";
+  ctx.font = "700 25px Arial";
+  ctx.fillText(new URL(url).host, 540, 1290);
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("Could not create the result image");
+  return new File([blob], "oddora-result.png", { type: "image/png" });
+}
+
 function App() {
   const [active, setActive] = useState("All");
   const [selected, setSelected] = useState(null);
@@ -98,6 +206,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [sharedPrank, setSharedPrank] = useState(null);
   const [xoInviteCode, setXoInviteCode] = useState("");
+  const [heartInviteCode, setHeartInviteCode] = useState("");
   useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const prankId = params.get("prank");
@@ -105,6 +214,11 @@ function App() {
   if (xoCode.length === 6) {
     const xoGame = experiences.find(item => item.id === "xo");
     if (xoGame) { setSelected(xoGame); setXoInviteCode(xoCode); }
+  }
+  const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  if (heartCode.length === 6) {
+    const heartGame = experiences.find(item => item.id === "catch-heart");
+    if (heartGame) { setSelected(heartGame); setHeartInviteCode(heartCode); }
   }
   const mode = params.get("mode");
   const sender = params.get("from");
@@ -200,7 +314,7 @@ function App() {
           <div className="hero-glow glow-two"></div>
 
           <div className="hero-content">
-            <div className="eyebrow"><span className="pulse"></span> OD PANNu! · YOUR PLAYGROUND</div>
+            <div className="eyebrow"><span className="pulse"></span> PLAY. CREATE. DISCOVER.</div>
             <h1>The internet's<br/><span className="gradient-text">playground.</span></h1>
             <p className="hero-copy">
               Play games. Create challenges. Discover harmless chaos.<br className="desktop-break"/>
@@ -346,12 +460,14 @@ function App() {
   setSelected(null);
   setSharedPrank(null);
   setXoInviteCode("");
+  setHeartInviteCode("");
   window.history.replaceState({}, "", window.location.pathname);
 }}
           onShare={shareResult}
           copied={copied}
           sharedPrank={sharedPrank}
           xoInviteCode={xoInviteCode}
+          heartInviteCode={heartInviteCode}
           onExplore={() => {
             setSelected(null);
             setActive("All");
@@ -360,6 +476,11 @@ function App() {
           onCreateChallenge={() => {
             setSelected(null);
             setActive("OD CREATE");
+            setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
+          }}
+          onBackToGames={() => {
+            setSelected(null);
+            setActive("OD GAMES");
             setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
           }}
         />
@@ -383,8 +504,8 @@ function ExperienceCard({ item, index, onClick }) {
   );
 }
 
-function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, onExplore, onCreateChallenge }) {
-  const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : 0);
+function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, heartInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
+  const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : item.id === "catch-heart" && heartInviteCode ? 14 : 0);
   const [prankMode, setPrankMode] = useState(
   sharedPrank?.mode === "friend" ? "friend" : "self"
 );
@@ -635,6 +756,7 @@ async function createFriendLink() {
     }
     if (item.id === "mind") return setStep(0);
     if (item.id === "xo") return setStep(13);
+    if (item.id === "catch-heart") return setStep(14);
     if (item.id === "award") return getRandomAward();
     if (item.id === "whatif") return getWhatIf();
 
@@ -1163,7 +1285,12 @@ async function createFriendLink() {
 
         {/* XO MULTIPLAYER */}
         {step === 13 && item.id === "xo" && (
-          <XOMultiplayer onBack={() => setStep(0)} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={xoInviteCode} />
+          <XOMultiplayer onBack={onBackToGames} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={xoInviteCode} />
+        )}
+
+        {/* CATCH MY HEART MULTIPLAYER */}
+        {step === 14 && item.id === "catch-heart" && (
+          <CatchMyHeart onBack={onBackToGames} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={heartInviteCode} />
         )}
 
         {/* GENERAL RESULT */}
@@ -1514,35 +1641,52 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
   async function joinRoom() {
     const code = joinCode.trim().toUpperCase();
     const name = cleanName(playerName);
+
     if (!uid || busy) return;
-    if (!name) { setNotice("Enter your display name before joining."); return; }
-    if (code.length !== 6) { setNotice("Enter a valid 6-character room code."); return; }
-    setBusy(true); setNotice("Joining your friend's challenge...");
+    if (!name) {
+      setNotice("Enter your display name before joining.");
+      return;
+    }
+    if (code.length !== 6) {
+      setNotice("Enter a valid 6-character room code.");
+      return;
+    }
+
+    setBusy(true);
+    setNotice("Joining your friend's challenge...");
+
     try {
       const roomRef = ref(database, `rooms/${code}`);
-      // Read the room from the server before starting the transaction. Without
-      // this preflight read, the first transaction callback can receive null
-      // from an empty local cache and abort before Firebase fetches the room.
       const existingSnapshot = await get(roomRef);
+
       if (!existingSnapshot.exists()) {
         throw new Error("Room not found. Ask your friend to create a new challenge and share the latest link.");
       }
+
       const existingRoom = existingSnapshot.val();
+
+      if (!Array.isArray(existingRoom.board) || existingRoom.gameType === "catch-heart") {
+        throw new Error("That code belongs to a different game. Use an XO invitation link.");
+      }
+
       if (existingRoom.players?.X === uid) {
         setRoomCode(code);
         setNotice("Welcome back! You're Player X.");
-        const url = new URL(window.location.href); url.searchParams.set("xo", code);
+        const url = new URL(window.location.href);
+        url.searchParams.set("xo", code);
         window.history.replaceState({}, "", url.toString());
         return;
       }
+
       if (existingRoom.players?.O && existingRoom.players.O !== uid) {
         throw new Error("This room is already full. Ask your friend to create a new challenge.");
       }
-      // The preflight read above confirms the room exists. Firebase can still
-      // invoke the first transaction callback with a null local-cache value.
-      // Use the confirmed snapshot once as a fallback; if Firebase retries,
-      // its server value takes precedence. A second null means the room vanished.
+
+      // Important: Firebase may call the first transaction update with null
+      // before the server value is loaded. Use the confirmed preflight snapshot
+      // once as a fallback, exactly as in the previously working XO version.
       let usedPreflightFallback = false;
+
       const result = await runTransaction(roomRef, current => {
         if (!current) {
           if (usedPreflightFallback) return;
@@ -1550,31 +1694,55 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
           current = existingRoom;
         }
 
+        if (!Array.isArray(current.board) || current.gameType === "catch-heart") return;
         if (current.players?.X === uid) return current;
+
         if (current.players?.O === uid) {
-          return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
+          return {
+            ...current,
+            playerNames: { ...(current.playerNames || {}), O: name }
+          };
         }
+
         if (current.status !== "waiting" || current.players?.O) return;
+
         return {
           ...current,
           players: { ...current.players, O: uid },
           playerNames: { ...(current.playerNames || {}), O: name },
-          status: "playing"
+          status: "playing",
+          startedAt: Date.now(),
+          endsAt: Date.now() + 60000,
+          finishReason: null
         };
       });
+
       if (!result.committed || !result.snapshot.exists()) {
         throw new Error("Could not join this room. It may have just been filled or closed. Ask your friend for a new invitation.");
       }
+
       const data = result.snapshot.val();
-      if (data.players?.X !== uid && data.players?.O !== uid) throw new Error("This room is already full.");
+
+      if (data.players?.X !== uid && data.players?.O !== uid) {
+        throw new Error("This room is already full.");
+      }
+
       setRoomCode(code);
-      setNotice(data.players?.X === uid ? "Welcome back! You're Player X." : "Joined! You're Player O. Your friend starts as X.");
-      const url = new URL(window.location.href); url.searchParams.set("xo", code);
+      setNotice(
+        data.players?.X === uid
+          ? "Welcome back! You're Player X."
+          : "Joined! You're Player O. Your friend starts as X."
+      );
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
       console.error("ODDORA join room failed:", error);
       setNotice(error.message || "Could not join the room. Check Firebase rules.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   function mySymbol() {
@@ -1628,6 +1796,42 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
     }
   }
 
+  async function shareXOResult() {
+    if (!room || room.status !== "finished") return;
+    const winnerName = room.winner === "draw"
+      ? "It's a draw"
+      : room.playerNames?.[room.winner] || (room.winner === "X" ? "Player X" : "Player O");
+    const loserName = room.playerNames?.[room.winner === "X" ? "O" : "X"] || "their friend";
+    const resultText = `❎⭕ ODDORA XO: ${winnerName === "It's a draw" ? winnerName : `${winnerName} won against ${loserName}`}! Play your own game:`;
+    const playUrl = `${window.location.origin}/`;
+    try {
+      const file = await shareODDORAResultCard({
+        game: "XO Multiplayer",
+        headline: winnerName === "It's a draw" ? "IT'S A DRAW!" : `${winnerName.toUpperCase()} WINS!`,
+        subtitle: winnerName === "It's a draw" ? "A close match. Time for a rematch." : `${winnerName} won the game against ${loserName}.`,
+        detail: "XO · ODDORA",
+        quote: "One game down. The fun isn't.",
+        url: playUrl
+      });
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ title: "ODDORA XO Result", text: resultText, url: playUrl, files: [file] });
+      } else {
+        const imageUrl = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = imageUrl;
+        a.download = "oddora-xo-result.png";
+        a.click();
+        URL.revokeObjectURL(imageUrl);
+        await navigator.clipboard?.writeText(`${resultText}\n${playUrl}`);
+        setNotice("Result image downloaded and game link copied.");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") setNotice("Could not share the result image. Please try again.");
+    }
+  }
+
   const symbol = mySymbol();
   const myName = symbol ? (room?.playerNames?.[symbol] || (symbol === "X" ? "Player X" : "Player O")) : "";
   const opponentSymbol = symbol === "X" ? "O" : "X";
@@ -1641,15 +1845,30 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
           <div className="xo-welcome"><div className="xo-mark">❎⭕</div><h3>Play Tic-Tac-Toe live</h3><p className="modal-description">Challenge a friend to a live XO match.</p></div>
           <label className="xo-label" htmlFor="xo-player-name">YOUR DISPLAY NAME</label>
           <input id="xo-player-name" className="xo-input" value={playerName} onChange={e => setPlayerName(e.target.value.slice(0, 18))} placeholder="Enter the name you like" maxLength={18} />
-          <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={createRoom}>{busy ? "Please wait..." : "＋ Create challenge as X"}</button>
-          <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
-          <input className="xo-input xo-code-input" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="6-character invite code" maxLength={6} />
-          <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>{busy ? "Joining..." : "Join friend's challenge"}</button>
-          {initialRoomCode && <p className="xo-invite-note">Your friend invited you! Enter your name above to join.</p>}
+          {initialRoomCode ? (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={joinRoom}>
+                {busy ? "Joining..." : "Join friend's game"}
+              </button>
+              <p className="xo-invite-note">Your friend invited you! Enter your name and join the game.</p>
+            </>
+          ) : (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={createRoom}>{busy ? "Please wait..." : "＋ Create challenge as X"}</button>
+              <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
+              <input className="xo-input xo-code-input" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="6-character invite code" maxLength={6} />
+              <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>{busy ? "Joining..." : "Join friend's challenge"}</button>
+            </>
+          )}
         </>
       ) : (
         <>
-          <div className="xo-room-head"><div><div className="eyebrow muted">ROOM CODE · {room?.gamesPlayed ? `GAME ${room.gamesPlayed + 1}` : "GAME 1"}</div><strong className="xo-room-code">{roomCode}</strong></div><button className="secondary-btn dark" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Copied" : "Invite friend"}</button></div>
+          <div className="xo-room-head">
+            <div>
+              <div className="eyebrow muted">ROOM CODE · {room?.gamesPlayed ? `GAME ${room.gamesPlayed + 1}` : "GAME 1"}</div>
+              <strong className="xo-room-code">{roomCode}</strong>
+            </div>
+          </div>
           <div className="xo-players">
             <div className={symbol === "X" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol">X</b><span>{room?.playerNames?.X || "Waiting..."}</span></div>
             <div className={symbol === "O" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol xo-o">O</b><span>{room?.playerNames?.O || "Waiting for friend"}</span></div>
@@ -1679,6 +1898,9 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
                 <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
                   <button className="primary-btn xo-wide" disabled={busy} onClick={() => restartGame(false)}>↻ Rematch – Same sides</button>
                   <button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => restartGame(true)}>⇄ Rematch – Swap sides</button>
+                  <button className="secondary-btn dark xo-wide" onClick={shareXOResult}>
+                    <Share2 size={15}/> {copied ? "Result copied" : "Share your result"}
+                  </button>
                 </div>
                 <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
                   <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
@@ -1690,13 +1912,493 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
               </div>
             </div>
           )}
-          {room?.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> Share invitation link</button>}
+          {room?.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Link copied" : "Share invitation link"}</button>}
           <button className="secondary-btn dark xo-wide" onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. The room remains available to your friend."); const url = new URL(window.location.href); url.searchParams.delete("xo"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
         </>
       )}
       <p className="modal-description xo-notice">{notice}</p>
       <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
       <p className="xo-footnote">Live multiplayer powered by Firebase. Use any display name you like.</p>
+    </div>
+  );
+}
+
+
+const HEART_CHOICES = ["❤️", "💖", "💜", "💙", "💚", "💛", "🧡", "🩷", "🤍"];
+
+function heartAttemptScore(attempts) {
+  const extraPicks = Math.max(0, Number(attempts || 2) - 2);
+  return Math.max(10, 100 - extraPicks * 5);
+}
+
+function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = "" }) {
+  const [uid, setUid] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [roomCode, setRoomCode] = useState("");
+  const [joinCode, setJoinCode] = useState(initialRoomCode);
+  const [room, setRoom] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("Enter your name to create a heart challenge or join a friend.");
+  const [copied, setCopied] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+
+  useEffect(() => { if (initialRoomCode) setJoinCode(initialRoomCode); }, [initialRoomCode]);
+
+  useEffect(() => {
+    let alive = true;
+    signInPlayer().then(credential => {
+      if (!alive) return;
+      setUid(credential.user.uid);
+      setNotice("You're connected. Create a heart challenge or join your friend's link.");
+    }).catch(error => {
+      console.error("ODDORA heart sign-in failed:", error);
+      if (alive) setNotice("Could not connect. Check your internet and try again.");
+    });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!roomCode) return undefined;
+    const roomRef = ref(database, `rooms/${roomCode}`);
+    const unsubscribe = onValue(roomRef, snapshot => {
+      if (snapshot.exists()) setRoom(snapshot.val());
+      else { setRoom(null); setNotice("This heart room no longer exists."); }
+    }, error => {
+      console.error("ODDORA heart room listener failed:", error);
+      setNotice("Unable to read this room. Check your Realtime Database rules.");
+    });
+    return () => unsubscribe();
+  }, [roomCode]);
+
+
+  useEffect(() => {
+    if (!roomCode || room?.status !== "playing" || !room?.endsAt) return undefined;
+
+    const updateClock = () => {
+      const remaining = Math.max(0, Math.ceil((Number(room.endsAt) - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+
+      if (remaining === 0) {
+        runTransaction(ref(database, `rooms/${roomCode}`), current => {
+          if (!current || current.gameType !== "catch-heart" || current.status !== "playing") return;
+          if (Number(current.endsAt || 0) > Date.now()) return;
+          return { ...current, status: "finished", finishReason: "timeout" };
+        }).catch(error => console.error("ODDORA heart timer failed:", error));
+      }
+    };
+
+    updateClock();
+    const timerId = window.setInterval(updateClock, 250);
+    return () => window.clearInterval(timerId);
+  }, [roomCode, room?.status, room?.endsAt]);
+
+  const cleanName = value => value.trim().replace(/\s+/g, " ").slice(0, 18);
+  const mySide = room?.players?.X === uid ? "X" : room?.players?.O === uid ? "O" : "";
+  const myChoice = mySide ? room?.choices?.[mySide] : "";
+  const friendSide = mySide === "X" ? "O" : "X";
+  const friendName = room?.playerNames?.[friendSide] || "Your friend";
+  const friendChoice = friendSide ? room?.choices?.[friendSide] : null;
+  const hasHeartChoice = value => value !== "" && value !== null && value !== undefined;
+  const bothPicked = hasHeartChoice(room?.choices?.X) && hasHeartChoice(room?.choices?.O);
+
+  async function createRoom() {
+    const name = cleanName(playerName);
+    if (!uid || busy || !name) { setNotice("Enter your name first."); return; }
+    setBusy(true); setNotice("Creating your heart challenge...");
+    try {
+      let code = ""; let exists = true;
+      for (let attempt = 0; attempt < 8 && exists; attempt += 1) {
+        code = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const snapshot = await get(ref(database, `rooms/${code}`));
+        exists = snapshot.exists();
+      }
+      if (exists) throw new Error("Could not generate a room code. Please try again.");
+      const newRoom = {
+        gameType: "catch-heart", players: { X: uid, O: "" },
+        playerNames: { X: name, O: "" }, choices: { X: null, O: null },
+        attempts: 0, status: "waiting", round: 1, createdAt: Date.now()
+      };
+      await set(ref(database, `rooms/${code}`), newRoom);
+      setRoomCode(code); setNotice("Your heart challenge is ready. Invite your friend!");
+      const url = new URL(window.location.href); url.search = ""; url.searchParams.set("heart", code);
+      window.history.replaceState({}, "", url.toString());
+    } catch (error) {
+      console.error("ODDORA heart create failed:", error);
+      setNotice(error.message || "Could not create the challenge. Please try again.");
+    } finally { setBusy(false); }
+  }
+
+  async function joinRoom() {
+    const name = cleanName(playerName);
+    const code = joinCode.trim().toUpperCase();
+
+    if (!uid || busy || !name || code.length !== 6) {
+      setNotice("Enter your name and the 6-character invite code.");
+      return;
+    }
+
+    setBusy(true);
+    setNotice("Joining your friend's heart challenge...");
+
+    try {
+      const roomRef = ref(database, `rooms/${code}`);
+      const existingSnapshot = await get(roomRef);
+
+      if (!existingSnapshot.exists()) {
+        throw new Error("This heart room does not exist. Check the invite code.");
+      }
+
+      const existingRoom = existingSnapshot.val();
+
+      if (existingRoom.gameType !== "catch-heart") {
+        throw new Error("That code belongs to a different game. Use a Catch My Heart invite.");
+      }
+
+      if (existingRoom.players?.X === uid) {
+        throw new Error("You created this room. Open the invitation on another device or browser to join as Player 2.");
+      }
+
+      if (existingRoom.status !== "waiting" || existingRoom.players?.O) {
+        if (existingRoom.players?.O === uid) {
+          setRoomCode(code);
+          setNotice("Welcome back! You're Player 2.");
+          const url = new URL(window.location.href);
+          url.search = "";
+          url.searchParams.set("heart", code);
+          window.history.replaceState({}, "", url.toString());
+          return;
+        }
+        throw new Error("This heart room is already full. Ask your friend to create a new challenge.");
+      }
+
+      // Use the confirmed room snapshot once if Firebase's first local
+      // transaction callback is null. Later retries use Firebase's live value.
+      let usedPreflightFallback = false;
+
+      const result = await runTransaction(roomRef, current => {
+        if (!current) {
+          if (usedPreflightFallback) return;
+          usedPreflightFallback = true;
+          current = existingRoom;
+        }
+
+        if (current.gameType !== "catch-heart") return;
+        if (current.players?.X === uid) return current;
+
+        if (current.players?.O === uid) {
+          return {
+            ...current,
+            playerNames: { ...(current.playerNames || {}), O: name }
+          };
+        }
+
+        if (current.status !== "waiting" || current.players?.O) return;
+
+        return {
+          ...current,
+          players: { ...current.players, O: uid },
+          playerNames: { ...(current.playerNames || {}), O: name },
+          choices: { X: null, O: null },
+          attempts: 0,
+          startedAt: Date.now(),
+          endsAt: Date.now() + 60000,
+          status: "playing"
+        };
+      });
+
+      if (!result.committed || !result.snapshot.exists()) {
+        throw new Error("Could not join. The code may be wrong or the room is already full.");
+      }
+
+      const data = result.snapshot.val();
+
+      if (data.players?.X !== uid && data.players?.O !== uid) {
+        throw new Error("This heart room is already full.");
+      }
+
+      setRoomCode(code);
+      setNotice("You're in! Choose a heart when you're ready.");
+
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.searchParams.set("heart", code);
+      window.history.replaceState({}, "", url.toString());
+    } catch (error) {
+      console.error("ODDORA heart join failed:", error);
+      setNotice(error.message || "Could not join this room. Ask your friend for a fresh link.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function chooseHeart(index) {
+    if (!roomCode || !mySide || room?.status !== "playing" || busy) return;
+
+    setBusy(true);
+
+    try {
+      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+        if (!current || current.gameType !== "catch-heart" || current.status !== "playing") return;
+        if (Number(current.endsAt || 0) <= Date.now()) {
+          return { ...current, status: "finished", finishReason: "timeout" };
+        }
+
+        const previousChoice = current.choices?.[mySide];
+        if (previousChoice === index) return current;
+
+        const choices = { ...(current.choices || {}), [mySide]: index };
+        const attempts = Number(current.attempts || 0) + 1;
+        const matched = choices.X !== null && choices.X !== undefined &&
+          choices.O !== null && choices.O !== undefined &&
+          choices.X === choices.O;
+
+        return {
+          ...current,
+          choices,
+          attempts,
+          status: matched ? "finished" : "playing",
+          finishReason: matched ? "match" : null
+        };
+      });
+
+      if (!result.committed) {
+        setNotice("Your heart could not be saved. Please try again.");
+      }
+    } catch (error) {
+      console.error("ODDORA heart choice failed:", error);
+      setNotice("Your heart could not be saved. Check your connection.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function playAgain(swapSides = false) {
+    if (!roomCode || !room || room.status !== "finished" || !mySide || busy) return;
+    setBusy(true);
+    try {
+      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+        if (!current || current.gameType !== "catch-heart" || current.status !== "finished" || !current.players?.X || !current.players?.O) return;
+        const players = swapSides ? { X: current.players.O, O: current.players.X } : current.players;
+        const playerNames = swapSides
+          ? { X: current.playerNames?.O || "Player 2", O: current.playerNames?.X || "Player 1" }
+          : (current.playerNames || {});
+        return {
+          ...current, players, playerNames,
+          choices: { X: null, O: null }, attempts: 0, status: "playing",
+          revealed: false, finishReason: null, startedAt: Date.now(),
+          endsAt: Date.now() + 60000, round: (current.round || 1) + 1
+        };
+      });
+      if (!result.committed) setNotice("Please wait for the next round to start.");
+    } catch (error) {
+      console.error("ODDORA heart rematch failed:", error);
+      setNotice("Could not start another round. Please try again.");
+    } finally { setBusy(false); }
+  }
+
+  async function shareInvitation() {
+    if (!roomCode) return;
+    const url = new URL(window.location.href); url.search = ""; url.searchParams.set("heart", roomCode);
+    const shareUrl = url.toString();
+    const shareText = `${room?.playerNames?.X || playerName || "Your friend"} sent you a Catch My Heart challenge on ODDORA!`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Catch My Heart · ODDORA", text: shareText, url: shareUrl });
+      else { await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`); setCopied(true); setTimeout(() => setCopied(false), 1800); }
+    } catch (error) {
+      if (error?.name !== "AbortError") setNotice("Copy the invitation link from your browser address bar.");
+    }
+  }
+
+  async function shareHeartResult() {
+    const attempts = Number(room?.attempts || 0);
+    const score = heartAttemptScore(attempts);
+    const quote = sameHeart
+      ? "Some hearts just know where to meet."
+      : "Different choices, same lovely chaos.";
+    const resultText = sameHeart
+      ? `💘 ${room?.playerNames?.X || "Player 1"} & ${room?.playerNames?.O || "Player 2"} found their match in ${attempts} picks! ODDORA match score: ${score}%.`
+      : `⏰ Our Catch My Heart round ran out of time. Play another round on ODDORA!`;
+    const playUrl = `${window.location.origin}/`;
+    try {
+      const file = await shareODDORAResultCard({
+        game: "Catch My Heart",
+        headline: sameHeart ? "HEARTS IN SYNC!" : "TIME'S UP!",
+        subtitle: sameHeart
+          ? `${room?.playerNames?.X || "Player 1"} & ${room?.playerNames?.O || "Player 2"} found their match.`
+          : "The clock ran out. Ready for another round?",
+        detail: sameHeart ? `${score}% ODDORA MATCH SCORE · ${attempts} PICKS` : "TRY AGAIN TOGETHER",
+        quote,
+        url: playUrl
+      });
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ title: "Catch My Heart · ODDORA", text: resultText, url: playUrl, files: [file] });
+      } else {
+        const imageUrl = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = imageUrl;
+        a.download = "oddora-catch-my-heart-result.png";
+        a.click();
+        URL.revokeObjectURL(imageUrl);
+        await navigator.clipboard?.writeText(`${resultText}\n${playUrl}`);
+        setNotice("Result image downloaded and game link copied.");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") setNotice("Could not share the result image. Please try again.");
+    }
+  }
+
+  const sameHeart = bothPicked && room.choices.X === room.choices.O;
+  const totalAttempts = Number(room?.attempts || 0);
+  const matchScore = heartAttemptScore(totalAttempts);
+
+  return (
+    <div className="heart-game-wrap">
+      {!roomCode ? (
+        <>
+          <div className="heart-welcome"><div className="heart-welcome-icon">💘</div><h3>Catch My Heart</h3><p className="modal-description">Two players. One secret heart each. Let's see if your choices match.</p></div>
+          <label className="xo-label" htmlFor="heart-player-name">YOUR DISPLAY NAME</label>
+          <input id="heart-player-name" className="xo-input" value={playerName} onChange={e => setPlayerName(e.target.value.slice(0, 18))} placeholder="Enter your name" maxLength={18} />
+          {initialRoomCode ? (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={joinRoom}>
+                {busy ? "Joining..." : "Join friend's game"}
+              </button>
+              <p className="xo-invite-note">Your friend invited you! Enter your name and join the heart game.</p>
+            </>
+          ) : (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={createRoom}>
+                {busy ? "Please wait..." : "💘 Create heart challenge"}
+              </button>
+              <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
+              <input className="xo-input xo-code-input" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="6-character invite code" maxLength={6} />
+              <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>
+                {busy ? "Joining..." : "Join friend's challenge"}
+              </button>
+            </>
+          )}
+        </>
+      ) : !room ? (
+        <div className="heart-waiting"><div className="heart-welcome-icon">💗</div><h3>Loading your heart room...</h3></div>
+      ) : (
+        <>
+          <div className="xo-room-head"><div><div className="eyebrow muted">HEART ROOM · ROUND {room.round || 1}</div><strong className="xo-room-code">{roomCode}</strong></div></div>
+          <div className="xo-players">
+            <div className={mySide === "X" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol">♥</b><span>{room.playerNames?.X || "Player 1"}</span></div>
+            <div className={mySide === "O" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol xo-o">♥</b><span>{room.playerNames?.O || "Waiting for friend"}</span></div>
+          </div>
+          {room.status === "waiting" ? (
+            <div className="heart-waiting"><div className="heart-welcome-icon">💌</div><h3>Waiting for your person...</h3><p>Share the invite link. Your friend joins as Player 2.</p></div>
+          ) : room.status === "finished" ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="heart-result-title"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 10000,
+                display: "grid",
+                placeItems: "center",
+                padding: "22px",
+                background: "rgba(5, 4, 12, .86)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                overflowY: "auto"
+              }}
+            >
+              <div
+                className="heart-result"
+                role="status"
+                aria-live="polite"
+                style={{
+                  width: "100%",
+                  maxWidth: 390,
+                  maxHeight: "min(88vh, 820px)",
+                  overflowY: "auto",
+                  padding: "28px 22px",
+                  borderRadius: 24,
+                  textAlign: "center",
+                  color: "#fff",
+                  background: "linear-gradient(145deg, #211936, #12101f)",
+                  border: "1px solid rgba(231, 117, 207, .38)",
+                  boxShadow: "0 24px 90px rgba(0,0,0,.6)"
+                }}
+              >
+              <div className="heart-burst">{sameHeart ? "💞" : "⏰"}</div>
+              <div className="eyebrow muted">ODDORA · CATCH MY HEART</div>
+              <h3 id="heart-result-title">{sameHeart ? "HEARTS IN SYNC!" : "TIME'S UP!"}</h3>
+              <p className="heart-result-copy">
+                {sameHeart
+                  ? "You both found the same heart. Now that's a lovely coincidence!"
+                  : "The clock ran out! Different picks, same team — try another round."}
+              </p>
+              {sameHeart && (
+                <div className="heart-score-card">
+                  <strong>{matchScore}%</strong>
+                  <span>ODDORA MATCH SCORE</span>
+                  <small>Matched in {totalAttempts} heart {totalAttempts === 1 ? "pick" : "picks"}</small>
+                </div>
+              )}
+              <p className="heart-result-quote">
+                {sameHeart
+                  ? "“Some hearts just know where to meet.” 💗"
+                  : "“Different choices, same lovely chaos.” 💞"}
+              </p>
+              <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+                <button className="primary-btn xo-wide" disabled={busy} onClick={() => playAgain(false)}>↻ Rematch – Same sides</button>
+                <button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => playAgain(true)}>⇄ Rematch – Swap sides</button>
+                <button className="secondary-btn dark xo-wide" onClick={shareHeartResult}>
+                  <Share2 size={15}/> {copied ? "Result copied" : "Share your result"}
+                </button>
+              </div>
+              <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
+                <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
+                <h3 style={{ fontSize: 21, margin: "0 0 6px", color: "#fff" }}>START YOUR OD ADVENTURE.</h3>
+                <p style={{ fontSize: 13, color: "#aaa1bd", lineHeight: 1.5, margin: "0 0 14px" }}>One game down. A whole playground to explore.</p>
+                <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>✨ Create Your Own Challenge</button>
+                <button className="secondary-btn dark xo-wide" style={{ marginTop: 9 }} onClick={onExplore}>🎮 Explore ODDORA</button>
+              </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="heart-pick-status">
+                <strong>Tap hearts until you both find the same one 💗</strong>
+                <span>
+                  You: {myChoice !== null && myChoice !== undefined ? HEART_CHOICES[myChoice] : "Not picked yet"}
+                  {" · "}
+                  {friendName}: {friendChoice !== null && friendChoice !== undefined ? HEART_CHOICES[friendChoice] : "Not picked yet"}
+                </span>
+                <strong className="heart-timer">⏱ 00:{String(secondsLeft).padStart(2, "0")}</strong>
+              </div>
+              <div className="heart-grid" aria-label="Choose a heart">
+                {HEART_CHOICES.map((heart, index) => (
+                  <button
+                    key={heart}
+                    type="button"
+                    className={`heart-choice ${myChoice === index ? "selected" : ""} ${friendChoice === index ? "friend-selected" : ""}`}
+                    onClick={() => chooseHeart(index)}
+                    disabled={busy || room.status !== "playing"}
+                    aria-label={`Choose heart ${index + 1}`}
+                    aria-pressed={myChoice === index}
+                  >
+                    {heart}
+                  </button>
+                ))}
+              </div>
+              <p className="heart-private-note">Keep changing your pick. Match the same heart before the 60-second timer ends!</p>
+            </>
+          )}
+          {room.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Link copied" : "Share invitation link"}</button>}
+          <button className="secondary-btn dark xo-wide" style={{ marginTop: 10 }} onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. Your friend can still use the invitation."); const url = new URL(window.location.href); url.searchParams.delete("heart"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
+        </>
+      )}
+      <p className="modal-description xo-notice">{notice}</p>
+      <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      <p className="xo-footnote">Live heart challenge powered by Firebase. Score is for fun only.</p>
     </div>
   );
 }
