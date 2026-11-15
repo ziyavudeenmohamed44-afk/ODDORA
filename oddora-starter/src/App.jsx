@@ -1538,8 +1538,18 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       if (existingRoom.players?.O && existingRoom.players.O !== uid) {
         throw new Error("This room is already full. Ask your friend to create a new challenge.");
       }
+      // The preflight read above confirms the room exists. Firebase can still
+      // invoke the first transaction callback with a null local-cache value.
+      // Use the confirmed snapshot once as a fallback; if Firebase retries,
+      // its server value takes precedence. A second null means the room vanished.
+      let usedPreflightFallback = false;
       const result = await runTransaction(roomRef, current => {
-        if (!current) return;
+        if (!current) {
+          if (usedPreflightFallback) return;
+          usedPreflightFallback = true;
+          current = existingRoom;
+        }
+
         if (current.players?.X === uid) return current;
         if (current.players?.O === uid) {
           return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
