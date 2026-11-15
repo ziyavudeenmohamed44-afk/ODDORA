@@ -907,3 +907,114 @@
     font-size: 11px;
   }
 }
+
+/* =========================================
+   ODDORA V2 — STICKY NAVIGATION + FIVE ZONES
+========================================= */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(13, 12, 24, .92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+.nav-links button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #aaa4b8;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: color .2s ease;
+}
+.nav-links button:hover,
+.nav-links button:focus-visible {
+  color: #d8c6ff;
+}
+.zone-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.zone-card {
+  min-height: 245px;
+}
+.empty-state {
+  line-height: 1.8;
+  max-width: 700px;
+  margin: 0 auto;
+}
+@media (max-width: 1100px) {
+  .zone-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nav-links { gap: 16px; }
+}
+@media (max-width: 900px) {
+  .zone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .topbar { position: sticky; top: 0; }
+  .nav-links button { text-align: left; width: 100%; font-size: 14px; }
+  .zone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zone-card { min-height: 190px; }
+}
+
+
+/* ODDORA V2.1 — HEADER, MARQUEE AND HERO CLEANUP */
+.app-shell { overflow: clip; }
+.topbar {
+  position: sticky; top: 0; z-index: 1000;
+  width: 100%; max-width: none; height: 76px;
+  padding: 0 clamp(20px, 5vw, 72px); margin: 0;
+  display: grid; grid-template-columns: minmax(170px, 1fr) auto minmax(100px, 1fr);
+  align-items: center; gap: 24px;
+  background: rgba(13, 12, 24, .94);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.topbar .brand { justify-self: start; white-space: nowrap; }
+.topbar .nav-links {
+  position: static; display: flex; flex-direction: row; align-items: center;
+  justify-content: center; gap: clamp(16px, 2.3vw, 34px);
+  white-space: nowrap; color: #b6b1c8;
+}
+.topbar .nav-links a, .topbar .nav-links button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 8px 0; font-size: 12px;
+}
+.topbar .top-actions { justify-self: end; align-items: center; }
+.hero-bottom { display: none !important; }
+.ticker { width: 100%; overflow: hidden; }
+.ticker .ticker-track {
+  display: flex; width: max-content; min-width: max-content;
+  animation: oddoraTicker 26s linear infinite; will-change: transform;
+}
+.ticker .ticker-track span { display: block; flex: 0 0 auto; white-space: nowrap; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes oddoraTicker { from { transform: translateX(0); } to { transform: translateX(-25%); } }
+@media (max-width: 1100px) and (min-width: 621px) {
+  .topbar { grid-template-columns: auto 1fr auto; gap: 16px; padding-inline: 22px; }
+  .topbar .nav-links { gap: 14px; }
+  .topbar .nav-links a, .topbar .nav-links button { font-size: 11px; }
+}
+@media (max-width: 620px) {
+  .topbar { display: flex; justify-content: space-between; height: 66px; padding: 0 18px; }
+  .topbar .nav-links {
+    display: none; position: absolute; top: 65px; left: 0; right: 0;
+    padding: 18px 22px; flex-direction: column; align-items: stretch;
+    gap: 8px; background: rgba(17,16,31,.98);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .nav-links.open { display: flex; }
+  .topbar .nav-links a, .topbar .nav-links button {
+    justify-content: flex-start; width: 100%; min-height: 42px; text-align: left;
+  }
+}
+
+
+/* ODDORA XO MULTIPLAYER V2.3 */
+.xo-game-wrap{display:grid;gap:13px;width:100%;margin-top:18px}
+.xo-welcome{text-align:center;margin-bottom:5px}.xo-mark{font-size:38px}.xo-welcome h3{font-size:21px;margin:5px 0}.xo-label{font:500 10px 'DM Mono',monospace;letter-spacing:1.8px;color:#bda8ff}
+.xo-input{width:100%;min-height:48px;padding:13px 14px;border:1px solid rgba(190,160,255,.25);border-radius:11px;background:#100d1b;color:#fff;outline:none}.xo-input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px #a78bfa22}.xo-input::placeholder{color:#777187}.xo-code-input{text-align:center;letter-spacing:4px;font-weight:700}.xo-wide{width:100%;justify-content:center;min-height:46px}.xo-or{display:flex;align-items:center;gap:10px;color:#928ba5;font:10px 'DM Mono',monospace}.xo-or span{height:1px;background:#ffffff1c;flex:1}.xo-invite-note{text-align:center;color:#c4a7ff;font-size:11px;margin:0}.xo-room-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.xo-room-code{font-size:25px;letter-spacing:5px}.xo-players{display:grid;grid-template-columns:1fr 1fr;gap:9px}.xo-player{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #ffffff15;border-radius:12px;background:#ffffff08;min-width:0}.xo-player.active{border-color:#a78bfa88;background:#a78bfa12}.xo-player-symbol{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#a78bfa22;color:#c4a7ff;font-size:19px}.xo-player-symbol.xo-o{background:#67e8f922;color:#67e8f9}.xo-player span{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.xo-status{display:grid;gap:5px;text-align:center;padding:13px 9px;border-radius:13px;background:#ffffff09}.xo-status strong{font-size:13px}.xo-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;max-width:350px;margin:0 auto}.xo-cell{aspect-ratio:1;border-radius:14px;border:1px solid rgba(190,160,255,.27);background:rgba(255,255,255,.055);color:#c4a7ff;font-size:clamp(38px,10vw,58px);font-weight:800;transition:background .15s,transform .15s}.xo-cell.o{color:#67e8f9}.xo-cell:not(:disabled):hover{background:#a78bfa20;transform:translateY(-2px)}.xo-cell:disabled{cursor:default}.xo-rematch{display:grid;gap:10px;text-align:center;padding:15px;border:1px solid #ffffff14;border-radius:14px;background:#ffffff07}.xo-rematch h3{margin:0;font-size:19px}.xo-rematch p{margin-bottom:3px}.xo-notice{text-align:center;margin:0}.xo-footnote{font-size:10px;color:#817b94;text-align:center;margin:0}
+@media(max-width:480px){.xo-room-head{align-items:flex-start}.xo-room-head .secondary-btn{padding:11px 12px;font-size:11px}.xo-player{padding:8px;gap:6px}.xo-player span{font-size:10px}.xo-cell{border-radius:11px}}

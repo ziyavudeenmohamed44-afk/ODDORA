@@ -8,20 +8,20 @@ import { database, signInPlayer } from "./firebase";
 import { get, onValue, ref, runTransaction, set, update } from "firebase/database";
 
 const experiences = [
-  { id:"hacker", title:"Fake Hacker", category:"Prank Lab", icon:"🖥️", tag:"Cinematic prank", description:"A dramatic fake terminal scan with a ridiculous reveal.", color:"purple", type:"prank" },
-  { id:"update", title:"Fake Software Update", category:"Prank Lab", icon:"📲", tag:"99% suspense", description:"A suspiciously dramatic update with a silly ending.", color:"blue", type:"prank" },
-  { id:"virus", title:"Virus Scanner", category:"Prank Lab", icon:"🦠", tag:"Harmless scan", description:"Scan your digital habits. Discover your scrolling virus.", color:"green", type:"prank" },
-  { id:"button", title:"Don't Touch the Button", category:"Prank Lab", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new ridiculous reaction.", color:"pink", type:"prank" },
-  { id:"iq", title:"Fake IQ Test", category:"Prank Lab", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
-  { id:"mind", title:"Mind Reader", category:"Mind Games", icon:"🧠", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
-  { id:"xo", title:"XO Multiplayer", category:"Mind Games", icon:"❎", tag:"Play with a friend", description:"Create a room, invite a friend and play Tic-Tac-Toe live.", color:"blue", type:"game" },
-  { id:"personality", title:"Your Secret Superpower", category:"Mind Games", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
-  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"What If?", icon:"💸", tag:"Fantasy simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
-  { id:"award", title:"Ridiculous Award", category:"Random Chaos", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
-  { id:"surprise", title:"Surprise Me", category:"Random Chaos", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
+  { id:"hacker", title:"Fake Hacker", category:"OD PRANKS", icon:"🖥️", tag:"Cinematic prank", description:"A dramatic fake terminal scan with a ridiculous reveal.", color:"purple", type:"prank" },
+  { id:"update", title:"Fake Software Update", category:"OD PRANKS", icon:"📲", tag:"99% suspense", description:"A suspiciously dramatic update with a silly ending.", color:"blue", type:"prank" },
+  { id:"virus", title:"Virus Scanner", category:"OD PRANKS", icon:"🦠", tag:"Harmless scan", description:"Scan your digital habits. Discover your scrolling virus.", color:"green", type:"prank" },
+  { id:"button", title:"Don't Touch the Button", category:"OD PRANKS", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new ridiculous reaction.", color:"pink", type:"prank" },
+  { id:"iq", title:"Fake IQ Test", category:"OD PRANKS", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
+  { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🧠", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
+  { id:"xo", title:"XO Multiplayer", category:"OD GAMES", icon:"❎", tag:"Play with a friend", description:"Create a room, invite a friend and play Tic-Tac-Toe live.", color:"blue", type:"game" },
+  { id:"personality", title:"Your Secret Superpower", category:"OD MIND", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
+  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"OD FUN", icon:"💸", tag:"Fantasy simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
+  { id:"award", title:"Ridiculous Award", category:"OD FUN", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
+  { id:"surprise", title:"Surprise Me", category:"OD FUN", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
 ];
 
-const categories = ["All", "Prank Lab", "Mind Games", "What If?", "Random Chaos"];
+const categories = ["All", "OD GAMES", "OD CREATE", "OD PRANKS", "OD MIND", "OD FUN"];
 
 const randomResults = [
   "You have been promoted to Chief Nap Officer. Your first assignment: do absolutely nothing.",
@@ -97,16 +97,22 @@ function App() {
   const [language, setLanguage] = useState("EN");
   const [copied, setCopied] = useState(false);
   const [sharedPrank, setSharedPrank] = useState(null);
+  const [xoInviteCode, setXoInviteCode] = useState("");
   useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const prankId = params.get("prank");
+  const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  if (xoCode.length === 6) {
+    const xoGame = experiences.find(item => item.id === "xo");
+    if (xoGame) { setSelected(xoGame); setXoInviteCode(xoCode); }
+  }
   const mode = params.get("mode");
   const sender = params.get("from");
 
   if (mode !== "friend" || !prankId) return;
 
   const prank = experiences.find(
-    item => item.id === prankId && item.category === "Prank Lab"
+    item => item.id === prankId && item.category === "OD PRANKS"
   );
 
   if (!prank) return;
@@ -135,8 +141,16 @@ function App() {
     openExperience(item);
   }
 
+  function goToCategory(category) {
+    setActive(category);
+    setSearch("");
+    setMenuOpen(false);
+    setSelected(null);
+    document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   async function shareResult(text) {
-    const shareText = `${text}\nTry the fun at ODDORA — The Internet's Playground!`;
+    const shareText = `${text}\nTry ODDORA — Your Playground. Your Challenges!`;
 
     if (navigator.share) {
       try {
@@ -161,10 +175,13 @@ function App() {
           <span>ODDORA<span className="brand-dot">.</span></span>
         </a>
 
-        <nav className={menuOpen ? "nav-links open" : "nav-links"}>
-          <a href="#explore" onClick={() => setMenuOpen(false)}>Explore</a>
-          <a href="#zones" onClick={() => setMenuOpen(false)}>Play zones</a>
-          <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
+        <nav className={menuOpen ? "nav-links open" : "nav-links"} aria-label="Main navigation">
+          <a href="#home" onClick={() => { setMenuOpen(false); setActive("All"); setSelected(null); }}>Home</a>
+          <button type="button" onClick={() => goToCategory("OD GAMES")}>OD Games</button>
+          <button type="button" onClick={() => goToCategory("OD CREATE")}>OD Create</button>
+          <button type="button" onClick={() => goToCategory("OD PRANKS")}>OD Pranks</button>
+          <button type="button" onClick={() => goToCategory("OD MIND")}>OD Mind</button>
+          <button type="button" onClick={() => goToCategory("OD FUN")}>OD Fun</button>
         </nav>
 
         <div className="top-actions">
@@ -177,17 +194,17 @@ function App() {
         </div>
       </header>
 
-      <main>
+      <main id="home">
         <section className="hero">
           <div className="hero-glow glow-one"></div>
           <div className="hero-glow glow-two"></div>
 
           <div className="hero-content">
-            <div className="eyebrow"><span className="pulse"></span> YOUR DAILY DOSE OF UNEXPECTED</div>
+            <div className="eyebrow"><span className="pulse"></span> OD PANNu! · YOUR PLAYGROUND</div>
             <h1>The internet's<br/><span className="gradient-text">playground.</span></h1>
             <p className="hero-copy">
-              Prank yourself. Challenge your brain.<br className="desktop-break"/>
-              Experience things that shouldn't be possible.
+              Play games. Create challenges. Discover harmless chaos.<br className="desktop-break"/>
+              Your playground. Your challenges.
             </p>
 
             <div className="hero-actions">
@@ -208,15 +225,16 @@ function App() {
             <div className="spark spark-b">✧</div>
           </div>
 
-          <div className="hero-bottom">
-            <span>SCROLL TO EXPLORE</span>
-            <div className="scroll-line"></div>
-            <span>01 / 04</span>
-          </div>
+
         </section>
 
         <section className="ticker" aria-label="ODDORA highlights">
-          <div>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> NO BORING MOMENTS <b>✳</b></div>
+          <div className="ticker-track" aria-hidden="true">
+            <span>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> </span>
+            <span>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> </span>
+            <span>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> </span>
+            <span>NO BORING MOMENTS <b>✳</b> IMPOSSIBLE IS A STARTING POINT <b>✳</b> PLAY NICE, PLAY WEIRD <b>✳</b> </span>
+          </div>
         </section>
 
         <section className="section zones-section" id="zones">
@@ -229,47 +247,39 @@ function App() {
           </div>
 
           <div className="zone-grid">
-            <button className="zone-card zone-purple" onClick={() => {
-              setActive("Prank Lab");
-              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
-            }}>
+            <button className="zone-card zone-blue" onClick={() => goToCategory("OD GAMES")}>
+              <span className="zone-icon">🎮</span>
+              <span className="zone-number">01 / PLAY</span>
+              <strong>OD GAMES</strong>
+              <span className="zone-desc">Play together. Challenge your friends.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+            <button className="zone-card zone-purple" onClick={() => goToCategory("OD CREATE")}>
+              <span className="zone-icon">✨</span>
+              <span className="zone-number">02 / CREATE</span>
+              <strong>OD CREATE</strong>
+              <span className="zone-desc">Build your own invites, proposals and challenges.</span>
+              <ArrowUpRight className="zone-arrow"/>
+            </button>
+            <button className="zone-card zone-pink" onClick={() => goToCategory("OD PRANKS")}>
               <span className="zone-icon">🃏</span>
-              <span className="zone-number">01 / PRANKS</span>
-              <strong>Prank Lab</strong>
+              <span className="zone-number">03 / SURPRISE</span>
+              <strong>OD PRANKS</strong>
               <span className="zone-desc">Harmless chaos. Unexpected reveals.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
-
-            <button className="zone-card zone-orange" onClick={() => {
-              setActive("Mind Games");
-              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
-            }}>
+            <button className="zone-card zone-orange" onClick={() => goToCategory("OD MIND")}>
               <span className="zone-icon">🧠</span>
-              <span className="zone-number">02 / THINK</span>
-              <strong>Mind Games</strong>
-              <span className="zone-desc">Puzzles, tricks and brain teasers.</span>
+              <span className="zone-number">04 / THINK</span>
+              <strong>OD MIND</strong>
+              <span className="zone-desc">Mind tricks, puzzles and brain teasers.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
-
-            <button className="zone-card zone-blue" onClick={() => {
-              setActive("What If?");
-              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
-            }}>
-              <span className="zone-icon">🪐</span>
-              <span className="zone-number">03 / IMAGINE</span>
-              <strong>What If?</strong>
-              <span className="zone-desc">Step into impossible scenarios.</span>
-              <ArrowUpRight className="zone-arrow"/>
-            </button>
-
-            <button className="zone-card zone-pink" onClick={() => {
-              setActive("Random Chaos");
-              document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
-            }}>
+            <button className="zone-card zone-purple" onClick={() => goToCategory("OD FUN")}>
               <span className="zone-icon">🎲</span>
-              <span className="zone-number">04 / RANDOM</span>
-              <strong>Random Chaos</strong>
-              <span className="zone-desc">You don't choose. The weird chooses.</span>
+              <span className="zone-number">05 / EXPLORE</span>
+              <strong>OD FUN</strong>
+              <span className="zone-desc">What ifs, random chaos and silly surprises.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
           </div>
@@ -299,7 +309,7 @@ function App() {
             {filtered.map((item, index) => (
               <ExperienceCard key={item.id} item={item} index={index} onClick={() => openExperience(item)}/>
             ))}
-            {filtered.length === 0 && <div className="empty-state">No weirdness found. Try another search. 👀</div>}
+            {filtered.length === 0 && <div className="empty-state">{active === "OD CREATE" ? "OD CREATE is coming next. Soon, you will be able to build and share your own invitations, proposals and challenges. ✨" : "No weirdness found. Try another search. 👀"}</div>}
           </div>
         </section>
 
@@ -335,11 +345,13 @@ function App() {
           onClose={() => {
   setSelected(null);
   setSharedPrank(null);
+  setXoInviteCode("");
   window.history.replaceState({}, "", window.location.pathname);
 }}
           onShare={shareResult}
           copied={copied}
           sharedPrank={sharedPrank}
+          xoInviteCode={xoInviteCode}
         />
       )}
     </div>
@@ -361,8 +373,8 @@ function ExperienceCard({ item, index, onClick }) {
   );
 }
 
-function ExperienceModal({ item, onClose, onShare, copied, sharedPrank }) {
-  const [step, setStep] = useState(0);
+function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode }) {
+  const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : 0);
   const [prankMode, setPrankMode] = useState(
   sharedPrank?.mode === "friend" ? "friend" : "self"
 );
@@ -904,7 +916,7 @@ async function createFriendLink() {
   <div className="modal-stage intro-stage">
     <div className="stage-orb">{item.icon}</div>
 
-    {item.category === "Prank Lab" ? (
+    {item.category === "OD PRANKS" ? (
       <>
         {sharedPrank?.mode === "friend" ? (
           <>
@@ -1141,7 +1153,7 @@ async function createFriendLink() {
 
         {/* XO MULTIPLAYER */}
         {step === 13 && item.id === "xo" && (
-          <XOMultiplayer onBack={() => setStep(0)} />
+          <XOMultiplayer onBack={() => setStep(0)} initialRoomCode={xoInviteCode} />
         )}
 
         {/* GENERAL RESULT */}
@@ -1149,7 +1161,7 @@ async function createFriendLink() {
           <div className="result-stage">
             <div className="result-spark">✨</div>
             <div className="eyebrow muted">YOUR OFFICIAL RESULT</div>
-            {item.category === "Prank Lab" && (
+            {item.category === "OD PRANKS" && (
   <div className="prank-final-reveal">
     {sharedPrank?.mode === "friend" ? (
       <>
@@ -1414,14 +1426,19 @@ const XO_WIN_LINES = [
   [0, 4, 8], [2, 4, 6]
 ];
 
-function XOMultiplayer({ onBack }) {
+function XOMultiplayer({ onBack, initialRoomCode = "" }) {
   const [uid, setUid] = useState("");
+  const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState(initialRoomCode);
   const [room, setRoom] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("Sign in securely to create or join a game.");
+  const [notice, setNotice] = useState("Enter your display name to create or join a game.");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (initialRoomCode) setJoinCode(initialRoomCode);
+  }, [initialRoomCode]);
 
   useEffect(() => {
     let alive = true;
@@ -1429,7 +1446,9 @@ function XOMultiplayer({ onBack }) {
       .then(credential => {
         if (!alive) return;
         setUid(credential.user.uid);
-        setNotice("You're connected. Create a room or join your friend's room.");
+        // Temporary diagnostic: shows the exact Firebase UID for this browser session.
+        console.info("ODDORA CURRENT FIREBASE UID:", credential.user.uid);
+        setNotice("You're connected. Choose your name and start playing.");
       })
       .catch(error => {
         console.error("ODDORA anonymous sign-in failed:", error);
@@ -1442,12 +1461,8 @@ function XOMultiplayer({ onBack }) {
     if (!roomCode) return undefined;
     const roomRef = ref(database, `rooms/${roomCode}`);
     const unsubscribe = onValue(roomRef, snapshot => {
-      if (snapshot.exists()) {
-        setRoom(snapshot.val());
-      } else {
-        setRoom(null);
-        setNotice("This room no longer exists.");
-      }
+      if (snapshot.exists()) setRoom(snapshot.val());
+      else { setRoom(null); setNotice("This room no longer exists."); }
     }, error => {
       console.error("ODDORA room listener failed:", error);
       setNotice("Unable to read this room. Check your Realtime Database rules.");
@@ -1455,14 +1470,16 @@ function XOMultiplayer({ onBack }) {
     return () => unsubscribe();
   }, [roomCode]);
 
+  function cleanName(value) { return value.trim().replace(/\s+/g, " ").slice(0, 18); }
+
   async function createRoom() {
-    if (!uid || busy) return;
-    setBusy(true);
-    setNotice("Creating your game room...");
+    const name = cleanName(playerName);
+    if (!uid || busy || !name) { setNotice("Enter your name first."); return; }
+    setBusy(true); setNotice("Creating your challenge...");
     try {
       let code = "";
       let exists = true;
-      for (let attempt = 0; attempt < 5 && exists; attempt += 1) {
+      for (let attempt = 0; attempt < 8 && exists; attempt += 1) {
         code = Math.random().toString(36).slice(2, 8).toUpperCase();
         const snapshot = await get(ref(database, `rooms/${code}`));
         exists = snapshot.exists();
@@ -1470,53 +1487,121 @@ function XOMultiplayer({ onBack }) {
       if (exists) throw new Error("Could not generate a room code. Please try again.");
       const newRoom = {
         board: ["", "", "", "", "", "", "", "", ""],
-        turn: "X",
-        players: { X: uid, O: "" },
-        status: "waiting",
-        winner: "",
+        turn: "X", players: { X: uid, O: "" },
+        playerNames: { X: name, O: "" },
+        status: "waiting", winner: "", gamesPlayed: 0,
         createdAt: Date.now()
       };
       await set(ref(database, `rooms/${code}`), newRoom);
       setRoomCode(code);
-      setNotice("Room created! Share the code with your friend.");
+      setNotice("Challenge created! Share the invitation link with your friend.");
+      const url = new URL(window.location.href); url.searchParams.set("xo", code);
+      window.history.replaceState({}, "", url.toString());
     } catch (error) {
       console.error("ODDORA create room failed:", error);
       setNotice(error.message || "Could not create the room. Check Firebase rules.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function joinRoom() {
     const code = joinCode.trim().toUpperCase();
-    if (!uid || !code || busy) return;
-    setBusy(true);
-    setNotice("Joining the room...");
+    const name = cleanName(playerName);
+    if (!uid || busy) return;
+    if (!name) { setNotice("Enter your display name before joining."); return; }
+    if (code.length !== 6) { setNotice("Enter a valid 6-character room code."); return; }
+    setBusy(true); setNotice("Joining your friend's challenge...");
     try {
       const roomRef = ref(database, `rooms/${code}`);
-      const snapshot = await get(roomRef);
-      if (!snapshot.exists()) throw new Error("Room not found. Check the code with your friend.");
-      const data = snapshot.val();
-      if (data.players?.X === uid || data.players?.O === uid) {
+      const existingSnapshot = await get(roomRef);
+      if (!existingSnapshot.exists()) {
+        throw new Error("Room not found. Ask your friend to create a new challenge and share the latest link.");
+      }
+
+      const existingRoom = existingSnapshot.val();
+      console.info("ODDORA JOIN PREFLIGHT:", {
+        roomCode: code,
+        currentUid: uid,
+        roomStatus: existingRoom.status,
+        playerX: existingRoom.players?.X ?? null,
+        playerO: existingRoom.players?.O ?? null,
+        playerXName: existingRoom.playerNames?.X ?? null,
+        playerOName: existingRoom.playerNames?.O ?? null
+      });
+
+      if (existingRoom.players?.X === uid) {
         setRoomCode(code);
-        setNotice("You're back in your game.");
+        setNotice("Welcome back! You're Player X.");
+        const url = new URL(window.location.href); url.searchParams.set("xo", code);
+        window.history.replaceState({}, "", url.toString());
         return;
       }
-      if (data.status !== "waiting" || data.players?.O) {
-        throw new Error("This room is already full. Ask your friend to create a new room.");
+
+      if (existingRoom.status !== "waiting" && existingRoom.players?.O !== uid) {
+        throw new Error("This room is already full or the game has already started.");
       }
+      if (existingRoom.players?.O && existingRoom.players.O !== uid) {
+        throw new Error("This room is already full. Ask your friend to create a new challenge.");
+      }
+
+      // Claim only the O seat. The transaction callback is expected to receive
+      // null initially because this child may not be in the local cache.
+      // Returning the UID (instead of aborting on null) lets Firebase safely
+      // resolve competing joins against the server value.
+      const playerORef = ref(database, `rooms/${code}/players/O`);
+      const seatResult = await runTransaction(playerORef, current => {
+        console.info("ODDORA O-SEAT TRANSACTION CALLBACK:", {
+          currentSeat: current ?? null,
+          currentUid: uid,
+          roomCode: code
+        });
+        if (current === uid) return current;
+        if (current) return;
+        return uid;
+      });
+
+      console.info("ODDORA O-SEAT TRANSACTION RESULT:", {
+        committed: seatResult.committed,
+        seatUid: seatResult.snapshot.val() ?? null
+      });
+
+      if (!seatResult.committed || seatResult.snapshot.val() !== uid) {
+        throw new Error("This room was just joined by someone else. Ask your friend for a new invitation.");
+      }
+
+      // If a previous attempt claimed the O seat but failed before this update,
+      // retrying with the same UID safely repairs the name and room status.
       await update(roomRef, {
-        "players/O": uid,
+        "playerNames/O": name,
         status: "playing"
       });
+
+      const finalSnapshot = await get(roomRef);
+      const data = finalSnapshot.val();
+      console.info("ODDORA JOIN FINAL ROOM:", {
+        roomCode: code,
+        playerX: data?.players?.X ?? null,
+        playerO: data?.players?.O ?? null,
+        status: data?.status ?? null
+      });
+
+      if (!data || data.players?.O !== uid) {
+        throw new Error("The O player seat could not be confirmed. Please try joining again.");
+      }
+
       setRoomCode(code);
-      setNotice("Joined! You're O. Your friend is X.");
+      setNotice("Joined! You're Player O. Your friend starts as X.");
+      const url = new URL(window.location.href); url.searchParams.set("xo", code);
+      window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA join room failed:", error);
+      console.error("ODDORA JOIN ROOM FULL ERROR:", {
+        name: error?.name,
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack,
+        error
+      });
       setNotice(error.message || "Could not join the room. Check Firebase rules.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   function mySymbol() {
@@ -1526,112 +1611,88 @@ function XOMultiplayer({ onBack }) {
   }
 
   async function playCell(index) {
-    if (!roomCode || !uid || !room) return;
     const symbol = mySymbol();
-    if (!symbol || room.status !== "playing" || room.turn !== symbol || room.board?.[index]) return;
-    const roomRef = ref(database, `rooms/${roomCode}`);
+    if (!roomCode || !uid || !room || !symbol || room.status !== "playing" || room.turn !== symbol || room.board?.[index]) return;
     try {
-      const result = await runTransaction(roomRef, current => {
+      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
         if (!current || current.status !== "playing" || current.turn !== symbol || current.board?.[index]) return;
-        const board = [...current.board];
-        board[index] = symbol;
+        const board = [...current.board]; board[index] = symbol;
         const winningLine = XO_WIN_LINES.find(line => line.every(cell => board[cell] === symbol));
         const draw = !winningLine && board.every(Boolean);
-        return {
-          ...current,
-          board,
-          turn: symbol === "X" ? "O" : "X",
-          status: winningLine || draw ? "finished" : "playing",
-          winner: winningLine ? symbol : draw ? "draw" : ""
-        };
+        return { ...current, board, turn: symbol === "X" ? "O" : "X", status: winningLine || draw ? "finished" : "playing", winner: winningLine ? symbol : draw ? "draw" : "" };
       });
       if (!result.committed) setNotice("That move was not accepted. Wait for your turn and try again.");
-    } catch (error) {
-      console.error("ODDORA move failed:", error);
-      setNotice("Move could not be saved. Check your connection.");
-    }
+    } catch (error) { console.error("ODDORA move failed:", error); setNotice("Move could not be saved. Check your connection."); }
   }
 
-  async function playAgain() {
-    if (!roomCode || !room || !mySymbol()) return;
+  async function restartGame(swapSides = false) {
+    if (!roomCode || !room || room.status !== "finished" || !mySymbol()) return;
+    setBusy(true);
     try {
-      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
-        if (!current || !current.players?.X || !current.players?.O) return;
-        return {
-          ...current,
-          board: ["", "", "", "", "", "", "", "", ""],
-          turn: "X",
-          status: "playing",
-          winner: ""
-        };
+      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+        if (!current || current.status !== "finished" || !current.players?.X || !current.players?.O) return;
+        const players = swapSides ? { X: current.players.O, O: current.players.X } : current.players;
+        const playerNames = swapSides
+          ? { X: current.playerNames?.O || "Player O", O: current.playerNames?.X || "Player X" }
+          : (current.playerNames || {});
+        return { ...current, players, playerNames, board: ["", "", "", "", "", "", "", "", ""], turn: "X", status: "playing", winner: "", gamesPlayed: (current.gamesPlayed || 0) + 1 };
       });
-    } catch (error) {
-      console.error("ODDORA rematch failed:", error);
-      setNotice("Could not restart the game. Please try again.");
-    }
+      if (!result.committed) setNotice("Another player has already restarted this game. Please wait for the board to update.");
+    } catch (error) { console.error("ODDORA rematch failed:", error); setNotice("Could not restart the game. Please try again."); }
+    finally { setBusy(false); }
   }
 
-  async function copyRoomCode() {
+  async function shareInvitation() {
+    if (!roomCode) return;
+    const url = new URL(window.location.href); url.searchParams.set("xo", roomCode);
+    const shareUrl = url.toString();
+    const text = `${room?.playerNames?.X || playerName || "Your friend"} challenged you to XO on ODDORA! Join the game:`;
     try {
-      await navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setNotice(`Share this room code with your friend: ${roomCode}`);
+      if (navigator.share) await navigator.share({ title: "XO Challenge – ODDORA", text, url: shareUrl });
+      else { await navigator.clipboard.writeText(`${text}\n${shareUrl}`); setCopied(true); setTimeout(() => setCopied(false), 1800); }
+    } catch (error) {
+      if (error?.name !== "AbortError") setNotice("Copy the invitation link from your browser address bar.");
     }
   }
 
   const symbol = mySymbol();
-  const statusText = !room
-    ? "Create a room or enter a room code to start."
-    : room.status === "waiting"
-      ? "Waiting for your friend to join..."
-      : room.status === "finished"
-        ? room.winner === "draw"
-          ? "It's a draw! Great game."
-          : room.winner === symbol ? "You win! 🎉" : "Your friend wins this round!"
-        : room.turn === symbol ? "Your turn — make a move!" : "Your friend's turn...";
+  const myName = symbol ? (room?.playerNames?.[symbol] || (symbol === "X" ? "Player X" : "Player O")) : "";
+  const opponentSymbol = symbol === "X" ? "O" : "X";
+  const opponentName = room?.playerNames?.[opponentSymbol] || (opponentSymbol === "X" ? "Player X" : "Player O");
+  const statusText = !room ? "Create a challenge or join your friend's invitation." : room.status === "waiting" ? "Waiting for your friend to join..." : room.status === "finished" ? (room.winner === "draw" ? "It's a draw! Great game." : room.winner === symbol ? `${myName} wins! 🎉` : `${opponentName} wins this round!`) : room.turn === symbol ? `${myName}, it's your turn!` : `Waiting for ${opponentName}...`;
 
   return (
-    <div style={{ width: "100%", display: "grid", gap: 16 }}>
+    <div className="xo-game-wrap">
       {!roomCode ? (
         <>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 42, marginBottom: 6 }}>❎⭕</div>
-            <h3 style={{ margin: "0 0 6px" }}>Play Tic-Tac-Toe live</h3>
-            <p className="modal-description">Create a private room and share its 6-character code with a friend.</p>
-          </div>
-          <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }} disabled={!uid || busy} onClick={createRoom}>
-            {busy ? "Please wait..." : "＋ Create a room"}
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#aaa", fontSize: 12 }}><span style={{ flex: 1, height: 1, background: "rgba(255,255,255,.12)" }} /> OR JOIN A FRIEND <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,.12)" }} /></div>
-          <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="Enter 6-character room code" maxLength={6} style={{ width: "100%", boxSizing: "border-box", padding: 14, borderRadius: 12, border: "1px solid rgba(190,160,255,.25)", background: "#100d1b", color: "#fff", textAlign: "center", letterSpacing: 4, fontSize: 18 }} />
-          <button className="secondary-btn dark" style={{ width: "100%", justifyContent: "center" }} disabled={!uid || busy || joinCode.length !== 6} onClick={joinRoom}>Join room</button>
+          <div className="xo-welcome"><div className="xo-mark">❎⭕</div><h3>Play Tic-Tac-Toe live</h3><p className="modal-description">Challenge a friend to a live XO match.</p></div>
+          <label className="xo-label" htmlFor="xo-player-name">YOUR DISPLAY NAME</label>
+          <input id="xo-player-name" className="xo-input" value={playerName} onChange={e => setPlayerName(e.target.value.slice(0, 18))} placeholder="Enter the name you like" maxLength={18} />
+          <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={createRoom}>{busy ? "Please wait..." : "＋ Create challenge as X"}</button>
+          <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
+          <input className="xo-input xo-code-input" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="6-character invite code" maxLength={6} />
+          <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>{busy ? "Joining..." : "Join friend's challenge"}</button>
+          {initialRoomCode && <p className="xo-invite-note">Your friend invited you! Enter your name above to join.</p>}
         </>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-            <div><div className="eyebrow muted">ROOM CODE</div><strong style={{ fontSize: 22, letterSpacing: 4 }}>{roomCode}</strong></div>
-            <button className="secondary-btn dark" onClick={copyRoomCode}><Copy size={15}/>{copied ? "Copied" : "Copy code"}</button>
+          <div className="xo-room-head"><div><div className="eyebrow muted">ROOM CODE · {room?.gamesPlayed ? `GAME ${room.gamesPlayed + 1}` : "GAME 1"}</div><strong className="xo-room-code">{roomCode}</strong></div><button className="secondary-btn dark" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Copied" : "Invite friend"}</button></div>
+          <div className="xo-players">
+            <div className={symbol === "X" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol">X</b><span>{room?.playerNames?.X || "Waiting..."}</span></div>
+            <div className={symbol === "O" ? "xo-player active" : "xo-player"}><b className="xo-player-symbol xo-o">O</b><span>{room?.playerNames?.O || "Waiting for friend"}</span></div>
           </div>
-          <div style={{ textAlign: "center", padding: "12px 8px", borderRadius: 14, background: "rgba(255,255,255,.045)" }}>
-            <div className="eyebrow muted">YOU ARE PLAYER {symbol || "..."}</div>
-            <strong>{statusText}</strong>
+          <div className="xo-status"><span className="eyebrow muted">YOU ARE {symbol || "CONNECTING"}</span><strong>{statusText}</strong></div>
+          <div className="xo-board">
+            {(room?.board || ["", "", "", "", "", "", "", "", ""]).map((cell, index) => <button key={index} className={`xo-cell ${cell ? `played ${cell.toLowerCase()}` : ""}`} onClick={() => playCell(index)} disabled={!symbol || room?.status !== "playing" || room?.turn !== symbol || Boolean(cell)} aria-label={`Square ${index + 1}${cell ? ` ${cell}` : " empty"}`}>{cell}</button>)}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, width: "100%", maxWidth: 340, margin: "0 auto" }}>
-            {(room?.board || ["", "", "", "", "", "", "", "", ""]).map((cell, index) => (
-              <button key={index} onClick={() => playCell(index)} disabled={!symbol || room?.status !== "playing" || room?.turn !== symbol || Boolean(cell)} aria-label={`Square ${index + 1}${cell ? ` ${cell}` : " empty"}`} style={{ aspectRatio: "1", borderRadius: 14, border: "1px solid rgba(190,160,255,.25)", background: "rgba(255,255,255,.055)", color: cell === "X" ? "#a78bfa" : "#67e8f9", fontSize: "clamp(34px, 10vw, 52px)", fontWeight: 800, cursor: "pointer" }}>
-                {cell}
-              </button>
-            ))}
-          </div>
-          {room?.status === "finished" && <button className="primary-btn" style={{ width: "100%", justifyContent: "center" }} onClick={playAgain}>↻ Play again</button>}
-          <button className="secondary-btn dark" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. The room remains available to your friend."); }}>Leave room</button>
+          {room?.status === "finished" && <div className="xo-rematch"><h3>{room.winner === "draw" ? "🤝 It's a draw!" : room.winner === symbol ? "🏆 You won!" : "👏 Great game!"}</h3><p className="modal-description">Play another round with the same sides or switch X and O.</p><button className="primary-btn xo-wide" disabled={busy} onClick={() => restartGame(false)}>↻ Rematch – Same sides</button><button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => restartGame(true)}>⇄ Rematch – Swap sides</button></div>}
+          {room?.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> Share invitation link</button>}
+          <button className="secondary-btn dark xo-wide" onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. The room remains available to your friend."); const url = new URL(window.location.href); url.searchParams.delete("xo"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
         </>
       )}
-      <p className="modal-description" style={{ textAlign: "center", margin: 0 }}>{notice}</p>
-      <button className="secondary-btn dark" style={{ width: "100%", justifyContent: "center" }} onClick={onBack}>Back to Mind Games</button>
-      <p style={{ fontSize: 11, color: "#888", textAlign: "center", margin: 0 }}>Live multiplayer powered by Firebase. No personal details are required.</p>
+      <p className="modal-description xo-notice">{notice}</p>
+      <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      <p className="xo-footnote">Live multiplayer powered by Firebase. Use any display name you like.</p>
     </div>
   );
 }
