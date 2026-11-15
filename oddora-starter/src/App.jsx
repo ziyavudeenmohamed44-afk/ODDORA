@@ -352,6 +352,16 @@ function App() {
           copied={copied}
           sharedPrank={sharedPrank}
           xoInviteCode={xoInviteCode}
+          onExplore={() => {
+            setSelected(null);
+            setActive("All");
+            setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
+          }}
+          onCreateChallenge={() => {
+            setSelected(null);
+            setActive("OD CREATE");
+            setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
+          }}
         />
       )}
     </div>
@@ -373,7 +383,7 @@ function ExperienceCard({ item, index, onClick }) {
   );
 }
 
-function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode }) {
+function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, onExplore, onCreateChallenge }) {
   const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : 0);
   const [prankMode, setPrankMode] = useState(
   sharedPrank?.mode === "friend" ? "friend" : "self"
@@ -1153,7 +1163,7 @@ async function createFriendLink() {
 
         {/* XO MULTIPLAYER */}
         {step === 13 && item.id === "xo" && (
-          <XOMultiplayer onBack={() => setStep(0)} initialRoomCode={xoInviteCode} />
+          <XOMultiplayer onBack={() => setStep(0)} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={xoInviteCode} />
         )}
 
         {/* GENERAL RESULT */}
@@ -1426,7 +1436,7 @@ const XO_WIN_LINES = [
   [0, 4, 8], [2, 4, 6]
 ];
 
-function XOMultiplayer({ onBack, initialRoomCode = "" }) {
+function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode = "" }) {
   const [uid, setUid] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -1446,8 +1456,6 @@ function XOMultiplayer({ onBack, initialRoomCode = "" }) {
       .then(credential => {
         if (!alive) return;
         setUid(credential.user.uid);
-        // Temporary diagnostic: shows the exact Firebase UID for this browser session.
-        console.info("ODDORA CURRENT FIREBASE UID:", credential.user.uid);
         setNotice("You're connected. Choose your name and start playing.");
       })
       .catch(error => {
@@ -1512,22 +1520,14 @@ function XOMultiplayer({ onBack, initialRoomCode = "" }) {
     setBusy(true); setNotice("Joining your friend's challenge...");
     try {
       const roomRef = ref(database, `rooms/${code}`);
+      // Read the room from the server before starting the transaction. Without
+      // this preflight read, the first transaction callback can receive null
+      // from an empty local cache and abort before Firebase fetches the room.
       const existingSnapshot = await get(roomRef);
       if (!existingSnapshot.exists()) {
         throw new Error("Room not found. Ask your friend to create a new challenge and share the latest link.");
       }
-
       const existingRoom = existingSnapshot.val();
-      console.info("ODDORA JOIN PREFLIGHT:", {
-        roomCode: code,
-        currentUid: uid,
-        roomStatus: existingRoom.status,
-        playerX: existingRoom.players?.X ?? null,
-        playerO: existingRoom.players?.O ?? null,
-        playerXName: existingRoom.playerNames?.X ?? null,
-        playerOName: existingRoom.playerNames?.O ?? null
-      });
-
       if (existingRoom.players?.X === uid) {
         setRoomCode(code);
         setNotice("Welcome back! You're Player X.");
@@ -1535,71 +1535,34 @@ function XOMultiplayer({ onBack, initialRoomCode = "" }) {
         window.history.replaceState({}, "", url.toString());
         return;
       }
-
-      if (existingRoom.status !== "waiting" && existingRoom.players?.O !== uid) {
-        throw new Error("This room is already full or the game has already started.");
-      }
       if (existingRoom.players?.O && existingRoom.players.O !== uid) {
         throw new Error("This room is already full. Ask your friend to create a new challenge.");
       }
-
-      // Claim only the O seat. The transaction callback is expected to receive
-      // null initially because this child may not be in the local cache.
-      // Returning the UID (instead of aborting on null) lets Firebase safely
-      // resolve competing joins against the server value.
-      const playerORef = ref(database, `rooms/${code}/players/O`);
-      const seatResult = await runTransaction(playerORef, current => {
-        console.info("ODDORA O-SEAT TRANSACTION CALLBACK:", {
-          currentSeat: current ?? null,
-          currentUid: uid,
-          roomCode: code
-        });
-        if (current === uid) return current;
-        if (current) return;
-        return uid;
+      const result = await runTransaction(roomRef, current => {
+        if (!current) return;
+        if (current.players?.X === uid) return current;
+        if (current.players?.O === uid) {
+          return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
+        }
+        if (current.status !== "waiting" || current.players?.O) return;
+        return {
+          ...current,
+          players: { ...current.players, O: uid },
+          playerNames: { ...(current.playerNames || {}), O: name },
+          status: "playing"
+        };
       });
-
-      console.info("ODDORA O-SEAT TRANSACTION RESULT:", {
-        committed: seatResult.committed,
-        seatUid: seatResult.snapshot.val() ?? null
-      });
-
-      if (!seatResult.committed || seatResult.snapshot.val() !== uid) {
-        throw new Error("This room was just joined by someone else. Ask your friend for a new invitation.");
+      if (!result.committed || !result.snapshot.exists()) {
+        throw new Error("Could not join this room. It may have just been filled or closed. Ask your friend for a new invitation.");
       }
-
-      // If a previous attempt claimed the O seat but failed before this update,
-      // retrying with the same UID safely repairs the name and room status.
-      await update(roomRef, {
-        "playerNames/O": name,
-        status: "playing"
-      });
-
-      const finalSnapshot = await get(roomRef);
-      const data = finalSnapshot.val();
-      console.info("ODDORA JOIN FINAL ROOM:", {
-        roomCode: code,
-        playerX: data?.players?.X ?? null,
-        playerO: data?.players?.O ?? null,
-        status: data?.status ?? null
-      });
-
-      if (!data || data.players?.O !== uid) {
-        throw new Error("The O player seat could not be confirmed. Please try joining again.");
-      }
-
+      const data = result.snapshot.val();
+      if (data.players?.X !== uid && data.players?.O !== uid) throw new Error("This room is already full.");
       setRoomCode(code);
-      setNotice("Joined! You're Player O. Your friend starts as X.");
+      setNotice(data.players?.X === uid ? "Welcome back! You're Player X." : "Joined! You're Player O. Your friend starts as X.");
       const url = new URL(window.location.href); url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA JOIN ROOM FULL ERROR:", {
-        name: error?.name,
-        code: error?.code,
-        message: error?.message,
-        stack: error?.stack,
-        error
-      });
+      console.error("ODDORA join room failed:", error);
       setNotice(error.message || "Could not join the room. Check Firebase rules.");
     } finally { setBusy(false); }
   }
@@ -1685,7 +1648,38 @@ function XOMultiplayer({ onBack, initialRoomCode = "" }) {
           <div className="xo-board">
             {(room?.board || ["", "", "", "", "", "", "", "", ""]).map((cell, index) => <button key={index} className={`xo-cell ${cell ? `played ${cell.toLowerCase()}` : ""}`} onClick={() => playCell(index)} disabled={!symbol || room?.status !== "playing" || room?.turn !== symbol || Boolean(cell)} aria-label={`Square ${index + 1}${cell ? ` ${cell}` : " empty"}`}>{cell}</button>)}
           </div>
-          {room?.status === "finished" && <div className="xo-rematch"><h3>{room.winner === "draw" ? "🤝 It's a draw!" : room.winner === symbol ? "🏆 You won!" : "👏 Great game!"}</h3><p className="modal-description">Play another round with the same sides or switch X and O.</p><button className="primary-btn xo-wide" disabled={busy} onClick={() => restartGame(false)}>↻ Rematch – Same sides</button><button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => restartGame(true)}>⇄ Rematch – Swap sides</button></div>}
+          {room?.status === "finished" && (
+            <div role="dialog" aria-modal="true" aria-labelledby="xo-result-title" style={{
+              position: "fixed", inset: 0, zIndex: 9999, display: "grid", placeItems: "center",
+              padding: "22px", background: "rgba(5, 4, 12, .86)", backdropFilter: "blur(12px)"
+            }}>
+              <div style={{ width: "100%", maxWidth: 390, padding: "28px 22px", borderRadius: 24,
+                textAlign: "center", color: "#fff", background: "linear-gradient(145deg, #211936, #12101f)",
+                border: "1px solid rgba(177, 139, 255, .38)", boxShadow: "0 24px 90px rgba(0,0,0,.6)" }}>
+                <div style={{ fontSize: 48, lineHeight: 1.2, marginBottom: 10 }}>
+                  {room.winner === "draw" ? "🤝" : room.winner === symbol ? "🏆" : "😅"}
+                </div>
+                <div className="eyebrow muted" style={{ marginBottom: 8 }}>ODDORA · XO MULTIPLAYER</div>
+                <h2 id="xo-result-title" style={{ fontSize: 29, lineHeight: 1.15, margin: "0 0 10px", color: "#fff" }}>
+                  {room.winner === "draw" ? "IT'S A DRAW!" : room.winner === symbol ? "YOU WIN!" : "YOU LOST!"}
+                </h2>
+                <p style={{ color: "#c8bfdc", fontSize: 14, lineHeight: 1.6, margin: "0 0 20px" }}>
+                  {room.winner === "draw" ? "Perfectly matched. Nobody is leaving without a rematch!" : room.winner === symbol ? "You conquered the board! Enjoy your victory. Your friend wants a rematch." : "Revenge starts in the next round. Don't let your friend celebrate for too long!"}
+                </p>
+                <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+                  <button className="primary-btn xo-wide" disabled={busy} onClick={() => restartGame(false)}>↻ Rematch – Same sides</button>
+                  <button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => restartGame(true)}>⇄ Rematch – Swap sides</button>
+                </div>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
+                  <h3 style={{ fontSize: 21, margin: "0 0 6px", color: "#fff" }}>START YOUR OD ADVENTURE.</h3>
+                  <p style={{ fontSize: 13, color: "#aaa1bd", lineHeight: 1.5, margin: "0 0 14px" }}>One game down. A whole playground to explore.</p>
+                  <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>✨ Create Your Own Challenge</button>
+                  <button className="secondary-btn dark xo-wide" style={{ marginTop: 9 }} onClick={onExplore}>🎮 Explore ODDORA</button>
+                </div>
+              </div>
+            </div>
+          )}
           {room?.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> Share invitation link</button>}
           <button className="secondary-btn dark xo-wide" onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. The room remains available to your friend."); const url = new URL(window.location.href); url.searchParams.delete("xo"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
         </>
