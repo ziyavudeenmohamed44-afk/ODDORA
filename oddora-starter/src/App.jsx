@@ -1995,9 +1995,6 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
   const cleanName = value => value.trim().replace(/\s+/g, " ").slice(0, 18);
   const mySide = room?.players?.X === uid ? "X" : room?.players?.O === uid ? "O" : "";
   const myChoice = mySide ? room?.choices?.[mySide] : "";
-  const friendSide = mySide === "X" ? "O" : "X";
-  const friendName = room?.playerNames?.[friendSide] || "Your friend";
-  const friendChoice = friendSide ? room?.choices?.[friendSide] : null;
   const hasHeartChoice = value => value !== "" && value !== null && value !== undefined;
   const bothPicked = hasHeartChoice(room?.choices?.X) && hasHeartChoice(room?.choices?.O);
 
@@ -2368,9 +2365,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
               <div className="heart-pick-status">
                 <strong>Tap hearts until you both find the same one 💗</strong>
                 <span>
-                  You: {myChoice !== null && myChoice !== undefined ? HEART_CHOICES[myChoice] : "Not picked yet"}
-                  {" · "}
-                  {friendName}: {friendChoice !== null && friendChoice !== undefined ? HEART_CHOICES[friendChoice] : "Not picked yet"}
+                  Your pick: {myChoice !== null && myChoice !== undefined ? HEART_CHOICES[myChoice] : "Not picked yet"}
                 </span>
                 <strong className="heart-timer">⏱ 00:{String(secondsLeft).padStart(2, "0")}</strong>
               </div>
@@ -2379,7 +2374,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
                   <button
                     key={heart}
                     type="button"
-                    className={`heart-choice ${myChoice === index ? "selected" : ""} ${friendChoice === index ? "friend-selected" : ""}`}
+                    className={`heart-choice ${myChoice === index ? "selected" : ""}`}
                     onClick={() => chooseHeart(index)}
                     disabled={busy || room.status !== "playing"}
                     aria-label={`Choose heart ${index + 1}`}
