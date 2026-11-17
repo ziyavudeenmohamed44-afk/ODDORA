@@ -33,57 +33,47 @@ const randomResults = [
 
 const mindPuzzles = [
   {
-    id: "number-trap", title: "The Number Trap", icon: "🔢",
-    intro: "Think of any number. Keep it secret.",
-    instructions: ["Double your original number.", "Add 10 to your result.", "Divide the result by 2.", "Finally, subtract your original number."],
-    answer: "5", reveal: "No matter which number you started with, your answer is 5!",
-    explanation: "Let your number be X. (2X + 10) / 2 - X simplifies to 5. That's the mathematical secret!",
+    id: "red-hammer", title: "The 98% Brain Lock", icon: "🧠",
+    intro: "Don't calculate—just react on pure instinct in under 2 seconds per prompt!",
+    instructions: [
+      "Picture a bright yellow banana in your mind. Got it? Tap Next.",
+      "Now picture a blue ocean wave crashing. Tap Next immediately.",
+      "Quick! Without thinking, name ANY CARPENTER TOOL and ANY COLOR in your head right now!"
+    ],
+    answer: "RED HAMMER 🔨",
+    reveal: "You thought of a RED HAMMER (or a hammer in red/blue)!",
+    explanation: "Cognitive priming bypasses your analytical prefrontal cortex. When forced to answer fast after primary color cues, 98% of human brains default to the strongest semantic pair: Hammer + Red.",
     type: "steps"
   },
   {
-    id: "magic-9", title: "The Magic 9", icon: "9️⃣",
-    intro: "Think of any positive whole number.",
-    instructions: ["Multiply your number by 9.", "Add all the digits of your answer.", "If you get a two-digit number, add those digits again.", "Keep going until you get a single digit."],
-    answer: "9", reveal: "Your final answer is 9!",
-    explanation: "Every positive multiple of 9 has digits that eventually add up to 9.",
-    type: "steps"
+    id: "card-vanish", title: "The Vanishing Card", icon: "🃏",
+    intro: "Stare at ONE card below and lock it into your memory. Do NOT tap it!",
+    answer: "Your chosen card vanished!",
+    reveal: "Look closely at the remaining 5 cards—your exact secret card is GONE.",
+    explanation: "Classic psychological misdirection: your brain focuses so intensely on tracking your chosen card that it fails to notice the entire 6-card set was swapped for a completely different 5-card set!",
+    type: "cardvanish"
   },
   {
-    id: "age-predictor", title: "The Age Predictor", icon: "🎯",
-    intro: "Think of your current age between 1 and 99.",
-    instructions: ["Double your age.", "Add 5 to the result.", "Multiply everything by 50.", "Now subtract 250."],
-    answer: "Your age", reveal: "ODDORA decoded your age from your final number!",
-    explanation: "The calculation simplifies to your original age multiplied by 100. Enter that final number and ODDORA divides it by 100 to reveal your age.",
-    type: "agecode"
+    id: "binary-matrix", title: "Zero-Math Telepathy", icon: "👁️",
+    intro: "Think of ANY secret number between 1 and 31. No math—just tell ODDORA if you see it.",
+    answer: "Your secret number",
+    reveal: "ODDORA read your micro-hesitations across the 5 grids!",
+    explanation: "Each mystical grid represents a binary bit (1, 2, 4, 8, 16). Simply answering Yes or No lets ODDORA reconstruct any number from 1 to 31 instantly.",
+    type: "binarymatrix"
   },
   {
-    id: "birthday-mystery", title: "The Birthday Mystery", icon: "🎂",
-    intro: "Think of your birth month as a number (January = 1) and your birthday date.",
-    instructions: ["Multiply your birth month by 5.", "Add 6.", "Multiply the result by 4.", "Add 9.", "Multiply everything by 5.", "Now add your birthday date and subtract 165."],
-    answer: "Your birthday", reveal: "ODDORA decoded your birthday from your final number!",
-    explanation: "The result is a code in MMDD format. For example, 1107 means November 7. For January 7, the result is 107.",
-    type: "birthdaycode"
+    id: "sealed-prediction", title: "The Sealed Envelope", icon: "✉️",
+    intro: "ODDORA has already locked a prediction inside a sealed digital envelope.",
+    answer: "EMERALD DRAGON 🐉",
+    reveal: "You eliminated every other option on your own—leaving only ODDORA's sealed prediction!",
+    explanation: "This is the Magician's Force: regardless of which items you tap to eliminate, ODDORA dynamically reframes your taps as 'keep' or 'discard' so the final survivor always matches the sealed envelope.",
+    type: "sealedforce"
   },
   {
-    id: "1089-mystery", title: "The 1089 Mystery", icon: "🔮",
-    intro: "Think of a three-digit number. Its first and last digits must differ by at least 2.",
-    instructions: ["Reverse the digits of your number.", "Subtract the smaller number from the larger number.", "Reverse the answer. If it has two digits, put a zero in front.", "Add the reversed answer to your subtraction result."],
-    answer: "1089", reveal: "Your answer is 1089!",
-    explanation: "Under the stated conditions, this classic number trick always produces 1089.",
-    type: "steps"
-  },
-  {
-    id: "birth-year", title: "Birth Year Decoder", icon: "🎂",
-    intro: "Let's discover your birth year.",
-    answer: "Your birth year",
-    explanation: "ODDORA uses your age and whether your birthday has happened this year to calculate your likely birth year.",
-    type: "birthyear"
-  },
-  {
-    id: "weekday", title: "Birthday Weekday Finder", icon: "📅",
-    intro: "Discover which day of the week you were born.",
+    id: "weekday", title: "Birthday Weekday Oracle", icon: "📅",
+    intro: "Discover the exact day of the week you entered the world.",
     answer: "Your birthday weekday",
-    explanation: "ODDORA calculates the weekday from the birth date you enter.",
+    explanation: "ODDORA calculates the exact Gregorian calendar weekday from your birth date.",
     type: "weekday"
   }
 ];
@@ -329,7 +319,7 @@ function App() {
     setSharedPrank({
       mode: "friend",
       sender: (sender || "Your friend").slice(0, 30),
-      autoStart: true
+      gatePending: true
     });
   }, []);
 
@@ -754,11 +744,12 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
   const [mindInstructionIndex, setMindInstructionIndex] = useState(0);
   const [result, setResult] = useState("");
   const [showMagicPopup, setShowMagicPopup] = useState(false);
-  const [birthAge, setBirthAge] = useState("");
-  const [birthdayPassed, setBirthdayPassed] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [puzzleCode, setPuzzleCode] = useState("");
-  const [error, setError] = useState("");
+  const [vanishPhase, setVanishPhase] = useState("pick");
+  const [matrixStep, setMatrixStep] = useState(0);
+  const [matrixSum, setMatrixSum] = useState(0);
+  const [forceItems, setForceItems] = useState(["PHOENIX 🔥", "CYBER WOLF 🐺", "EMERALD DRAGON 🐉", "SHADOW FALCON 🦅"]);
+  const [forcePrompt, setForcePrompt] = useState("Tap any TWO icons to eliminate them:");
   const [buttonClicks, setButtonClicks] = useState(0);
   const [iqQuestion, setIqQuestion] = useState(0);
   const [iqAnswers, setIqAnswers] = useState([]);
@@ -865,6 +856,31 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
     }
   }, []);
 
+
+  // Continuous atmospheric audio throughout active pranks
+  useEffect(() => {
+    if (!soundEnabled) return undefined;
+    if (item.id === "hacker" && step === 1) {
+      const pulse = window.setInterval(() => {
+        playSound(hackerElapsed > 13 ? "alert" : "key");
+      }, 650);
+      return () => window.clearInterval(pulse);
+    }
+    if (item.id === "update" && step === 9) {
+      const tick = window.setInterval(() => {
+        playSound("suspense");
+      }, 1800);
+      return () => window.clearInterval(tick);
+    }
+    if (item.id === "virus" && step === 10) {
+      const scanBeep = window.setInterval(() => {
+        playSound("step");
+      }, 1100);
+      return () => window.clearInterval(scanBeep);
+    }
+    return undefined;
+  }, [item.id, step, soundEnabled, hackerElapsed > 13]);
+
   useEffect(() => {
     if (item.id !== "hacker" || step !== 1) return;
 
@@ -918,13 +934,14 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
 
   function resetMind() {
     setMindInstructionIndex(0);
-    setBirthAge("");
-    setBirthdayPassed("");
     setBirthDate("");
-    setPuzzleCode("");
     setResult("");
-    setError("");
     setShowMagicPopup(false);
+    setVanishPhase("pick");
+    setMatrixStep(0);
+    setMatrixSum(0);
+    setForceItems(["PHOENIX 🔥", "CYBER WOLF 🐺", "EMERALD DRAGON 🐉", "SHADOW FALCON 🦅"]);
+    setForcePrompt("Tap any TWO icons to eliminate them:");
   }
 
   function choosePuzzle(index) {
@@ -1062,12 +1079,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
   }
 
 
-  useEffect(() => {
-    if (sharedPrank?.autoStart && !autoStartedRef.current && item.category === "OD PRANKS") {
-      autoStartedRef.current = true;
-      startExperience();
-    }
-  }, [sharedPrank, item.id]);
+
 
   useEffect(() => {
     if (item.category !== "OD PRANKS" || step === 0) return undefined;
@@ -1367,14 +1379,28 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
             {item.category === "OD PRANKS" ? (
               <>
                 {sharedPrank?.mode === "friend" ? (
-                  <>
-                    <div className="eyebrow muted">A PRANK FROM YOUR FRIEND</div>
-                    <h3>{sharedPrank.sender} has a surprise for you!</h3>
-                    <p>Ready to see what they sent you?</p>
-                    <button className="primary-btn" onClick={startExperience}>
-                      Start the prank <Zap size={17}/>
+                  <div className="realistic-gate">
+                    <div className="gate-badge">
+                      {item.id === "update" ? "⚙️ SYSTEM FIRMWARE NOTICE" : item.id === "virus" ? "🛡️ DEVICE INTEGRITY CHECK" : "🔒 BROWSER SECURITY VERIFICATION"}
+                    </div>
+                    <h3>
+                      {item.id === "update"
+                        ? "Critical System Patch Queued"
+                        : item.id === "virus"
+                          ? "Suspicious Background Activity Flagged"
+                          : `Encrypted Session Shared by ${sharedPrank.sender}`}
+                    </h3>
+                    <p>
+                      {item.id === "update"
+                        ? "Your device requires an immediate stability & display calibration update before continuing."
+                        : item.id === "virus"
+                          ? "An automated diagnostic check was requested for this browser session. Tap below to inspect."
+                          : `${sharedPrank.sender} granted you temporary access to a protected terminal session. Verify your browser to proceed.`}
+                    </p>
+                    <button className="primary-btn gate-btn" onClick={startExperience}>
+                      {item.id === "update" ? "Install Update Now" : item.id === "virus" ? "Run Quick Diagnostic" : "Verify & Continue"} <ChevronRight size={17}/>
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <>
                     <p>How do you want to enjoy this prank?</p>
@@ -1635,23 +1661,23 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           <div className="result-stage">
             <div className="result-spark">✨</div>
             <div className="eyebrow muted">YOUR OFFICIAL RESULT</div>
-            {item.category === "OD PRANKS" && (
-              <div className="prank-final-reveal">
-                {sharedPrank?.mode === "friend" ? (
-                  <>
-                    <span>😂</span>
-                    <h3>YOU GOT PRANKED!</h3>
-                    <p>Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you!</p>
-                  </>
-                ) : (
-                  <>
-                    <span>😄</span>
-                    <h3>JUST A PRANK!</h3>
-                    <p>Your device is safe. Nothing was accessed or changed.</p>
-                  </>
-                )}
-              </div>
-            )}
+            {item.category === "OD PRANKS" && (() => {
+              const verdicts = {
+                update: { badge: "HEART RATE: +140 BPM 💓", title: "100% SCREEN ILLUSION", sub: "Zero files touched. Your phone didn't even blink." },
+                virus: { badge: "DIAGNOSIS: CHRONIC SCROLLING 📱", title: "QUARANTINE COMPLETE", sub: "No actual viruses found—just unmatched screen time." },
+                button: { badge: "WILLPOWER SCORE: 0 / 100 🔴", title: "CURIOSITY WINS AGAIN", sub: "We literally told you not to press it." },
+                iq: { badge: "CERTIFIED MENSA-ISH 🎓", title: "OFFICIAL CHAOS GENIUS", sub: "Science cannot explain how your brain works." }
+              };
+              const v = verdicts[item.id] || { badge: "SIMULATION COMPLETE ⚡", title: "GOTCHA!", sub: "Completely harmless visual chaos." };
+              return (
+                <div className="prank-final-reveal">
+                  <span>{sharedPrank?.mode === "friend" ? "🎯" : "⚡"}</span>
+                  <div className="eyebrow muted" style={{ justifyContent: "center", marginTop: 6 }}>{v.badge}</div>
+                  <h3>{sharedPrank?.mode === "friend" ? `${sharedPrank.sender.toUpperCase()} GOT YOU!` : v.title}</h3>
+                  <p>{sharedPrank?.mode === "friend" ? `${sharedPrank.sender} sent you this trap. ${v.sub}` : v.sub}</p>
+                </div>
+              );
+            })()}
             <p className="result-text">{result}</p>
             <div className="result-actions">
               <button className="primary-btn" onClick={() => { playSound("tap"); onShare(result); }}>
@@ -1682,12 +1708,11 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* STEP-BY-STEP NUMBER PUZZLES */}
-        {step === 5 && item.id === "mind" &&
-          ["steps", "agecode", "birthdaycode"].includes(currentPuzzle.type) && (
+        {/* STEP-BY-STEP PSYCHOLOGICAL PRIMING */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "steps" && (
           <div className="result-stage">
             <div className="eyebrow muted">
-              STEP {String(mindInstructionIndex + 1).padStart(2, "0")} / {String(currentPuzzle.instructions.length).padStart(2, "0")}
+              PHASE {String(mindInstructionIndex + 1).padStart(2, "0")} / {String(currentPuzzle.instructions.length + 1).padStart(2, "0")}
             </div>
             <div className="result-spark">{currentPuzzle.icon}</div>
             <h3>{currentPuzzle.title}</h3>
@@ -1704,43 +1729,133 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
                 playSound(mindInstructionIndex < currentPuzzle.instructions.length ? "step" : "reveal");
                 if (mindInstructionIndex < currentPuzzle.instructions.length) {
                   setMindInstructionIndex(i => i + 1);
-                } else if (isCodePuzzle) {
-                  setStep(8);
                 } else {
                   setStep(6);
                 }
               }}>
-                {mindInstructionIndex < currentPuzzle.instructions.length ? "Next Step" : "I'm ready!"}
-                <ChevronRight size={17}/>
+                {mindInstructionIndex < currentPuzzle.instructions.length ? "Got it →" : "Read My Mind 🔮"}
               </button>
             </div>
           </div>
         )}
 
-        {/* BIRTH YEAR DECODER */}
-        {step === 5 && item.id === "mind" && currentPuzzle.type === "birthyear" && (
-          <div className="result-stage" style={{ textAlign: "left" }}>
-            <div className="result-spark" style={{ textAlign: "center" }}>🎂</div>
-            <h3 style={{ textAlign: "center" }}>Let's decode your birth year</h3>
-            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
-              How old are you today?
-              <input type="number" min="1" max="120" value={birthAge}
-                onChange={e => setBirthAge(e.target.value)} placeholder="Enter your age" style={fieldStyle}/>
-            </label>
-            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
-              Has your birthday happened already this year?
-              <select value={birthdayPassed} onChange={e => setBirthdayPassed(e.target.value)} style={fieldStyle}>
-                <option value="">Choose one</option>
-                <option value="yes">Yes, it has</option>
-                <option value="no">No, not yet</option>
-              </select>
-            </label>
-            <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
-              disabled={!birthAge || !birthdayPassed || Number(birthAge) < 1 || Number(birthAge) > 120}
-              onClick={revealBirthYear}>Reveal my birth year ✨</button>
-            <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
-              Calculated in your browser. Nothing is saved.
-            </p>
+        {/* THE VANISHING CARD ILLUSION */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "cardvanish" && (
+          <div className="result-stage">
+            <div className="eyebrow muted">{vanishPhase === "pick" ? "STEP 1: FOCUS ON ONE CARD" : "STEP 2: LOOK AT THE MATRIX"}</div>
+            <h3>{vanishPhase === "pick" ? "Lock ONE card in your mind (don't tap it)" : "Your secret card has vanished!"}</h3>
+            <div className="choice-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+              {(vanishPhase === "pick"
+                ? ["K♠", "Q♥", "J♦", "A♣", "10♥", "K♦"]
+                : ["Q♠", "J♥", "10♦", "K♣", "A♦"]
+              ).map(card => (
+                <div key={card} className="choice" style={{ fontSize: 22, fontWeight: 700, padding: "18px 8px", textAlign: "center" }}>
+                  {card}
+                </div>
+              ))}
+            </div>
+            {vanishPhase === "pick" ? (
+              <button className="primary-btn" onClick={() => { playSound("magic"); setVanishPhase("vanished"); }}>
+                I've locked my card 🔒
+              </button>
+            ) : (
+              <div className="result-actions">
+                <button className="primary-btn" onClick={() => { playSound("reveal"); setResult("Your secret card vanished into thin air! 🃏"); setStep(6); }}>
+                  Whoa, how?! 💡
+                </button>
+                <button className="secondary-btn dark" onClick={() => setVanishPhase("pick")}>
+                  Try again
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ZERO-MATH BINARY TELEPATHY MATRIX */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "binarymatrix" && (() => {
+          const bit = 1 << matrixStep;
+          const gridNums = Array.from({ length: 31 }, (_, i) => i + 1).filter(n => (n & bit) !== 0);
+          const answerNo = () => {
+            playSound("tap");
+            if (matrixStep < 4) setMatrixStep(s => s + 1);
+            else {
+              playSound("reveal");
+              setResult(`Your secret number is ${matrixSum || 31}!`);
+              setStep(6);
+            }
+          };
+          const answerYes = () => {
+            playSound("step");
+            const nextSum = matrixSum + bit;
+            setMatrixSum(nextSum);
+            if (matrixStep < 4) setMatrixStep(s => s + 1);
+            else {
+              playSound("reveal");
+              setResult(`Your secret number is ${nextSum}!`);
+              setStep(6);
+            }
+          };
+          return (
+            <div className="result-stage">
+              <div className="eyebrow muted">SCAN {matrixStep + 1} OF 5 · NO MATH NEEDED</div>
+              <h3>Is your secret number inside this grid?</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, width: "100%" }}>
+                {gridNums.map(n => (
+                  <div key={n} className="choice" style={{ padding: "10px 4px", fontWeight: 700, fontSize: 15 }}>
+                    {n}
+                  </div>
+                ))}
+              </div>
+              <div className="result-actions" style={{ width: "100%" }}>
+                <button className="primary-btn" style={{ flex: 1 }} onClick={answerYes}>YES, I see it 👁️</button>
+                <button className="secondary-btn dark" style={{ flex: 1 }} onClick={answerNo}>NO, not here</button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* SEALED ENVELOPE MAGICIAN'S FORCE */}
+        {step === 5 && item.id === "mind" && currentPuzzle.type === "sealedforce" && (
+          <div className="result-stage">
+            <div className="eyebrow muted">✉️ SEALED PREDICTION LOCKED</div>
+            <h3>{forcePrompt}</h3>
+            <div className="choice-grid">
+              {forceItems.map(itemLabel => (
+                <button
+                  key={itemLabel}
+                  className="choice"
+                  style={{ fontWeight: 600, fontSize: 13 }}
+                  onClick={() => {
+                    playSound("tap");
+                    const target = "EMERALD DRAGON 🐉";
+                    if (forceItems.length === 4) {
+                      const remaining = forceItems.filter(x => x !== itemLabel);
+                      if (!remaining.includes(target)) {
+                        setForceItems([itemLabel, target]);
+                        setForcePrompt("Interesting! Those two survive. Now tap ONE to eliminate:");
+                      } else {
+                        setForceItems(remaining.slice(0, 3));
+                        setForcePrompt("Good. Now tap ONE MORE to eliminate:");
+                      }
+                    } else if (forceItems.length === 3) {
+                      const remaining = forceItems.filter(x => x !== itemLabel);
+                      if (!remaining.includes(target)) {
+                        setForceItems([itemLabel, target]);
+                      } else {
+                        setForceItems(remaining);
+                      }
+                      setForcePrompt("Final showdown! Tap ONE icon to decide:");
+                    } else {
+                      playSound("reveal");
+                      setResult(target);
+                      setStep(6);
+                    }
+                  }}
+                >
+                  {itemLabel}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

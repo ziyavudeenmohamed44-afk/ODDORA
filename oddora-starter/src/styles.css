@@ -1891,3 +1891,25 @@ a {
   padding:28px 20px !important;
   overflow-y:auto !important;
 }
+
+/* REALISTIC SYSTEM / SECURITY GATE FOR FRIEND LINKS */
+.realistic-gate {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  padding:8px 4px;
+}
+.gate-badge {
+  font:600 10px 'DM Mono',monospace;
+  letter-spacing:1.4px;
+  color:#ff8a8a;
+  background:rgba(255,95,95,.12);
+  border:1px solid rgba(255,95,95,.3);
+  padding:6px 12px;
+  border-radius:999px;
+}
+.gate-btn {
+  width:100%;
+  margin-top:6px;
+}
