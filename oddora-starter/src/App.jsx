@@ -15,9 +15,11 @@ const experiences = [
   { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🔮", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
   { id:"xo", title:"XO Multiplayer & AI", category:"OD GAMES", icon:"❎", tag:"Solo AI or Friend", description:"Challenge the witty ODDORA Bot solo or invite a friend live.", color:"blue", type:"game" },
   { id:"catch-heart", title:"Catch My Heart", category:"OD GAMES", icon:"💘", tag:"Solo AI or Friend", description:"Match hearts against ODDORA AI or play live with a friend.", color:"pink", type:"game" },
+  { id:"tap-trap", title:"Tap Trap", category:"OD GAMES", icon:"⚡", tag:"60s Reflex Duel", description:"Hit glowing targets, dodge decoy traps, and outscore your rival.", color:"purple", type:"game" },
+  { id:"od-invite", title:"OD Invite", category:"OD CREATE", icon:"💌", tag:"Runaway No link", description:"Create a custom Yes/No invite where the No button dodges 8 times.", color:"pink", type:"create" },
+  { id:"od-propose", title:"OD Propose", category:"OD CREATE", icon:"💍", tag:"3-step interactive flow", description:"Build a 3-step crush, bestie, or funny proposal with custom outcomes.", color:"purple", type:"create" },
   { id:"personality", title:"Your Secret Superpower", category:"OD MIND", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
-  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"OD FUN", icon:"💸", tag:"3-choice simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
-  { id:"award", title:"Ridiculous Award", category:"OD FUN", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
+  { id:"od-fun-coming", title:"OD Fun Area", category:"OD FUN", icon:"🎁", tag:"Under Construction", description:"We are working to treat you with best fun activities. Drop how do you want to have fun! ✨", color:"purple", type:"fun" },
   { id:"surprise", title:"Surprise Me", category:"OD FUN", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
 ];
 
@@ -158,48 +160,67 @@ async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas is unavailable");
 
+  // Ultra-attractive cyberpunk / fintech gradient background
   const bg = ctx.createLinearGradient(0, 0, 1080, 1350);
-  bg.addColorStop(0, "#211936");
-  bg.addColorStop(1, "#090812");
+  bg.addColorStop(0, "#1f143d");
+  bg.addColorStop(0.5, "#0e0c1f");
+  bg.addColorStop(1, "#05040b");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, 1080, 1350);
 
-  const glow = ctx.createRadialGradient(540, 360, 30, 540, 360, 560);
-  glow.addColorStop(0, "rgba(145, 86, 255, .34)");
-  glow.addColorStop(1, "rgba(145, 86, 255, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, 1080, 900);
+  // Neon glowing orb accents
+  const glow1 = ctx.createRadialGradient(200, 200, 20, 200, 200, 500);
+  glow1.addColorStop(0, "rgba(154, 112, 255, .35)");
+  glow1.addColorStop(1, "rgba(154, 112, 255, 0)");
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, 1080, 700);
 
-  ctx.strokeStyle = "rgba(190, 145, 255, .48)";
-  ctx.lineWidth = 3;
+  const glow2 = ctx.createRadialGradient(880, 1100, 30, 880, 1100, 500);
+  glow2.addColorStop(0, "rgba(68, 214, 233, .3)");
+  glow2.addColorStop(1, "rgba(68, 214, 233, 0)");
+  ctx.fillStyle = glow2;
+  ctx.fillRect(200, 800, 880, 550);
+
+  // Frosted glass card border container
+  ctx.strokeStyle = "rgba(190, 145, 255, .6)";
+  ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.roundRect(48, 48, 984, 1254, 42);
+  ctx.roundRect(48, 48, 984, 1254, 40);
+  ctx.stroke();
+
+  // Top Badge Stamp
+  ctx.fillStyle = "rgba(154, 112, 255, .18)";
+  ctx.strokeStyle = "rgba(154, 112, 255, .5)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(330, 100, 420, 56, 28);
+  ctx.fill();
   ctx.stroke();
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#c5a4ff";
-  ctx.font = "700 30px Arial";
-  ctx.fillText("ODDORA", 540, 145);
-  ctx.fillStyle = "#9d91b5";
-  ctx.font = "700 20px Arial";
-  ctx.fillText(game.toUpperCase(), 540, 215);
+  ctx.fillStyle = "#e0d4ff";
+  ctx.font = "700 22px 'Space Grotesk', Arial";
+  ctx.fillText(`⚡ ODDORA · ${game.toUpperCase()}`, 540, 137);
 
+  // Main Headline (Click-bait styling)
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 66px Arial";
+  ctx.font = "800 64px 'Space Grotesk', Arial";
   const headlineWords = String(headline || "").split(" ");
   let lines = [""];
   for (const word of headlineWords) {
     const candidate = `${lines[lines.length - 1]} ${word}`.trim();
-    if (ctx.measureText(candidate).width > 850) lines.push(word);
+    if (ctx.measureText(candidate).width > 860) lines.push(word);
     else lines[lines.length - 1] = candidate;
   }
-  let y = 390 - (lines.length - 1) * 42;
+  let y = 330 - (lines.length - 1) * 40;
   for (const line of lines) {
     ctx.fillText(line, 540, y);
-    y += 88;
+    y += 82;
   }
 
-  ctx.fillStyle = "#d5cce6";
+  // Subtitle
+  ctx.fillStyle = "#c8bfdc";
+  ctx.font = "500 32px 'Space Grotesk', Arial";
   const drawWrapped = (text, startY, maxWidth, lineHeight, font) => {
     ctx.font = font;
     const words = String(text || "").split(" ");
@@ -216,47 +237,72 @@ async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, 
     if (line) ctx.fillText(line, 540, yy);
     return yy;
   };
-  let textY = drawWrapped(subtitle, y + 30, 850, 52, "500 34px Arial");
+  let textY = drawWrapped(subtitle, y + 25, 860, 48, "500 32px 'Space Grotesk', Arial");
 
+  // Highlight Detail Box (Financial / Status Flex)
   if (detail) {
-    const cardY = Math.max(textY + 80, 690);
+    const cardY = Math.max(textY + 70, 680);
     const cardGrad = ctx.createLinearGradient(120, cardY, 960, cardY + 210);
-    cardGrad.addColorStop(0, "rgba(151, 83, 221, .30)");
-    cardGrad.addColorStop(1, "rgba(225, 95, 182, .16)");
+    cardGrad.addColorStop(0, "rgba(154, 112, 255, .32)");
+    cardGrad.addColorStop(1, "rgba(68, 214, 233, .2)");
     ctx.fillStyle = cardGrad;
-    ctx.strokeStyle = "rgba(218, 135, 226, .45)";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(190, 145, 255, .6)";
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(120, cardY, 840, 210, 28);
+    ctx.roundRect(100, cardY, 880, 200, 26);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#f3a7db";
-    ctx.font = "800 54px Arial";
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "800 52px 'Space Grotesk', Arial";
     ctx.fillText(detail, 540, cardY + 115);
-    textY = cardY + 210;
+    textY = cardY + 200;
   }
 
+  // Quote or Tagline
   if (quote) {
-    ctx.fillStyle = "#ead7f0";
-    drawWrapped(`“${quote}”`, Math.max(textY + 105, 1010), 820, 48, "600 30px Arial");
+    ctx.fillStyle = "#f5f3ff";
+    drawWrapped(`“${quote}”`, Math.max(textY + 95, 1000), 820, 46, "600 28px 'Space Grotesk', Arial");
   }
 
-  ctx.fillStyle = "#b7a8d0";
-  ctx.font = "600 24px Arial";
-  ctx.fillText("PLAY. CREATE. DISCOVER.", 540, 1210);
-  ctx.fillStyle = "#8f82a8";
-  ctx.font = "500 22px Arial";
-  ctx.fillText("Play your own challenge:", 540, 1255);
-  ctx.fillStyle = "#c6a5ff";
-  ctx.font = "700 25px Arial";
-  ctx.fillText(new URL(url).host, 540, 1290);
+  // Footer Branding
+  ctx.fillStyle = "#a78bfa";
+  ctx.font = "700 22px 'DM Mono', Arial";
+  ctx.fillText("PLAY · CREATE · PRANK · VIRAL", 540, 1190);
+
+  ctx.fillStyle = "#77728e";
+  ctx.font = "500 20px 'Space Grotesk', Arial";
+  ctx.fillText("Experience it live at:", 540, 1235);
+
+  ctx.fillStyle = "#c4b5fd";
+  ctx.font = "700 24px 'Space Grotesk', Arial";
+  ctx.fillText(new URL(url).host, 540, 1270);
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("Could not create the result image");
-  return new File([blob], "oddora-result.png", { type: "image/png" });
+  return new File([blob], "oddora-viral-card.png", { type: "image/png" });
 }
 
 function App() {
+  useEffect(() => {
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.getElementsByTagName("head")[0].appendChild(link);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#9a70ff";
+    ctx.beginPath(); ctx.roundRect(0, 0, 64, 64, 16); ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 40px 'Space Grotesk', Arial";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("O", 32, 34);
+    link.href = canvas.toDataURL("image/png");
+  }, []);
+
   const [active, setActive] = useState("All");
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
@@ -272,6 +318,8 @@ function App() {
   const [sharedPrank, setSharedPrank] = useState(null);
   const [xoInviteCode, setXoInviteCode] = useState("");
   const [heartInviteCode, setHeartInviteCode] = useState("");
+  const [tapInviteCode, setTapInviteCode] = useState("");
+  const [odcCode, setOdcCode] = useState("");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -285,8 +333,18 @@ function App() {
     const prankId = params.get("prank");
     const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    const tapCode = (params.get("tap") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    const createCode = (params.get("odc") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 
-    if (xoCode.length === 6) {
+    if (createCode.length === 6) {
+      setOdcCode(createCode);
+    } else if (tapCode.length === 6) {
+      const tapGame = experiences.find(item => item.id === "tap-trap");
+      if (tapGame) {
+        setSelected(tapGame);
+        setTapInviteCode(tapCode);
+      }
+    } else if (xoCode.length === 6) {
       const xoGame = experiences.find(item => item.id === "xo");
       if (xoGame) {
         setSelected(xoGame);
@@ -514,9 +572,7 @@ function App() {
             ))}
             {filtered.length === 0 && (
               <div className="empty-state">
-                {active === "OD CREATE"
-                  ? "OD CREATE is coming next. Soon, you will be able to build and share your own invitations, proposals and challenges. ✨"
-                  : "No weirdness found. Try another search. 👀"}
+                No weirdness found. Try another search. 👀
               </div>
             )}
           </div>
@@ -550,6 +606,26 @@ function App() {
         <span>© {new Date().getFullYear()} ODDORA · Made for fun.</span>
       </footer>
 
+      {odcCode && (
+        <ODCreatePlayer
+          code={odcCode}
+          onClose={() => {
+            setOdcCode("");
+            const url = new URL(window.location.href);
+            url.searchParams.delete("odc");
+            window.history.replaceState({}, "", url.toString());
+          }}
+          onCreateReply={() => {
+            setOdcCode("");
+            const url = new URL(window.location.href);
+            url.searchParams.delete("odc");
+            window.history.replaceState({}, "", url.toString());
+            const inviteCard = experiences.find(e => e.id === "od-invite");
+            if (inviteCard) openExperience(inviteCard);
+          }}
+        />
+      )}
+
       {selected && (
         <ExperienceModal
           item={selected}
@@ -558,6 +634,7 @@ function App() {
             setSharedPrank(null);
             setXoInviteCode("");
             setHeartInviteCode("");
+            setTapInviteCode("");
             window.history.replaceState({}, "", window.location.pathname);
           }}
           onShare={shareResult}
@@ -565,6 +642,7 @@ function App() {
           sharedPrank={sharedPrank}
           xoInviteCode={xoInviteCode}
           heartInviteCode={heartInviteCode}
+          tapInviteCode={tapInviteCode}
           onExplore={() => {
             setSelected(null);
             setXoInviteCode("");
@@ -731,8 +809,8 @@ function ExperienceCard({ item, index, onClick }) {
   );
 }
 
-function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, heartInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
-  const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : item.id === "catch-heart" && heartInviteCode ? 14 : 0);
+function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, heartInviteCode, tapInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
+  const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : item.id === "catch-heart" && heartInviteCode ? 14 : item.id === "tap-trap" && tapInviteCode ? 16 : 0);
   const [prankMode, setPrankMode] = useState(sharedPrank?.mode === "friend" ? "friend" : "self");
   const [senderName, setSenderName] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -1058,13 +1136,12 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
     if (item.id === "mind") return setStep(0);
     if (item.id === "xo") return setStep(13);
     if (item.id === "catch-heart") return setStep(14);
+    if (item.id === "tap-trap") return setStep(16);
+    if (item.id === "vip-call") return setStep(17);
+    if (item.id === "billionaire-alert") return setStep(18);
+    if (item.id === "buy-universe") return setStep(19);
     if (item.id === "award") return getRandomAward();
-    if (item.id === "whatif") {
-      setWhatIfStep(0);
-      setWhatIfScores([]);
-      playSound("step");
-      return setStep(15);
-    }
+    
 
     if (item.id === "surprise") {
       playSound("reveal");
@@ -1371,8 +1448,13 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
+        {/* OD CREATE STUDIO INSIDE STANDARD MODAL */}
+        {step === 0 && (item.id === "od-invite" || item.id === "od-propose") && (
+          <ODCreateStudio initialTab={item.id === "od-propose" ? "propose" : "invite"} />
+        )}
+
         {/* INTRO FOR OTHER EXPERIENCES */}
-        {step === 0 && item.id !== "mind" && (
+        {step === 0 && item.id !== "mind" && item.id !== "od-invite" && item.id !== "od-propose" && (
           <div className="modal-stage intro-stage">
             <div className="stage-orb">{item.icon}</div>
 
@@ -1654,6 +1736,43 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
             initialRoomCode={heartInviteCode}
             playSound={playSound}
           />
+        )}
+
+        {/* TAP TRAP SOLO & 60S MULTIPLAYER */}
+        {step === 16 && item.id === "tap-trap" && (
+          <TapTrapGame
+            onBack={onBackToGames}
+            onExplore={onExplore}
+            onCreateChallenge={onCreateChallenge}
+            initialRoomCode={tapInviteCode}
+            playSound={playSound}
+          />
+        )}
+
+        {/* OD FUN COMING SOON MESSAGE */}
+        {step === 0 && item.id === "od-fun-coming" && (
+          <div className="result-stage">
+            <div className="result-spark">🎁</div>
+            <div className="eyebrow muted">OD FUN · COMING SOON</div>
+            <h3>We are working to treat you with best fun activities!</h3>
+            <p className="result-text">Drop how do you want to have fun? Exciting interactive experiences and challenges are loading soon.</p>
+            <button type="button" className="primary-btn" onClick={onClose}>Explore OD Games & Create</button>
+          </div>
+        )}
+
+        {/* CUSTOM VIP INCOMING CALL */}
+        {step === 17 && item.id === "vip-call" && (
+          <VIPCallExperience onBack={onBackToGames} playSound={playSound} sharedPrank={sharedPrank} />
+        )}
+
+        {/* BILLIONAIRE VAULT ALERT */}
+        {step === 18 && item.id === "billionaire-alert" && (
+          <BillionaireAlertExperience onBack={onBackToGames} playSound={playSound} sharedPrank={sharedPrank} />
+        )}
+
+        {/* BUY THE UNIVERSE LUXURY FLEX */}
+        {step === 19 && item.id === "buy-universe" && (
+          <BuyUniverseExperience onBack={onBackToGames} playSound={playSound} />
         )}
 
         {/* GENERAL RESULT */}
@@ -3056,5 +3175,1589 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
     </div>
   );
 }
+
+
+const TAP_DIFFICULTIES = {
+  easy:   { label: "Easy",   interval: 950,  trapChance: 0.20, bonusChance: 0.14, desc: "Relaxed pace · Fewer decoy traps" },
+  medium: { label: "Medium", interval: 720,  trapChance: 0.30, bonusChance: 0.16, desc: "Balanced speed · Fakeout traps" },
+  hard:   { label: "Hard",   interval: 540,  trapChance: 0.38, bonusChance: 0.18, desc: "Fast spawns · High trap density" },
+  chaos:  { label: "Chaos",  interval: 400,  trapChance: 0.45, bonusChance: 0.22, desc: "Hyper-speed · Rapid trap shifts" }
+};
+
+function TapTrapGame({ onBack, onExplore, onCreateChallenge, initialRoomCode = "", playSound }) {
+  const [mode, setMode] = useState(initialRoomCode ? "multi" : "select");
+  const [difficulty, setDifficulty] = useState("medium");
+
+  // Solo state (60s Timer + 3 Lives + Personal Best High Score — No AI)
+  const [soloActive, setSoloActive] = useState(false);
+  const [soloOver, setSoloOver] = useState(false);
+  const [soloEndReason, setSoloEndReason] = useState("time");
+  const [soloTimeLeft, setSoloTimeLeft] = useState(60);
+  const [lives, setLives] = useState(3);
+  const [soloScore, setSoloScore] = useState(0);
+  const [bestScore, setBestScore] = useState(() => {
+    try {
+      return Number(localStorage.getItem("oddora-taptrap-best") || 0);
+    } catch {
+      return 0;
+    }
+  });
+  const [combo, setCombo] = useState(0);
+  const [soloCells, setSoloCells] = useState(Array(9).fill(null));
+  const [soloBanner, setSoloBanner] = useState("60 seconds · 3 lives. Hit ⚡ & 💎, dodge 💣!");
+
+  // Multiplayer state
+  const [uid, setUid] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [roomCode, setRoomCode] = useState("");
+  const [joinCode, setJoinCode] = useState(initialRoomCode);
+  const [room, setRoom] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("Enter your display name to create or join a 60s Tap Trap duel.");
+  const [copied, setCopied] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [mpScore, setMpScore] = useState(0);
+  const [mpCells, setMpCells] = useState(Array(9).fill(null));
+  const [mpFlash, setMpFlash] = useState("Tap ⚡ +10 · 💎 +25 · Avoid 💣 -15");
+
+  const mpScoreRef = useRef(0);
+
+  useEffect(() => {
+    if (initialRoomCode) {
+      setJoinCode(initialRoomCode);
+      setMode("multi");
+    }
+  }, [initialRoomCode]);
+
+  // Solo spawn & 60-second countdown timer
+  useEffect(() => {
+    if (mode !== "solo" || !soloActive || soloOver) return undefined;
+    const cfg = TAP_DIFFICULTIES[difficulty] || TAP_DIFFICULTIES.medium;
+
+    const spawnGrid = () => {
+      const next = Array(9).fill(null);
+      const count = difficulty === "chaos" ? 3 : 2;
+      const used = new Set();
+      for (let i = 0; i < count; i += 1) {
+        let idx = Math.floor(Math.random() * 9);
+        while (used.has(idx)) idx = Math.floor(Math.random() * 9);
+        used.add(idx);
+
+        const roll = Math.random();
+        if (i === 0) {
+          next[idx] = roll < cfg.bonusChance ? "bonus" : "target";
+        } else {
+          next[idx] = roll < cfg.trapChance ? "trap" : roll < cfg.trapChance + cfg.bonusChance ? "bonus" : "target";
+        }
+      }
+      setSoloCells(next);
+    };
+
+    spawnGrid();
+    const spawnTimer = window.setInterval(spawnGrid, cfg.interval);
+    const clockTimer = window.setInterval(() => {
+      setSoloTimeLeft(prev => {
+        if (prev <= 1) {
+          window.clearInterval(spawnTimer);
+          window.clearInterval(clockTimer);
+          setSoloActive(false);
+          setSoloOver(true);
+          setSoloEndReason("time");
+          setSoloBanner("Time's up! 60 seconds survived.");
+          playSound?.("reveal");
+          triggerHaptic([25, 35, 25]);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(spawnTimer);
+      window.clearInterval(clockTimer);
+    };
+  }, [mode, soloActive, soloOver, difficulty]);
+
+  function startSoloGame() {
+    playSound?.("magic");
+    triggerHaptic(15);
+    setLives(3);
+    setSoloScore(0);
+    setSoloTimeLeft(60);
+    setSoloEndReason("time");
+    setCombo(0);
+    setSoloOver(false);
+    setSoloActive(true);
+    setSoloBanner("Go! Score as high as you can in 60s!");
+  }
+
+  function handleSoloTap(index) {
+    if (!soloActive || soloOver) return;
+    const cell = soloCells[index];
+    if (!cell) return;
+
+    const updated = [...soloCells];
+    updated[index] = null;
+    setSoloCells(updated);
+
+    if (cell === "trap") {
+      playSound?.("wrong");
+      triggerHaptic([35, 45, 35]);
+      setCombo(0);
+      setLives(prev => {
+        const nextLives = prev - 1;
+        if (nextLives <= 0) {
+          setSoloActive(false);
+          setSoloOver(true);
+          setSoloEndReason("lives");
+          setSoloBanner("Out of lives! Trap triggered.");
+        } else {
+          setSoloBanner(`💥 Trap hit! ${nextLives} ${nextLives === 1 ? "life" : "lives"} remaining.`);
+        }
+        return Math.max(0, nextLives);
+      });
+      return;
+    }
+
+    const nextCombo = combo + 1;
+    const bonusPts = cell === "bonus" ? 25 : 10;
+    const comboExtra = nextCombo >= 5 ? 5 : 0;
+    const earned = bonusPts + comboExtra;
+    setCombo(nextCombo);
+    setSoloScore(prevScore => {
+      const updatedScore = prevScore + earned;
+      if (updatedScore > bestScore) {
+        setBestScore(updatedScore);
+        try {
+          localStorage.setItem("oddora-taptrap-best", String(updatedScore));
+        } catch {}
+      }
+      return updatedScore;
+    });
+    playSound?.(cell === "bonus" ? "magic" : "tap");
+    triggerHaptic(12);
+    setSoloBanner(cell === "bonus" ? `💎 Bonus Gem! +${earned}` : nextCombo >= 5 ? `🔥 ${nextCombo}x Streak! +${earned}` : `⚡ Nice hit! +${earned}`);
+  }
+
+  // Firebase Auth for Multiplayer
+  useEffect(() => {
+    if (mode !== "multi") return undefined;
+    let alive = true;
+    signInPlayer()
+      .then(cred => {
+        if (!alive) return;
+        setUid(cred.user.uid);
+        setNotice("Connected! Create a 60s Tap Trap room or enter an invite code.");
+      })
+      .catch(() => {
+        if (alive) setNotice("Could not connect to Firebase. Check your internet or play Solo mode.");
+      });
+    return () => { alive = false; };
+  }, [mode]);
+
+  // Listen to Multiplayer Room
+  useEffect(() => {
+    if (!roomCode || mode !== "multi") return undefined;
+    const roomRef = ref(database, `rooms/${roomCode}`);
+    const unsub = onValue(roomRef, snap => {
+      if (snap.exists()) {
+        const val = snap.val();
+        if (val.status === "finished" && room?.status === "playing") {
+          playSound?.("reveal");
+        }
+        setRoom(val);
+      } else {
+        setRoom(null);
+        setNotice("This Tap Trap room no longer exists.");
+      }
+    }, () => {
+      setNotice("Unable to read room. Check Firebase Realtime Database rules.");
+    });
+    return () => unsub();
+  }, [roomCode, mode]);
+
+  const mySide = room?.players?.X === uid ? "X" : room?.players?.O === uid ? "O" : "";
+
+  // Multiplayer 60s clock & target spawner
+  useEffect(() => {
+    if (!roomCode || room?.status !== "playing" || !room?.endsAt || mode !== "multi") return undefined;
+
+    const spawnMp = () => {
+      const next = Array(9).fill(null);
+      const t1 = Math.floor(Math.random() * 9);
+      let t2 = Math.floor(Math.random() * 9);
+      while (t2 === t1) t2 = Math.floor(Math.random() * 9);
+      next[t1] = Math.random() < 0.2 ? "bonus" : "target";
+      next[t2] = Math.random() < 0.42 ? "trap" : "target";
+      setMpCells(next);
+    };
+
+    spawnMp();
+    const spawner = window.setInterval(spawnMp, 650);
+
+    const clock = window.setInterval(() => {
+      const rem = Math.max(0, Math.ceil((Number(room.endsAt) - Date.now()) / 1000));
+      setSecondsLeft(rem);
+      if (rem === 0) {
+        runTransaction(ref(database, `rooms/${roomCode}`), current => {
+          if (!current || current.gameType !== "tap-trap" || current.status !== "playing") return;
+          if (Number(current.endsAt || 0) > Date.now()) return;
+          const scores = { ...(current.scores || { X: 0, O: 0 }) };
+          if (mySide) scores[mySide] = Math.max(Number(scores[mySide] || 0), mpScoreRef.current);
+          return { ...current, scores, status: "finished" };
+        }).catch(() => {});
+      }
+    }, 250);
+
+    return () => {
+      window.clearInterval(spawner);
+      window.clearInterval(clock);
+    };
+  }, [roomCode, room?.status, room?.endsAt, mode, mySide]);
+
+  function handleMpTap(index) {
+    if (!roomCode || !mySide || room?.status !== "playing") return;
+    const cell = mpCells[index];
+    if (!cell) return;
+
+    const updated = [...mpCells];
+    updated[index] = null;
+    setMpCells(updated);
+
+    const delta = cell === "trap" ? -15 : cell === "bonus" ? 25 : 10;
+    const nextScore = Math.max(0, mpScoreRef.current + delta);
+    mpScoreRef.current = nextScore;
+    setMpScore(nextScore);
+
+    if (cell === "trap") {
+      playSound?.("wrong");
+      triggerHaptic([30, 40, 30]);
+      setMpFlash("💣 Decoy Trap! -15 pts");
+    } else {
+      playSound?.(cell === "bonus" ? "magic" : "tap");
+      triggerHaptic(12);
+      setMpFlash(cell === "bonus" ? "💎 Bonus Gem! +25 pts" : "⚡ Hit! +10 pts");
+    }
+
+    set(ref(database, `rooms/${roomCode}/scores/${mySide}`), nextScore).catch(() => {});
+  }
+
+  const cleanName = val => val.trim().replace(/\s+/g, " ").slice(0, 18);
+
+  async function createRoom() {
+    const name = cleanName(playerName);
+    if (!uid || busy || !name) { setNotice("Enter your display name first."); return; }
+    setBusy(true);
+    setNotice("Creating Tap Trap arena...");
+    try {
+      let code = "";
+      let exists = true;
+      for (let i = 0; i < 8 && exists; i += 1) {
+        code = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const snap = await get(ref(database, `rooms/${code}`));
+        exists = snap.exists();
+      }
+      if (exists) throw new Error("Could not generate room code. Try again.");
+
+      mpScoreRef.current = 0;
+      setMpScore(0);
+
+      await set(ref(database, `rooms/${code}`), {
+        gameType: "tap-trap",
+        players: { X: uid, O: "" },
+        playerNames: { X: name, O: "" },
+        scores: { X: 0, O: 0 },
+        status: "waiting",
+        round: 1,
+        createdAt: Date.now()
+      });
+
+      setRoomCode(code);
+      playSound?.("magic");
+      setNotice("Room ready! Share the invite link with your friend.");
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.searchParams.set("tap", code);
+      window.history.replaceState({}, "", url.toString());
+    } catch (err) {
+      setNotice(err.message || "Could not create room.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function joinRoom() {
+    const name = cleanName(playerName);
+    const code = joinCode.trim().toUpperCase();
+    if (!uid || busy || !name || code.length !== 6) {
+      setNotice("Enter your name and a 6-character room code.");
+      return;
+    }
+    setBusy(true);
+    setNotice("Joining Tap Trap duel...");
+    try {
+      const roomRef = ref(database, `rooms/${code}`);
+      const snap = await get(roomRef);
+      if (!snap.exists()) throw new Error("Room not found. Ask your friend for a fresh link.");
+      const existing = snap.val();
+      if (existing.gameType !== "tap-trap") throw new Error("That code belongs to a different ODDORA game.");
+      if (existing.players?.X === uid) throw new Error("You created this room. Open the link on another device to join as Player 2.");
+
+      let fallbackUsed = false;
+      const res = await runTransaction(roomRef, current => {
+        if (!current) {
+          if (fallbackUsed) return;
+          fallbackUsed = true;
+          current = existing;
+        }
+        if (current.gameType !== "tap-trap") return;
+        if (current.players?.X === uid) return current;
+        if (current.players?.O === uid) {
+          return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
+        }
+        if (current.status !== "waiting" || current.players?.O) return;
+
+        return {
+          ...current,
+          players: { ...current.players, O: uid },
+          playerNames: { ...(current.playerNames || {}), O: name },
+          scores: { X: 0, O: 0 },
+          startedAt: Date.now(),
+          endsAt: Date.now() + 60000,
+          status: "playing"
+        };
+      });
+
+      if (!res.committed || !res.snapshot.exists()) {
+        throw new Error("Could not join room. It may already be full.");
+      }
+
+      mpScoreRef.current = 0;
+      setMpScore(0);
+      setRoomCode(code);
+      playSound?.("magic");
+      setNotice("Match live! Outscore your friend in 60 seconds!");
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.searchParams.set("tap", code);
+      window.history.replaceState({}, "", url.toString());
+    } catch (err) {
+      setNotice(err.message || "Could not join room.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restartMatch() {
+    if (!roomCode || !room || room.status !== "finished" || !mySide || busy) return;
+    setBusy(true);
+    try {
+      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+        if (!current || current.gameType !== "tap-trap" || current.status !== "finished") return;
+        return {
+          ...current,
+          scores: { X: 0, O: 0 },
+          status: "playing",
+          startedAt: Date.now(),
+          endsAt: Date.now() + 60000,
+          round: (current.round || 1) + 1
+        };
+      });
+      mpScoreRef.current = 0;
+      setMpScore(0);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function shareInvite() {
+    if (!roomCode) return;
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("tap", roomCode);
+    const shareUrl = url.toString();
+    const text = `${room?.playerNames?.X || playerName || "Your friend"} challenged you to a 60s TAP TRAP reflex duel on ODDORA! ⚡`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Tap Trap · ODDORA", text, url: shareUrl });
+      else {
+        await navigator.clipboard.writeText(`${text}
+${shareUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch {}
+  }
+
+  async function shareTapResult(p1Name, p1Score, p2Name, p2Score, winnerHeadline) {
+    const playUrl = `${window.location.origin}/`;
+    const resultText = `⚡ TAP TRAP · ODDORA: ${winnerHeadline} (${p1Name}: ${p1Score} vs ${p2Name}: ${p2Score})`;
+    try {
+      const file = await shareODDORAResultCard({
+        game: "Tap Trap",
+        headline: winnerHeadline,
+        subtitle: `${p1Name} (${p1Score} pts) vs ${p2Name} (${p2Score} pts)`,
+        detail: `${Math.max(p1Score, p2Score)} HIGHEST SCORE`,
+        quote: "Fast fingers survive. Trap clickers perish.",
+        url: playUrl
+      });
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ title: "Tap Trap · ODDORA", text: resultText, url: playUrl, files: [file] });
+      } else {
+        const imageUrl = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = imageUrl;
+        a.download = "oddora-tap-trap-result.png";
+        a.click();
+        URL.revokeObjectURL(imageUrl);
+        await navigator.clipboard?.writeText(`${resultText}
+${playUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch {}
+  }
+
+  if (mode === "select") {
+    return (
+      <div className="tap-game-wrap">
+        <div className="xo-welcome">
+          <div className="xo-mark">⚡💣</div>
+          <h3>Choose your Tap Trap arena</h3>
+          <p className="modal-description">Survive with 3 lives against AI or battle a friend in a 60-second reflex duel.</p>
+        </div>
+        <div className="prank-mode-options">
+          <button type="button" className="prank-mode-card active" onClick={() => { playSound?.("tap"); setMode("solo"); }}>
+            <span><Bot size={28}/></span>
+            <strong>Solo Mode (60s · 3 Lives)</strong>
+            <small>Beat the clock · Set high score</small>
+          </button>
+          <button type="button" className="prank-mode-card" onClick={() => { playSound?.("tap"); setMode("multi"); }}>
+            <span><Users size={28}/></span>
+            <strong>Online Multiplayer</strong>
+            <small>60s Live Score Battle</small>
+          </button>
+        </div>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
+  }
+
+  if (mode === "solo") {
+    const survivedFull = soloEndReason === "time" && lives > 0;
+    const isNewBest = soloScore > 0 && soloScore >= bestScore;
+    return (
+      <div className="tap-game-wrap">
+        <div className="tap-diff-row" role="group" aria-label="Speed Difficulty">
+          {Object.entries(TAP_DIFFICULTIES).map(([key, cfg]) => (
+            <button
+              key={key}
+              type="button"
+              className={difficulty === key ? "tap-diff-chip active" : "tap-diff-chip"}
+              onClick={() => {
+                playSound?.("tap");
+                setDifficulty(key);
+                if (soloActive) startSoloGame();
+              }}
+            >
+              {cfg.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="tap-hud">
+          <div className="tap-stat">
+            <span>LIVES</span>
+            <strong>{"❤️".repeat(lives) || "💀"}</strong>
+          </div>
+          <div className="tap-stat">
+            <span>SCORE</span>
+            <strong className="tap-score-you">{soloScore}</strong>
+          </div>
+          <div className="tap-stat">
+            <span>TIME LEFT</span>
+            <strong className="tap-score-ai">00:{String(soloTimeLeft).padStart(2, "0")}</strong>
+          </div>
+        </div>
+
+        <div className="xo-status">
+          <span className="eyebrow muted">{TAP_DIFFICULTIES[difficulty].desc} · BEST: {bestScore} PTS</span>
+          <strong>{soloBanner}</strong>
+        </div>
+
+        {!soloActive && !soloOver ? (
+          <button className="primary-btn xo-wide" onClick={startSoloGame}>
+            <Zap size={17}/> Start 60s Solo Run
+          </button>
+        ) : soloOver ? (
+          <div className="tap-result-card">
+            <div className="heart-burst">{survivedFull ? "⏱️" : "💥"}</div>
+            <div className="eyebrow muted">
+              {isNewBest ? "NEW PERSONAL BEST! 🏆" : survivedFull ? "60 SECONDS COMPLETED" : "ALL 3 LIVES LOST"}
+            </div>
+            <h3>{survivedFull ? "TIME'S UP! GREAT RUN!" : "TRAPPED BY THE SYSTEM!"}</h3>
+            <p className="modal-description">
+              Final Score: <strong>{soloScore} pts</strong> · Personal Best: <strong>{bestScore} pts</strong>
+            </p>
+            <div className="result-actions" style={{ marginTop: 12 }}>
+              <button className="primary-btn" onClick={startSoloGame}>
+                <RotateCcw size={16}/> Play Again
+              </button>
+              <button
+                className="secondary-btn dark"
+                onClick={() => shareTapResult("Solo Run", soloScore, "Personal Best", bestScore, survivedFull ? `${soloScore} PTS IN 60S!` : `SCORED ${soloScore} PTS!`)}
+              >
+                <Share2 size={16}/> {copied ? "Copied!" : "Share Score"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="tap-grid" aria-label="Tap Trap Grid">
+            {soloCells.map((cell, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`tap-cell ${cell ? `is-${cell}` : ""}`}
+                onClick={() => handleSoloTap(idx)}
+              >
+                {cell === "target" ? "⚡" : cell === "bonus" ? "💎" : cell === "trap" ? "💣" : ""}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button className="secondary-btn dark xo-wide" onClick={() => { setSoloActive(false); setMode("multi"); }}>
+          <Users size={15}/> Switch to 60s Friend Multiplayer
+        </button>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
+  }
+
+  // MULTIPLAYER MODE
+  const scoreX = mySide === "X" ? mpScore : Number(room?.scores?.X || 0);
+  const scoreO = mySide === "O" ? mpScore : Number(room?.scores?.O || 0);
+  const nameX = room?.playerNames?.X || "Player 1";
+  const nameO = room?.playerNames?.O || "Waiting for friend";
+
+  const winnerTitle = scoreX === scoreO
+    ? "IT'S A TIE!"
+    : scoreX > scoreO
+      ? `${nameX.toUpperCase()} WINS!`
+      : `${nameO.toUpperCase()} WINS!`;
+
+  return (
+    <div className="tap-game-wrap">
+      {!roomCode ? (
+        <>
+          <div className="xo-welcome">
+            <div className="xo-mark">⚡💣</div>
+            <h3>60-Second Tap Trap Duel</h3>
+            <p className="modal-description">Compete live for 60 seconds. Highest score wins!</p>
+          </div>
+          <label className="xo-label" htmlFor="tap-player-name">YOUR DISPLAY NAME</label>
+          <input
+            id="tap-player-name"
+            className="xo-input"
+            value={playerName}
+            onChange={e => setPlayerName(e.target.value.slice(0, 18))}
+            placeholder="Enter your name"
+            maxLength={18}
+          />
+          {initialRoomCode ? (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={joinRoom}>
+                {busy ? "Joining..." : "Join 60s Duel"}
+              </button>
+              <p className="xo-invite-note">Your friend invited you! Enter your name to start the 60s battle.</p>
+            </>
+          ) : (
+            <>
+              <button className="primary-btn xo-wide" disabled={!uid || busy || !cleanName(playerName)} onClick={createRoom}>
+                {busy ? "Creating..." : "⚡ Create 60s Challenge"}
+              </button>
+              <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
+              <input
+                className="xo-input xo-code-input"
+                value={joinCode}
+                onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                placeholder="6-character invite code"
+                maxLength={6}
+              />
+              <button
+                className="secondary-btn dark xo-wide"
+                disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)}
+                onClick={joinRoom}
+              >
+                {busy ? "Joining..." : "Join Friend's Duel"}
+              </button>
+              <button className="secondary-btn dark xo-wide" onClick={() => setMode("solo")}>
+                <Bot size={15}/> Play Solo Mode (3 Lives) instead
+              </button>
+            </>
+          )}
+        </>
+      ) : !room ? (
+        <div className="heart-waiting"><div className="heart-welcome-icon">⚡</div><h3>Loading Tap Trap arena...</h3></div>
+      ) : (
+        <>
+          <div className="xo-room-head">
+            <div>
+              <div className="eyebrow muted">TAP TRAP · ROUND {room.round || 1}</div>
+              <strong className="xo-room-code">{roomCode}</strong>
+            </div>
+            {room.status === "playing" && (
+              <strong className="heart-timer">⏱ 00:{String(secondsLeft).padStart(2, "0")}</strong>
+            )}
+          </div>
+
+          <div className="xo-players">
+            <div className={mySide === "X" ? "xo-player active" : "xo-player"}>
+              <b className="xo-player-symbol">⚡</b>
+              <span>{nameX}: {scoreX}</span>
+            </div>
+            <div className={mySide === "O" ? "xo-player active" : "xo-player"}>
+              <b className="xo-player-symbol xo-o">⚡</b>
+              <span>{nameO}: {scoreO}</span>
+            </div>
+          </div>
+
+          {room.status === "waiting" ? (
+            <div className="heart-waiting">
+              <div className="heart-welcome-icon">⚡</div>
+              <h3>Waiting for your opponent...</h3>
+              <p>Share the invite link. The 60-second clock starts as soon as your friend joins!</p>
+              <button className="primary-btn xo-wide" style={{ marginTop: 12 }} onClick={shareInvite}>
+                <Share2 size={15}/> {copied ? "Invite Link Copied!" : "Share Invite Link"}
+              </button>
+            </div>
+          ) : room.status === "finished" ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="tap-result-title"
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 10000,
+                display: "grid",
+                placeItems: "center",
+                padding: "22px",
+                background: "rgba(5, 4, 12, .88)",
+                backdropFilter: "blur(12px)"
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: 390,
+                  padding: "28px 22px",
+                  borderRadius: 24,
+                  textAlign: "center",
+                  color: "#fff",
+                  background: "linear-gradient(145deg, #211936, #12101f)",
+                  border: "1px solid rgba(177, 139, 255, .38)",
+                  boxShadow: "0 24px 90px rgba(0,0,0,.6)"
+                }}
+              >
+                <div style={{ fontSize: 52, marginBottom: 8 }}>🏆</div>
+                <div className="eyebrow muted" style={{ justifyContent: "center", marginBottom: 8 }}>ODDORA · TAP TRAP 60S DUEL</div>
+                <h2 id="tap-result-title" style={{ fontSize: 30, margin: "0 0 10px", color: "#fff" }}>{winnerTitle}</h2>
+                <div className="heart-score-card">
+                  <strong>{Math.max(scoreX, scoreO)} PTS</strong>
+                  <span>FINAL SCOREBOARD</span>
+                  <small>{nameX}: {scoreX} pts · {nameO}: {scoreO} pts</small>
+                </div>
+                <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+                  <button className="primary-btn xo-wide" disabled={busy} onClick={restartMatch}>
+                    ↻ Rematch (60s)
+                  </button>
+                  <button
+                    className="secondary-btn dark xo-wide"
+                    onClick={() => shareTapResult(nameX, scoreX, nameO, scoreO, winnerTitle)}
+                  >
+                    <Share2 size={15}/> {copied ? "Result Copied!" : "Share Winner Card"}
+                  </button>
+                  <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>
+                    ✨ Create Your Own Challenge
+                  </button>
+                  <button className="secondary-btn dark xo-wide" onClick={onExplore}>
+                    🎮 Explore ODDORA
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="xo-status">
+                <strong>{mpFlash}</strong>
+              </div>
+              <div className="tap-grid" aria-label="Multiplayer Tap Trap Grid">
+                {mpCells.map((cell, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`tap-cell ${cell ? `is-${cell}` : ""}`}
+                    onClick={() => handleMpTap(idx)}
+                  >
+                    {cell === "target" ? "⚡" : cell === "bonus" ? "💎" : cell === "trap" ? "💣" : ""}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button
+            className="secondary-btn dark xo-wide"
+            onClick={() => {
+              setRoomCode("");
+              setRoom(null);
+              setJoinCode("");
+              const url = new URL(window.location.href);
+              url.searchParams.delete("tap");
+              window.history.replaceState({}, "", url.toString());
+            }}
+          >
+            Leave room
+          </button>
+        </>
+      )}
+
+      <p className="modal-description xo-notice">{notice}</p>
+      <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+    </div>
+  );
+}
+
+
+const INVITE_TEMPLATES = [
+  {
+    id: "movie",
+    badge: "🎬 MOVIE NIGHT",
+    title: "Movie night tonight? 🍿",
+    question: "Are we going to the movies tonight? Tickets and popcorn are on me!",
+    yesLabel: "Confirm Date 🍿",
+    noLabel: "No",
+    yesMessage: "Date confirmed! Meet you at the theatre—don't be late 😎🎬"
+  },
+  {
+    id: "office",
+    badge: "💼 OFFICE CHECK",
+    title: "Are you coming to office?",
+    question: "Be honest... are you coming to the office today or working from bed?",
+    yesLabel: "Yes, on my way 🏃‍♂️",
+    noLabel: "No (WFH)",
+    yesMessage: "Confirmed! Coffee break at 4 PM sharp ☕✨"
+  },
+  {
+    id: "side",
+    badge: "💫 REAL ONE CHECK",
+    title: "Are you still by my side?",
+    question: "Through all the chaos, overthinking, and spontaneous plans—are you still by my side?",
+    yesLabel: "Always & Forever 💜",
+    noLabel: "No",
+    yesMessage: "Locked in! Best duo certified 🔒💜"
+  },
+  {
+    id: "coffee",
+    badge: "☕ COFFEE RUN",
+    title: "Coffee & late-night drive?",
+    question: "No overthinking. Iced coffee, good playlist, and zero stress tonight?",
+    yesLabel: "Let's go 🚀",
+    noLabel: "Pass",
+    yesMessage: "It's a plan! Send me your location 📍✨"
+  }
+];
+
+const PROPOSE_THEMES = [
+  { id: "romantic", label: "💘 Crush / Romantic", defaultQ: "Will you go on a date with me? 💘" },
+  { id: "friendship", label: "🤝 Bestie / Ride-or-Die", defaultQ: "Best friends for life—no take-backs? 🤝" },
+  { id: "funny", label: "😂 Chaotic / Funny", defaultQ: "Will you officially fund my midnight snack addiction? 🍕" },
+  { id: "gold", label: "🔥 Bold / Dare", defaultQ: "Do you accept this mystery dare without asking questions? ⚡" }
+];
+
+const DODGE_TAUNTS = [
+  "Are you sure? 👀",
+  "Nice try, too slow! ⚡",
+  "Button malfunction... try Yes? 😏",
+  "System says: INVALID CHOICE 🚫",
+  "Why are you chasing No?! 😂",
+  "Almost caught it! 🏃‍♂️💨",
+  "Resistance is futile 💜",
+  "Okay fine... converted to YES! ✨"
+];
+
+function generateWarmupQuestions(mainQuestion, themeId) {
+  const lower = mainQuestion.toLowerCase();
+  if (lower.includes("valentine")) {
+    return [
+      {
+        q: "1. Quick check — do you know what day Feb 14 is?",
+        options: ["Valentine's Day 💘", "Just another Thursday", "National Chocolate Day 🍫"]
+      },
+      {
+        q: "2. Honestly, what would people do without love?",
+        options: ["Overthink at 2 AM 🌙", "Listen to sad playlists 🎧", "Survive on iced coffee ☕"]
+      }
+    ];
+  }
+  if (themeId === "friendship") {
+    return [
+      {
+        q: "1. Who carries this entire friendship's chaotic energy?",
+        options: ["Definitely You 😎", "100% Me 👑", "50-50 Partners in Crime 🤝"]
+      },
+      {
+        q: "2. If we get stuck in traffic for 2 hours, what happens?",
+        options: ["Full carpool concert 🎤", "Non-stop gossip & snacks 🍟", "Deep 2 AM life talks 🌌"]
+      }
+    ];
+  }
+  if (themeId === "funny") {
+    return [
+      {
+        q: "1. Be honest: how many unread messages are on your phone?",
+        options: ["0 (I'm innocent) 😇", "50+ (Don't judge) 👀", "999+ (Chaos mode) 🔥"]
+      },
+      {
+        q: "2. Scientific question: are you ready for a plot twist?",
+        options: ["Born ready ⚡", "Wait, what is this?! 😳", "Only if there's food 🍕"]
+      }
+    ];
+  }
+  if (themeId === "gold") {
+    return [
+      {
+        q: "1. On a scale of 1 to 10, how fearless are you right now?",
+        options: ["10/10 Unstoppable 🔥", "7/10 Cautiously brave 😅", "Depends on the dare 👀"]
+      },
+      {
+        q: "2. Rule #1: Once you tap Yes, there is no backing out. Deal?",
+        options: ["Deal, bring it on ⚡", "Let me see the dare first 😏", "Born for chaos 🎲"]
+      }
+    ];
+  }
+  return [
+    {
+      q: "1. Quick vibe check — what makes a moment unforgettable?",
+      options: ["The right person ✨", "Late-night talks 🌙", "Spontaneous plans 🚀"]
+    },
+    {
+      q: "2. Do you believe some connections happen for a reason?",
+      options: ["100% Yes 💫", "Maybe, prove it 😏", "Destiny knows 👀"]
+    }
+  ];
+}
+
+function ODCreateStudio({ initialTab = "invite" }) {
+  const [studioTab, setStudioTab] = useState(initialTab);
+  const [stepMode, setStepMode] = useState("edit"); // "edit" | "preview" | "published"
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Common fields
+  const [senderName, setSenderName] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [cardTheme, setCardTheme] = useState("purple");
+
+  // OD INVITE state (100% English defaults, fully editable)
+  const [inviteTitle, setInviteTitle] = useState(INVITE_TEMPLATES[0].title);
+  const [inviteQuestion, setInviteQuestion] = useState(INVITE_TEMPLATES[0].question);
+  const [yesLabel, setYesLabel] = useState(INVITE_TEMPLATES[0].yesLabel);
+  const [noLabel, setNoLabel] = useState(INVITE_TEMPLATES[0].noLabel);
+  const [yesMessage, setYesMessage] = useState(INVITE_TEMPLATES[0].yesMessage);
+
+  // OD PROPOSE state (4 distinct vibes, fully editable)
+  const [proposeTheme, setProposeTheme] = useState("romantic");
+  const [proposeIntro, setProposeIntro] = useState("Before you answer the final question, clear these 2 quick vibe checks...");
+  const [q1, setQ1] = useState("1. Quick vibe check — what makes a moment unforgettable?");
+  const [q1Opts, setQ1Opts] = useState(["The right person ✨", "Late-night talks 🌙", "Spontaneous plans 🚀"]);
+  const [q2, setQ2] = useState("2. Do you believe some connections happen for a reason?");
+  const [q2Opts, setQ2Opts] = useState(["100% Yes 💫", "Maybe, prove it 😏", "Destiny knows 👀"]);
+  const [finalProposal, setFinalProposal] = useState("Will you go on a date with me? 💘");
+  const [propYesLabel, setPropYesLabel] = useState("YES, 100% 💖");
+  const [propNoLabel, setPropNoLabel] = useState("No 🙈");
+  const [dressCode, setDressCode] = useState("Black / Pastel Aesthetic ✨");
+  const [datePlace, setDatePlace] = useState("Sunset Coffee & Long Drive ☕");
+  const [yesAckMessage, setYesAckMessage] = useState("It's official! Tap Share Result Card below and send it to me 💌");
+  const [noPrankMessage, setNoPrankMessage] = useState("😂 YOU GOT PRANKED! Relax, this was just an ODDORA social experiment! Nice reflexes though 💀");
+
+  function applyInviteTemplate(tpl) {
+    setInviteTitle(tpl.title);
+    setInviteQuestion(tpl.question);
+    setYesLabel(tpl.yesLabel);
+    setNoLabel(tpl.noLabel);
+    setYesMessage(tpl.yesMessage);
+    setStepMode("edit");
+  }
+
+  function handleSelectProposeTheme(pt) {
+    setProposeTheme(pt.id);
+    setFinalProposal(pt.defaultQ);
+    const generated = generateWarmupQuestions(pt.defaultQ, pt.id);
+    setQ1(generated[0].q);
+    setQ1Opts(generated[0].options);
+    setQ2(generated[1].q);
+    setQ2Opts(generated[1].options);
+  }
+
+  function handleAutoBuildFlow() {
+    const generated = generateWarmupQuestions(finalProposal, proposeTheme);
+    setQ1(generated[0].q);
+    setQ1Opts(generated[0].options);
+    setQ2(generated[1].q);
+    setQ2Opts(generated[1].options);
+  }
+
+  function buildPayload() {
+    const cleanSender = (senderName.trim() || "Someone special").slice(0, 24);
+    const cleanRecipient = (recipientName.trim() || "You").slice(0, 24);
+
+    if (studioTab === "invite") {
+      return {
+        type: "invite",
+        theme: cardTheme,
+        creatorName: cleanSender,
+        recipientName: cleanRecipient,
+        createdAt: Date.now(),
+        payload: {
+          title: (inviteTitle.trim() || "Quick Question 👀").slice(0, 80),
+          question: (inviteQuestion.trim() || "Are we doing this?").slice(0, 240),
+          yesLabel: (yesLabel.trim() || "Yes 💜").slice(0, 28),
+          noLabel: (noLabel.trim() || "No").slice(0, 28),
+          yesMessage: (yesMessage.trim() || "Confirmed! See you soon 🎉").slice(0, 240),
+          maxDodges: 8
+        }
+      };
+    }
+
+    return {
+      type: "propose",
+      theme: proposeTheme,
+      creatorName: cleanSender,
+      recipientName: cleanRecipient,
+      createdAt: Date.now(),
+      payload: {
+        intro: (proposeIntro.trim() || "Answer 2 quick questions first...").slice(0, 200),
+        questions: [
+          { q: q1.trim().slice(0, 140), options: q1Opts.map(o => o.trim().slice(0, 50)).filter(Boolean) },
+          { q: q2.trim().slice(0, 140), options: q2Opts.map(o => o.trim().slice(0, 50)).filter(Boolean) }
+        ],
+        finalQuestion: (finalProposal.trim() || "Do you love me? 💘").slice(0, 160),
+        yesLabel: (propYesLabel.trim() || "YES 💖").slice(0, 28),
+        noLabel: (propNoLabel.trim() || "No").slice(0, 28),
+        dressCode: (dressCode.trim() || "Your best vibe ✨").slice(0, 80),
+        datePlace: (datePlace.trim() || "Surprise spot 📍").slice(0, 80),
+        yesAckMessage: (yesAckMessage.trim() || "Confirmed! Share the result card back 💌").slice(0, 220),
+        noPrankMessage: (noPrankMessage.trim() || "😂 YOU GOT PRANKED! Just a harmless ODDORA test!").slice(0, 220)
+      }
+    };
+  }
+
+  async function publishCreation() {
+    if (publishing) return;
+    setPublishing(true);
+    try {
+      const cred = await signInPlayer();
+      let code = "";
+      let exists = true;
+      for (let i = 0; i < 8 && exists; i += 1) {
+        code = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const snap = await get(ref(database, `creations/${code}`));
+        exists = snap.exists();
+      }
+      if (exists) throw new Error("Could not generate unique code");
+
+      const data = {
+        id: code,
+        creatorUid: cred.user.uid,
+        ...buildPayload()
+      };
+      await set(ref(database, `creations/${code}`), data);
+
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.searchParams.set("odc", code);
+      setPublishedUrl(url.toString());
+      setStepMode("published");
+      triggerHaptic([20, 30, 20]);
+    } catch {
+      alert("Could not publish right now. Please check your internet or Firebase rules for /creations.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  function shareWhatsApp() {
+    const who = senderName.trim() || "Your friend";
+    const text = studioTab === "invite"
+      ? `${who} sent you a personal invite on ODDORA 👀✨
+Open here: ${publishedUrl}`
+      : `${who} made something special for you 💌✨
+Open here: ${publishedUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  }
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(publishedUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {}
+  }
+
+  return (
+    <div className="odc-modal-studio">
+      <div className="odc-mode-pills">
+        <button
+          type="button"
+          className={studioTab === "invite" ? "odc-pill active" : "odc-pill"}
+          onClick={() => { setStudioTab("invite"); setStepMode("edit"); }}
+        >
+          💌 OD Invite
+        </button>
+        <button
+          type="button"
+          className={studioTab === "propose" ? "odc-pill active" : "odc-pill"}
+          onClick={() => { setStudioTab("propose"); setStepMode("edit"); }}
+        >
+          💍 OD Propose
+        </button>
+      </div>
+
+      {stepMode === "preview" ? (
+        <div className="odc-preview-shell">
+          <div className="odc-preview-bar">
+            <span>👁️ RECIPIENT PREVIEW</span>
+            <button type="button" className="secondary-btn" onClick={() => setStepMode("edit")}>
+              ← Edit
+            </button>
+          </div>
+          <InteractiveCreationView
+            data={buildPayload()}
+            isPreview={true}
+            onReplyCreate={() => setStepMode("edit")}
+          />
+          <div className="odc-action-row">
+            <button type="button" className="primary-btn xo-wide" onClick={publishCreation} disabled={publishing}>
+              {publishing ? "Publishing..." : "🚀 Publish & Get Shareable Link"}
+            </button>
+          </div>
+        </div>
+      ) : stepMode === "published" ? (
+        <div className="result-stage">
+          <div className="result-spark">🎉</div>
+          <div className="eyebrow muted">LINK LIVE & READY</div>
+          <h3>Your {studioTab === "invite" ? "OD Invite" : "OD Propose"} is ready!</h3>
+          <p className="modal-description">Send this link to <strong>{recipientName || "your person"}</strong>. Read-only recipient mode is locked.</p>
+          <div className="odc-link-box">
+            <input readOnly value={publishedUrl} onFocus={e => e.target.select()} />
+            <button type="button" className="secondary-btn" onClick={copyShareLink}>
+              {copiedLink ? "Copied ✓" : "Copy"}
+            </button>
+          </div>
+          <div className="result-actions">
+            <button type="button" className="primary-btn" onClick={shareWhatsApp}>
+              📲 Share on WhatsApp
+            </button>
+            <button type="button" className="secondary-btn dark" onClick={() => setStepMode("preview")}>
+              👁️ Preview
+            </button>
+            <button type="button" className="secondary-btn dark" onClick={() => setStepMode("edit")}>
+              ✏️ Create Another
+            </button>
+          </div>
+        </div>
+      ) : studioTab === "invite" ? (
+        <div className="odc-builder-card">
+          <div className="odc-templates">
+            <span className="xo-label">STARTER TEMPLATES (OR TYPE ANYTHING):</span>
+            <div className="odc-template-row">
+              {INVITE_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  className="odc-tpl-chip"
+                  onClick={() => applyInviteTemplate(tpl)}
+                >
+                  {tpl.badge}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="odc-grid-2">
+            <label className="odc-field">
+              <span>YOUR NAME</span>
+              <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="Type your name" maxLength={24}/>
+            </label>
+            <label className="odc-field">
+              <span>RECIPIENT NAME</span>
+              <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Friend or crush name" maxLength={24}/>
+            </label>
+          </div>
+
+          <label className="odc-field">
+            <span>INVITE HEADLINE</span>
+            <input value={inviteTitle} onChange={e => setInviteTitle(e.target.value)} placeholder="Type whatever headline you want..." maxLength={80}/>
+          </label>
+
+          <label className="odc-field">
+            <span>YOUR QUESTION / MESSAGE</span>
+            <textarea rows={2} value={inviteQuestion} onChange={e => setInviteQuestion(e.target.value)} placeholder="Type whatever message you want..." maxLength={240}/>
+          </label>
+
+          <div className="odc-grid-2">
+            <label className="odc-field">
+              <span>YES BUTTON TEXT</span>
+              <input value={yesLabel} onChange={e => setYesLabel(e.target.value)} maxLength={28}/>
+            </label>
+            <label className="odc-field">
+              <span>NO BUTTON (Dodges 8x → Yes)</span>
+              <input value={noLabel} onChange={e => setNoLabel(e.target.value)} maxLength={28}/>
+            </label>
+          </div>
+
+          <label className="odc-field">
+            <span>MESSAGE WHEN THEY CLICK YES</span>
+            <input value={yesMessage} onChange={e => setYesMessage(e.target.value)} placeholder="Type confirmation message..." maxLength={240}/>
+          </label>
+
+          <div className="odc-theme-row">
+            <span className="xo-label">CARD THEME:</span>
+            {["purple", "romantic", "cyan", "gold"].map(t => (
+              <button
+                key={t}
+                type="button"
+                className={cardTheme === t ? "odc-swatch active" : "odc-swatch"}
+                onClick={() => setCardTheme(t)}
+              >
+                {t.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <div className="odc-action-row">
+            <button type="button" className="secondary-btn" onClick={() => setStepMode("preview")}>
+              👁️ Preview
+            </button>
+            <button type="button" className="primary-btn" onClick={publishCreation} disabled={publishing}>
+              {publishing ? "Publishing..." : "🚀 Publish Invite"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="odc-builder-card">
+          <div className="odc-theme-row">
+            <span className="xo-label">PROPOSAL VIBE:</span>
+            {PROPOSE_THEMES.map(pt => (
+              <button
+                key={pt.id}
+                type="button"
+                className={proposeTheme === pt.id ? "odc-pill active" : "odc-pill"}
+                onClick={() => handleSelectProposeTheme(pt)}
+              >
+                {pt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="odc-grid-2">
+            <label className="odc-field">
+              <span>YOUR NAME</span>
+              <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="Your name" maxLength={24}/>
+            </label>
+            <label className="odc-field">
+              <span>THEIR NAME</span>
+              <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Crush / partner / friend" maxLength={24}/>
+            </label>
+          </div>
+
+          <label className="odc-field">
+            <span>STEP 3: YOUR MAIN PROPOSAL QUESTION</span>
+            <div className="odc-inline-ai">
+              <input value={finalProposal} onChange={e => setFinalProposal(e.target.value)} placeholder="Type whatever question you want..." maxLength={160}/>
+              <button type="button" className="secondary-btn" onClick={handleAutoBuildFlow}>
+                ✨ Auto-Build Q1 & Q2
+              </button>
+            </div>
+          </label>
+
+          <div className="odc-q-box">
+            <span className="xo-label">WARM-UP QUESTION 1</span>
+            <input value={q1} onChange={e => setQ1(e.target.value)} maxLength={140}/>
+            <div className="odc-opts-grid">
+              {q1Opts.map((opt, idx) => (
+                <input
+                  key={idx}
+                  value={opt}
+                  onChange={e => {
+                    const copy = [...q1Opts];
+                    copy[idx] = e.target.value;
+                    setQ1Opts(copy);
+                  }}
+                  placeholder={`Option ${idx + 1}`}
+                  maxLength={50}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="odc-q-box">
+            <span className="xo-label">WARM-UP QUESTION 2</span>
+            <input value={q2} onChange={e => setQ2(e.target.value)} maxLength={140}/>
+            <div className="odc-opts-grid">
+              {q2Opts.map((opt, idx) => (
+                <input
+                  key={idx}
+                  value={opt}
+                  onChange={e => {
+                    const copy = [...q2Opts];
+                    copy[idx] = e.target.value;
+                    setQ2Opts(copy);
+                  }}
+                  placeholder={`Option ${idx + 1}`}
+                  maxLength={50}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="odc-grid-2">
+            <label className="odc-field">
+              <span>YES BUTTON TEXT</span>
+              <input value={propYesLabel} onChange={e => setPropYesLabel(e.target.value)} maxLength={28}/>
+            </label>
+            <label className="odc-field">
+              <span>NO BUTTON (Prank Escape)</span>
+              <input value={propNoLabel} onChange={e => setPropNoLabel(e.target.value)} maxLength={28}/>
+            </label>
+          </div>
+
+          <div className="odc-grid-2">
+            <label className="odc-field">
+              <span>IF YES → DRESS CODE / VIBE</span>
+              <input value={dressCode} onChange={e => setDressCode(e.target.value)} maxLength={80}/>
+            </label>
+            <label className="odc-field">
+              <span>IF YES → PLACE / PLAN</span>
+              <input value={datePlace} onChange={e => setDatePlace(e.target.value)} maxLength={80}/>
+            </label>
+          </div>
+
+          <label className="odc-field">
+            <span>IF YES → ACKNOWLEDGE CONFIRMATION MESSAGE</span>
+            <input value={yesAckMessage} onChange={e => setYesAckMessage(e.target.value)} maxLength={220}/>
+          </label>
+
+          <label className="odc-field">
+            <span>IF NO → PLAYFUL PRANK REVEAL MESSAGE</span>
+            <input value={noPrankMessage} onChange={e => setNoPrankMessage(e.target.value)} maxLength={220}/>
+          </label>
+
+          <div className="odc-action-row">
+            <button type="button" className="secondary-btn" onClick={() => setStepMode("preview")}>
+              👁️ Preview
+            </button>
+            <button type="button" className="primary-btn" onClick={publishCreation} disabled={publishing}>
+              {publishing ? "Publishing..." : "💘 Publish Proposal"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InteractiveCreationView({ data, isPreview = false, onReplyCreate }) {
+  const [dodgeCount, setDodgeCount] = useState(0);
+  const [noOffset, setNoOffset] = useState({ x: 0, y: 0 });
+  const [inviteOutcome, setInviteOutcome] = useState(""); // "" | "yes"
+  const [propStage, setPropStage] = useState(0); // 0=Q1, 1=Q2, 2=Final, 3=YesResult, 4=NoPrankResult
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [cardShared, setCardShared] = useState(false);
+
+  const maxDodges = data?.payload?.maxDodges || 8;
+  const convertedToYes = dodgeCount >= maxDodges;
+
+  async function handleShareOutcomeCard(gameTitle, headline, subtitle, detail, quote) {
+    const playUrl = `${window.location.origin}/`;
+    try {
+      const file = await shareODDORAResultCard({
+        game: gameTitle,
+        headline,
+        subtitle,
+        detail,
+        quote,
+        url: playUrl
+      });
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({
+          title: `${gameTitle} · ODDORA`,
+          text: `${headline} — ${subtitle}`,
+          files: [file]
+        });
+      } else {
+        const imageUrl = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = imageUrl;
+        a.download = "oddora-invite-result.png";
+        a.click();
+        URL.revokeObjectURL(imageUrl);
+        setCardShared(true);
+        setTimeout(() => setCardShared(false), 2200);
+      }
+    } catch {}
+  }
+
+  function handleNoDodge() {
+    if (convertedToYes) {
+      setInviteOutcome("yes");
+      triggerHaptic([20, 30, 20]);
+      return;
+    }
+    const next = dodgeCount + 1;
+    setDodgeCount(next);
+    triggerHaptic(15);
+    if (next >= maxDodges) {
+      setNoOffset({ x: 0, y: 0 });
+    } else {
+      const rx = Math.round((Math.random() - 0.5) * 160);
+      const ry = Math.round((Math.random() - 0.5) * 90);
+      setNoOffset({ x: rx, y: ry });
+    }
+  }
+
+  if (data.type === "invite") {
+    const p = data.payload;
+    return (
+      <div className={`odc-player-card theme-${data.theme || "purple"}`}>
+        <div className="eyebrow">PERSONAL INVITE FOR {data.recipientName?.toUpperCase()}</div>
+        {inviteOutcome === "yes" ? (
+          <div className="odc-outcome-box">
+            <div className="heart-burst">🎉</div>
+            <h3>CONFIRMED! 💜</h3>
+            <p className="result-text">{p.yesMessage}</p>
+            <small className="muted">Sent by {data.creatorName} via ODDORA</small>
+            <div className="result-actions">
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => handleShareOutcomeCard(
+                  "OD Invite",
+                  "INVITE CONFIRMED! 💜",
+                  `${data.recipientName} said YES to ${data.creatorName}!`,
+                  p.title,
+                  p.yesMessage
+                )}
+              >
+                <Share2 size={16}/> {cardShared ? "Card Saved ✓" : "Share Result Card"}
+              </button>
+            </div>
+            <div className="odc-reply-cta">
+              <p>If you still want No, create your reply invite 👇</p>
+              <button type="button" className="secondary-btn" onClick={onReplyCreate}>
+                ↩️ Create Your Reply Invite
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h2>{p.title}</h2>
+            <p className="odc-msg">{p.question}</p>
+            {dodgeCount > 0 && (
+              <div className="odc-taunt">
+                {DODGE_TAUNTS[Math.min(dodgeCount - 1, DODGE_TAUNTS.length - 1)]} ({dodgeCount}/{maxDodges})
+              </div>
+            )}
+            <div className="odc-btn-arena">
+              <button
+                type="button"
+                className="primary-btn odc-yes-btn"
+                style={{ transform: `scale(${1 + Math.min(dodgeCount, 7) * 0.05})` }}
+                onClick={() => {
+                  triggerHaptic([20, 35, 20]);
+                  setInviteOutcome("yes");
+                }}
+              >
+                {p.yesLabel}
+              </button>
+              <button
+                type="button"
+                className={convertedToYes ? "primary-btn" : "secondary-btn odc-no-btn"}
+                style={convertedToYes ? {} : { transform: `translate(${noOffset.x}px, ${noOffset.y}px)` }}
+                onMouseEnter={() => { if (!convertedToYes && dodgeCount < 4) handleNoDodge(); }}
+                onClick={handleNoDodge}
+              >
+                {convertedToYes ? `Okay ${p.yesLabel}` : p.noLabel}
+              </button>
+            </div>
+            <small className="muted">From {data.creatorName} · {isPreview ? "Preview Mode" : "ODDORA Invite"}</small>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // OD PROPOSE 3-STEP FLOW
+  const p = data.payload;
+  const questions = p.questions || [];
+
+  return (
+    <div className={`odc-player-card theme-${data.theme || "romantic"}`}>
+      <div className="eyebrow">FOR {data.recipientName?.toUpperCase()} · FROM {data.creatorName?.toUpperCase()}</div>
+
+      {propStage < questions.length ? (
+        <>
+          <div className="iq-count">STEP {propStage + 1} OF {questions.length + 1}</div>
+          {propStage === 0 && <p className="muted" style={{ fontSize: 12 }}>{p.intro}</p>}
+          <h3>{questions[propStage].q}</h3>
+          <div className="iq-options">
+            {questions[propStage].options.map((opt, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="choice"
+                onClick={() => {
+                  triggerHaptic(12);
+                  setPropStage(s => s + 1);
+                }}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : propStage === questions.length ? (
+        <>
+          <div className="heart-burst">💘</div>
+          <div className="iq-count">FINAL QUESTION</div>
+          <h2>{p.finalQuestion}</h2>
+          <div className="odc-btn-arena">
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => {
+                triggerHaptic([25, 40, 25]);
+                setPropStage(questions.length + 1);
+              }}
+            >
+              {p.yesLabel}
+            </button>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => {
+                triggerHaptic([30, 40, 30]);
+                setPropStage(questions.length + 2);
+              }}
+            >
+              {p.noLabel}
+            </button>
+          </div>
+        </>
+      ) : propStage === questions.length + 1 ? (
+        <div className="odc-outcome-box">
+          <div className="heart-burst">💞</div>
+          <h3>DATE LOCKED IN! ✨</h3>
+          <div className="odc-plan-details">
+            <div><span>👗 DRESS CODE:</span> <strong>{p.dressCode}</strong></div>
+            <div><span>📍 PLACE / PLAN:</span> <strong>{p.datePlace}</strong></div>
+          </div>
+          <p className="result-text">{p.yesAckMessage}</p>
+          <div className="result-actions">
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => {
+                triggerHaptic(20);
+                setAcknowledged(true);
+              }}
+            >
+              {acknowledged ? "Acknowledged & Confirmed ✓💌" : "Confirm & Acknowledge 💌"}
+            </button>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => handleShareOutcomeCard(
+                "OD Propose",
+                "DATE LOCKED IN! 💞",
+                `${data.recipientName} & ${data.creatorName} are officially locked in!`,
+                `${p.datePlace} · ${p.dressCode}`,
+                p.finalQuestion
+              )}
+            >
+              <Share2 size={16}/> {cardShared ? "Card Saved ✓" : "Share Result Card"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="odc-outcome-box">
+          <div className="heart-burst">😂</div>
+          <h3>YOU GOT PRANKED!</h3>
+          <p className="result-text">{p.noPrankMessage}</p>
+          <div className="result-actions">
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => handleShareOutcomeCard(
+                "OD Propose",
+                "YOU GOT PRANKED! 😂",
+                `${data.creatorName} caught ${data.recipientName} in an ODDORA trap!`,
+                "100% HARMLESS EXPERIMENT",
+                p.noPrankMessage
+              )}
+            >
+              <Share2 size={16}/> {cardShared ? "Card Saved ✓" : "Share Result Card"}
+            </button>
+            <button type="button" className="secondary-btn" onClick={onReplyCreate}>
+              ✨ Create Your Own Trap
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ODCreatePlayer({ code, onClose, onCreateReply }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    get(ref(database, `creations/${code}`))
+      .then(snap => {
+        if (!alive) return;
+        if (snap.exists()) setData(snap.val());
+        else setNotFound(true);
+      })
+      .catch(() => { if (alive) setNotFound(true); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [code]);
+
+  return (
+    <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="experience-modal" style={{ position: "relative" }}>
+        <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20}/></button>
+        {loading ? (
+          <div className="result-stage"><p>Loading your special invite...</p></div>
+        ) : notFound || !data ? (
+          <div className="result-stage">
+            <h3>Invite link not found 👀</h3>
+            <p className="muted">This link may have expired or been mistyped.</p>
+            <button type="button" className="primary-btn" onClick={onClose}>Explore ODDORA</button>
+          </div>
+        ) : (
+          <InteractiveCreationView data={data} isPreview={false} onReplyCreate={onCreateReply} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 
 export default App;
