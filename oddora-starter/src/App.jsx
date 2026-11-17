@@ -211,12 +211,23 @@ function App() {
   const params = new URLSearchParams(window.location.search);
   const prankId = params.get("prank");
   const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+
+  // A shared URL must point to one game only. If an older URL contains both
+  // parameters, prefer XO and remove the conflicting Catch My Heart parameter.
   if (xoCode.length === 6) {
     const xoGame = experiences.find(item => item.id === "xo");
-    if (xoGame) { setSelected(xoGame); setXoInviteCode(xoCode); }
-  }
-  const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  if (heartCode.length === 6) {
+    if (xoGame) {
+      setSelected(xoGame);
+      setXoInviteCode(xoCode);
+      if (params.has("heart")) {
+        params.delete("heart");
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.search = params.toString();
+        window.history.replaceState({}, "", cleanUrl.toString());
+      }
+    }
+  } else if (heartCode.length === 6) {
     const heartGame = experiences.find(item => item.id === "catch-heart");
     if (heartGame) { setSelected(heartGame); setHeartInviteCode(heartCode); }
   }
@@ -470,13 +481,25 @@ function App() {
           heartInviteCode={heartInviteCode}
           onExplore={() => {
             setSelected(null);
+            setXoInviteCode("");
+            setHeartInviteCode("");
+            setSharedPrank(null);
             setActive("All");
-            setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
+            window.history.replaceState({}, "", window.location.pathname);
+            window.setTimeout(() => {
+              document.getElementById("explore")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 180);
           }}
           onCreateChallenge={() => {
             setSelected(null);
+            setXoInviteCode("");
+            setHeartInviteCode("");
+            setSharedPrank(null);
             setActive("OD CREATE");
-            setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 80);
+            window.history.replaceState({}, "", window.location.pathname);
+            window.setTimeout(() => {
+              document.getElementById("explore")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 180);
           }}
           onBackToGames={() => {
             setSelected(null);
@@ -1630,7 +1653,12 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       await set(ref(database, `rooms/${code}`), newRoom);
       setRoomCode(code);
       setNotice("Challenge created! Share the invitation link with your friend.");
-      const url = new URL(window.location.href); url.searchParams.set("xo", code);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("heart");
+      url.searchParams.delete("prank");
+      url.searchParams.delete("mode");
+      url.searchParams.delete("from");
+      url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
       console.error("ODDORA create room failed:", error);
@@ -1673,6 +1701,10 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
         setRoomCode(code);
         setNotice("Welcome back! You're Player X.");
         const url = new URL(window.location.href);
+        url.searchParams.delete("heart");
+        url.searchParams.delete("prank");
+        url.searchParams.delete("mode");
+        url.searchParams.delete("from");
         url.searchParams.set("xo", code);
         window.history.replaceState({}, "", url.toString());
         return;
@@ -1735,6 +1767,10 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       );
 
       const url = new URL(window.location.href);
+      url.searchParams.delete("heart");
+      url.searchParams.delete("prank");
+      url.searchParams.delete("mode");
+      url.searchParams.delete("from");
       url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
@@ -1785,7 +1821,12 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
 
   async function shareInvitation() {
     if (!roomCode) return;
-    const url = new URL(window.location.href); url.searchParams.set("xo", roomCode);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("heart");
+    url.searchParams.delete("prank");
+    url.searchParams.delete("mode");
+    url.searchParams.delete("from");
+    url.searchParams.set("xo", roomCode);
     const shareUrl = url.toString();
     const text = `${room?.playerNames?.X || playerName || "Your friend"} challenged you to XO on ODDORA! Join the game:`;
     try {
