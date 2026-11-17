@@ -1,11 +1,10 @@
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowUpRight, Sparkles, Zap, Brain, WandSparkles, Dice5, Menu,
-  X, Search, Share2, ChevronRight, RotateCcw, Copy, Check, Globe2
+  ArrowUpRight, Sparkles, Zap, WandSparkles, Dice5, Menu,
+  X, Search, Share2, ChevronRight, RotateCcw, Sun, Moon, Bot, Users, Send
 } from "lucide-react";
 import { database, signInPlayer } from "./firebase";
-import { get, onValue, ref, runTransaction, set, update } from "firebase/database";
+import { get, onValue, push, ref, runTransaction, set } from "firebase/database";
 
 const experiences = [
   { id:"hacker", title:"Fake Hacker", category:"OD PRANKS", icon:"🖥️", tag:"Cinematic prank", description:"A dramatic fake terminal scan with a ridiculous reveal.", color:"purple", type:"prank" },
@@ -13,11 +12,11 @@ const experiences = [
   { id:"virus", title:"Virus Scanner", category:"OD PRANKS", icon:"🦠", tag:"Harmless scan", description:"Scan your digital habits. Discover your scrolling virus.", color:"green", type:"prank" },
   { id:"button", title:"Don't Touch the Button", category:"OD PRANKS", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new ridiculous reaction.", color:"pink", type:"prank" },
   { id:"iq", title:"Fake IQ Test", category:"OD PRANKS", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
-  { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🧠", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
-  { id:"xo", title:"XO Multiplayer", category:"OD GAMES", icon:"❎", tag:"Play with a friend", description:"Create a room, invite a friend and play Tic-Tac-Toe live.", color:"blue", type:"game" },
-  { id:"catch-heart", title:"Catch My Heart", category:"OD GAMES", icon:"💘", tag:"A two-player heart match", description:"Pick a heart at the same time and reveal your playful match score.", color:"pink", type:"game" },
+  { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🔮", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
+  { id:"xo", title:"XO Multiplayer & AI", category:"OD GAMES", icon:"❎", tag:"Solo AI or Friend", description:"Challenge the witty ODDORA Bot solo or invite a friend live.", color:"blue", type:"game" },
+  { id:"catch-heart", title:"Catch My Heart", category:"OD GAMES", icon:"💘", tag:"Solo AI or Friend", description:"Match hearts against ODDORA AI or play live with a friend.", color:"pink", type:"game" },
   { id:"personality", title:"Your Secret Superpower", category:"OD MIND", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
-  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"OD FUN", icon:"💸", tag:"Fantasy simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
+  { id:"whatif", title:"What If You Had ₹100 Crore?", category:"OD FUN", icon:"💸", tag:"3-choice simulator", description:"Make three choices and see what kind of billionaire you become.", color:"gold", type:"whatif" },
   { id:"award", title:"Ridiculous Award", category:"OD FUN", icon:"🏆", tag:"Instant certificate", description:"Receive an award you absolutely did not ask for.", color:"pink", type:"random" },
   { id:"surprise", title:"Surprise Me", category:"OD FUN", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
 ];
@@ -89,6 +88,78 @@ const mindPuzzles = [
   }
 ];
 
+const whatIfQuestions = [
+  {
+    step: "CHOICE 01 / FIRST PURCHASE",
+    question: "₹100 Crore just landed in your bank account. What is your first move?",
+    options: [
+      { label: "Buy a private island with zero Wi-Fi 🏝️", score: "chill" },
+      { label: "Launch a chaotic startup on Mars 🚀", score: "visionary" },
+      { label: "Order every item in my online cart 🛍️", score: "chaotic" },
+      { label: "Keep it secret and still ask for extra ketchup 🤫", score: "stealth" }
+    ]
+  },
+  {
+    step: "CHOICE 02 / DAILY ROUTINE",
+    question: "How does your average Tuesday look now?",
+    options: [
+      { label: "Waking up at 2 PM with zero alarms 🛌", score: "chill" },
+      { label: "Hiring a personal chef just for midnight snacks 🍕", score: "chaotic" },
+      { label: "Buying my old school and cancelling Mondays 📅", score: "visionary" },
+      { label: "Taking public transport just for the plot 🚌", score: "stealth" }
+    ]
+  },
+  {
+    step: "CHOICE 03 / SIGNATURE FLEX",
+    question: "What becomes your legendary billionaire habit?",
+    options: [
+      { label: "Tipping delivery riders the price of a scooter 🛵", score: "visionary" },
+      { label: "Building a secret underground gaming bunker 🎮", score: "chaotic" },
+      { label: "Disappearing to the mountains for 6 months 🏔️", score: "chill" },
+      { label: "Still splitting a ₹200 bill down to the rupee 🧾", score: "stealth" }
+    ]
+  }
+];
+
+const whatIfOutcomes = {
+  chill: "The Zen Couch Emperor 🛌 — You turned ₹100 Crore into a lifetime subscription to peace, naps, and never answering 'Are you free this weekend?'",
+  visionary: "The Chaotic Philanthropist 🚀 — You banned Mondays, funded weird inventions, and accidentally became a folklore legend.",
+  chaotic: "The Midnight Impulse Mogul 🍕 — Your mansion has a slide instead of stairs, 400 unopened gadgets, and zero regrets.",
+  stealth: "The Undercover Billionaire 🤫 — Nobody knows you're rich because you still argue over ₹10 delivery fees while owning the building."
+};
+
+const defaultVibes = [
+  { id: "seed-1", name: "Aarav", mood: "😂", text: "Sent the Fake Hacker link to my roommate and watched him unplug the Wi-Fi router!", createdAt: Date.now() - 3600000 },
+  { id: "seed-2", name: "Maya", mood: "🔮", text: "The 1089 Mind Reader genuinely broke my brain at 1 AM.", createdAt: Date.now() - 7200000 },
+  { id: "seed-3", name: "Dev", mood: "💘", text: "Beat the ODDORA AI in Catch My Heart in 3 picks. Certified telepathy.", createdAt: Date.now() - 10800000 }
+];
+
+function enterDeviceFullscreen() {
+  try {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+  } catch {}
+}
+
+function exitDeviceFullscreen() {
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  } catch {}
+}
+
+function triggerHaptic(pattern = 15) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch {}
+}
 
 async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, url }) {
   const canvas = document.createElement("canvas");
@@ -139,7 +210,6 @@ async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, 
   }
 
   ctx.fillStyle = "#d5cce6";
-  ctx.font = "500 34px Arial";
   const drawWrapped = (text, startY, maxWidth, lineHeight, font) => {
     ctx.font = font;
     const words = String(text || "").split(" ");
@@ -201,53 +271,67 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [surprise, setSurprise] = useState("");
-  const [language, setLanguage] = useState("EN");
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("oddora-theme") === "light" ? "light" : "dark";
+    } catch {
+      return "dark";
+    }
+  });
   const [copied, setCopied] = useState(false);
   const [sharedPrank, setSharedPrank] = useState(null);
   const [xoInviteCode, setXoInviteCode] = useState("");
   const [heartInviteCode, setHeartInviteCode] = useState("");
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const prankId = params.get("prank");
-  const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 
-  // A shared URL must point to one game only. If an older URL contains both
-  // parameters, prefer XO and remove the conflicting Catch My Heart parameter.
-  if (xoCode.length === 6) {
-    const xoGame = experiences.find(item => item.id === "xo");
-    if (xoGame) {
-      setSelected(xoGame);
-      setXoInviteCode(xoCode);
-      if (params.has("heart")) {
-        params.delete("heart");
-        const cleanUrl = new URL(window.location.href);
-        cleanUrl.search = params.toString();
-        window.history.replaceState({}, "", cleanUrl.toString());
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem("oddora-theme", theme);
+    } catch {}
+  }, [theme]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prankId = params.get("prank");
+    const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+
+    if (xoCode.length === 6) {
+      const xoGame = experiences.find(item => item.id === "xo");
+      if (xoGame) {
+        setSelected(xoGame);
+        setXoInviteCode(xoCode);
+        if (params.has("heart")) {
+          params.delete("heart");
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.search = params.toString();
+          window.history.replaceState({}, "", cleanUrl.toString());
+        }
+      }
+    } else if (heartCode.length === 6) {
+      const heartGame = experiences.find(item => item.id === "catch-heart");
+      if (heartGame) {
+        setSelected(heartGame);
+        setHeartInviteCode(heartCode);
       }
     }
-  } else if (heartCode.length === 6) {
-    const heartGame = experiences.find(item => item.id === "catch-heart");
-    if (heartGame) { setSelected(heartGame); setHeartInviteCode(heartCode); }
-  }
-  const mode = params.get("mode");
-  const sender = params.get("from");
 
-  if (mode !== "friend" || !prankId) return;
+    const mode = params.get("mode");
+    const sender = params.get("from");
+    if (mode !== "friend" || !prankId) return;
 
-  const prank = experiences.find(
-    item => item.id === prankId && item.category === "OD PRANKS"
-  );
+    const prank = experiences.find(
+      item => item.id === prankId && item.category === "OD PRANKS"
+    );
+    if (!prank) return;
 
-  if (!prank) return;
-
-  setSelected(prank);
-  setSharedPrank({
-    mode: "friend",
-    sender: (sender || "Your friend").slice(0, 30)
-  });
-}, []);
+    setSelected(prank);
+    setSharedPrank({
+      mode: "friend",
+      sender: (sender || "Your friend").slice(0, 30),
+      autoStart: true
+    });
+  }, []);
 
   const filtered = useMemo(() => experiences.filter(item =>
     (active === "All" || item.category === active) &&
@@ -255,9 +339,9 @@ function App() {
   ), [active, search]);
 
   function openExperience(item) {
+    triggerHaptic(12);
     setSelected(item);
     setSharedPrank(null);
-    setSurprise("");
     setCopied(false);
   }
 
@@ -310,8 +394,17 @@ function App() {
         </nav>
 
         <div className="top-actions">
-          <button className="language-btn" onClick={() => setLanguage(language === "EN" ? "TA" : "EN")} title="Language preference">
-            <Globe2 size={15}/>{language}
+          <button
+            className="language-btn"
+            onClick={() => {
+              triggerHaptic(10);
+              setTheme(prev => (prev === "dark" ? "light" : "dark"));
+            }}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle color theme"
+          >
+            {theme === "dark" ? <Sun size={15}/> : <Moon size={15}/>}
+            <span>{theme === "dark" ? "LIGHT" : "DARK"}</span>
           </button>
           <button className="menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             {menuOpen ? <X/> : <Menu/>}
@@ -321,9 +414,6 @@ function App() {
 
       <main id="home">
         <section className="hero">
-          <div className="hero-glow glow-one"></div>
-          <div className="hero-glow glow-two"></div>
-
           <div className="hero-content">
             <div className="eyebrow"><span className="pulse"></span> PLAY. CREATE. DISCOVER.</div>
             <h1>The internet's<br/><span className="gradient-text">playground.</span></h1>
@@ -337,7 +427,7 @@ function App() {
               <button className="secondary-btn" onClick={surpriseMe}><Dice5 size={17}/> Surprise me</button>
             </div>
 
-            <div className="hero-note"><Sparkles size={14}/> Free to explore · No account needed</div>
+            <div className="hero-note"><Sparkles size={14}/> Free to explore · Solo or with friends · No sign-up</div>
           </div>
 
           <div className="hero-art" aria-label="Abstract glowing ODDORA portal illustration">
@@ -349,8 +439,6 @@ function App() {
             <div className="spark spark-a">✦</div>
             <div className="spark spark-b">✧</div>
           </div>
-
-
         </section>
 
         <section className="ticker" aria-label="ODDORA highlights">
@@ -376,7 +464,7 @@ function App() {
               <span className="zone-icon">🎮</span>
               <span className="zone-number">01 / PLAY</span>
               <strong>OD GAMES</strong>
-              <span className="zone-desc">Play together. Challenge your friends.</span>
+              <span className="zone-desc">Play solo against AI or challenge friends live.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
             <button className="zone-card zone-purple" onClick={() => goToCategory("OD CREATE")}>
@@ -434,9 +522,17 @@ function App() {
             {filtered.map((item, index) => (
               <ExperienceCard key={item.id} item={item} index={index} onClick={() => openExperience(item)}/>
             ))}
-            {filtered.length === 0 && <div className="empty-state">{active === "OD CREATE" ? "OD CREATE is coming next. Soon, you will be able to build and share your own invitations, proposals and challenges. ✨" : "No weirdness found. Try another search. 👀"}</div>}
+            {filtered.length === 0 && (
+              <div className="empty-state">
+                {active === "OD CREATE"
+                  ? "OD CREATE is coming next. Soon, you will be able to build and share your own invitations, proposals and challenges. ✨"
+                  : "No weirdness found. Try another search. 👀"}
+              </div>
+            )}
           </div>
         </section>
+
+        <VibeWall />
 
         <section className="surprise-banner">
           <div className="banner-orb">?</div>
@@ -468,12 +564,12 @@ function App() {
         <ExperienceModal
           item={selected}
           onClose={() => {
-  setSelected(null);
-  setSharedPrank(null);
-  setXoInviteCode("");
-  setHeartInviteCode("");
-  window.history.replaceState({}, "", window.location.pathname);
-}}
+            setSelected(null);
+            setSharedPrank(null);
+            setXoInviteCode("");
+            setHeartInviteCode("");
+            window.history.replaceState({}, "", window.location.pathname);
+          }}
           onShare={shareResult}
           copied={copied}
           sharedPrank={sharedPrank}
@@ -512,9 +608,127 @@ function App() {
   );
 }
 
+function VibeWall() {
+  const [vibes, setVibes] = useState(defaultVibes);
+  const [name, setName] = useState("");
+  const [mood, setMood] = useState("😂");
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+
+  useEffect(() => {
+    const vibesRef = ref(database, "vibes");
+    const unsubscribe = onValue(
+      vibesRef,
+      snapshot => {
+        if (!snapshot.exists()) return;
+        const raw = snapshot.val();
+        const list = Object.entries(raw)
+          .map(([id, item]) => ({ id, ...item }))
+          .filter(item => item && item.text && item.name)
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+          .slice(0, 6);
+        if (list.length > 0) setVibes(list);
+      },
+      () => {}
+    );
+    return () => unsubscribe();
+  }, []);
+
+  async function submitVibe(e) {
+    e.preventDefault();
+    const cleanText = text.trim().replace(/\s+/g, " ").slice(0, 140);
+    const cleanName = (name.trim().replace(/\s+/g, " ") || "Anonymous Explorer").slice(0, 20);
+    if (!cleanText || sending) return;
+
+    setSending(true);
+    setStatusMsg("");
+    triggerHaptic(15);
+
+    const entry = {
+      name: cleanName,
+      mood,
+      text: cleanText,
+      createdAt: Date.now()
+    };
+
+    try {
+      await signInPlayer();
+      await push(ref(database, "vibes"), entry);
+      setText("");
+      setStatusMsg("Vibe posted to the wall! ✨");
+    } catch {
+      setVibes(prev => [{ id: `local-${Date.now()}`, ...entry }, ...prev].slice(0, 6));
+      setText("");
+      setStatusMsg("Added to your session wall! ✨");
+    } finally {
+      setSending(false);
+      setTimeout(() => setStatusMsg(""), 2500);
+    }
+  }
+
+  return (
+    <section className="section vibe-section" id="vibes">
+      <div className="section-heading">
+        <div>
+          <div className="eyebrow muted">LIVE CHAOS WALL</div>
+          <h2>Visitor <span className="gradient-text">vibe check.</span></h2>
+        </div>
+        <p>Drop a quick reaction after pranking a friend<br/>or beating the ODDORA AI.</p>
+      </div>
+
+      <form className="vibe-form" onSubmit={submitVibe}>
+        <div className="vibe-moods" role="group" aria-label="Choose mood">
+          {["😂", "🤯", "💘", "😈", "🔥"].map(m => (
+            <button
+              type="button"
+              key={m}
+              className={mood === m ? "vibe-mood active" : "vibe-mood"}
+              onClick={() => setMood(m)}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <input
+          className="vibe-name-input"
+          value={name}
+          onChange={e => setName(e.target.value.slice(0, 20))}
+          placeholder="Your name (optional)"
+          maxLength={20}
+        />
+        <input
+          className="vibe-text-input"
+          value={text}
+          onChange={e => setText(e.target.value.slice(0, 140))}
+          placeholder="How did your prank or game go? (140 chars)"
+          maxLength={140}
+        />
+        <button className="primary-btn" type="submit" disabled={!text.trim() || sending}>
+          <Send size={15}/> {sending ? "Posting..." : "Post vibe"}
+        </button>
+      </form>
+      {statusMsg && <p className="vibe-status">{statusMsg}</p>}
+
+      <div className="vibe-grid">
+        {vibes.map(item => (
+          <div className="vibe-card" key={item.id}>
+            <div className="vibe-card-top">
+              <span className="vibe-emoji">{item.mood || "✨"}</span>
+              <strong>{item.name}</strong>
+              <span className="vibe-badge">VERIFIED CHAOS</span>
+            </div>
+            <p>“{item.text}”</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ExperienceCard({ item, index, onClick }) {
   return (
-    <button className={`experience-card ${item.color}`} onClick={onClick} style={{"--delay": `${index * 65}ms`}}>
+    <button className={`experience-card ${item.color}`} onClick={onClick} style={{"--delay": `${index * 55}ms`}}>
       <div className="experience-card-top">
         <span className="experience-emoji">{item.icon}</span>
         <span className="card-open"><ArrowUpRight size={17}/></span>
@@ -529,16 +743,16 @@ function ExperienceCard({ item, index, onClick }) {
 
 function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, heartInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
   const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : item.id === "catch-heart" && heartInviteCode ? 14 : 0);
-  const [prankMode, setPrankMode] = useState(
-  sharedPrank?.mode === "friend" ? "friend" : "self"
-);
-const [senderName, setSenderName] = useState("");
-const [linkCopied, setLinkCopied] = useState(false);
+  const [prankMode, setPrankMode] = useState(sharedPrank?.mode === "friend" ? "friend" : "self");
+  const [senderName, setSenderName] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkError, setLinkError] = useState("");
   const [choice, setChoice] = useState("");
+  const [whatIfStep, setWhatIfStep] = useState(0);
+  const [whatIfScores, setWhatIfScores] = useState([]);
   const [mindPuzzleIndex, setMindPuzzleIndex] = useState(0);
   const [mindInstructionIndex, setMindInstructionIndex] = useState(0);
   const [result, setResult] = useState("");
-  const [terminalLines, setTerminalLines] = useState([]);
   const [showMagicPopup, setShowMagicPopup] = useState(false);
   const [birthAge, setBirthAge] = useState("");
   const [birthdayPassed, setBirthdayPassed] = useState("");
@@ -549,13 +763,14 @@ const [linkCopied, setLinkCopied] = useState(false);
   const [iqQuestion, setIqQuestion] = useState(0);
   const [iqAnswers, setIqAnswers] = useState([]);
   const [hackerElapsed, setHackerElapsed] = useState(0);
+  const [hackerRunId, setHackerRunId] = useState(0);
   const [updateElapsed, setUpdateElapsed] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioContextRef = useRef(null);
   const soundEnabledRef = useRef(true);
   const lastHackerToneRef = useRef(-1);
+  const autoStartedRef = useRef(false);
 
-  // All sounds are generated locally with Web Audio. No audio files or network calls.
   async function playSound(kind = "tap") {
     if (!soundEnabledRef.current) return;
 
@@ -568,15 +783,49 @@ const [linkCopied, setLinkCopied] = useState(false);
       if (ctx.state === "suspended") await ctx.resume();
 
       const patterns = {
-        tap:     [{ f: 620, d: 0.055, v: 0.035, w: "sine" }],
-        step:    [{ f: 440, d: 0.08, v: 0.045, w: "triangle" }, { f: 660, d: 0.10, v: 0.035, w: "triangle", delay: 0.07 }],
-        magic:   [{ f: 523, d: 0.13, v: 0.045, w: "sine" }, { f: 659, d: 0.13, v: 0.04, w: "sine", delay: 0.11 }, { f: 784, d: 0.22, v: 0.04, w: "sine", delay: 0.22 }],
-        reveal:  [{ f: 523, d: 0.16, v: 0.06, w: "triangle" }, { f: 659, d: 0.18, v: 0.06, w: "triangle", delay: 0.13 }, { f: 784, d: 0.34, v: 0.07, w: "sine", delay: 0.27 }],
-        wrong:   [{ f: 220, d: 0.15, v: 0.05, w: "sawtooth" }, { f: 165, d: 0.22, v: 0.045, w: "sawtooth", delay: 0.13 }],
-        boot:    [{ f: 75, d: 0.55, v: 0.10, w: "sawtooth" }, { f: 150, d: 0.42, v: 0.045, w: "sine", delay: 0.22 }],
-        key:     [{ f: 760, d: 0.035, v: 0.018, w: "square" }],
-        alert:   [{ f: 190, d: 0.22, v: 0.07, w: "sawtooth" }, { f: 145, d: 0.25, v: 0.06, w: "sawtooth", delay: 0.2 }],
-        suspense:[{ f: 110, d: 0.5, v: 0.045, w: "sine" }, { f: 116, d: 0.5, v: 0.035, w: "sine", delay: 0.45 }],
+        tap: [
+          { f: 680, d: 0.06, v: 0.09, w: "triangle" },
+          { f: 1020, d: 0.05, v: 0.05, w: "sine", delay: 0.02 }
+        ],
+        step: [
+          { f: 440, d: 0.11, v: 0.11, w: "triangle" },
+          { f: 659, d: 0.14, v: 0.10, w: "sine", delay: 0.08 }
+        ],
+        magic: [
+          { f: 523.25, d: 0.18, v: 0.12, w: "sine" },
+          { f: 659.25, d: 0.18, v: 0.11, w: "triangle", delay: 0.11 },
+          { f: 783.99, d: 0.24, v: 0.12, w: "sine", delay: 0.22 },
+          { f: 1046.5, d: 0.34, v: 0.10, w: "sine", delay: 0.33 }
+        ],
+        reveal: [
+          { f: 261.63, d: 0.38, v: 0.12, w: "triangle" },
+          { f: 523.25, d: 0.22, v: 0.15, w: "triangle" },
+          { f: 659.25, d: 0.24, v: 0.15, w: "triangle", delay: 0.13 },
+          { f: 783.99, d: 0.45, v: 0.18, w: "sine", delay: 0.26, slideTo: 1046.5 }
+        ],
+        wrong: [
+          { f: 185, d: 0.24, v: 0.16, w: "sawtooth", slideTo: 130 },
+          { f: 146.83, d: 0.32, v: 0.15, w: "sawtooth", delay: 0.18, slideTo: 98 }
+        ],
+        boot: [
+          { f: 65.41, d: 0.85, v: 0.24, w: "sawtooth", slideTo: 130.81 },
+          { f: 130.81, d: 0.75, v: 0.18, w: "triangle", delay: 0.15, slideTo: 261.63 },
+          { f: 523.25, d: 0.35, v: 0.12, w: "sine", delay: 0.55 }
+        ],
+        key: [
+          { f: 920, d: 0.04, v: 0.07, w: "square" },
+          { f: 1380, d: 0.03, v: 0.05, w: "triangle", delay: 0.02 }
+        ],
+        alert: [
+          { f: 440, d: 0.22, v: 0.20, w: "sawtooth", slideTo: 220 },
+          { f: 440, d: 0.24, v: 0.20, w: "sawtooth", delay: 0.24, slideTo: 195 },
+          { f: 110, d: 0.45, v: 0.18, w: "square", delay: 0.1 }
+        ],
+        suspense: [
+          { f: 98, d: 0.75, v: 0.16, w: "sawtooth" },
+          { f: 103.83, d: 0.75, v: 0.14, w: "sine", delay: 0.25 },
+          { f: 196, d: 0.55, v: 0.10, w: "triangle", delay: 0.5 }
+        ],
       };
       const notes = patterns[kind] || patterns.tap;
       const startAt = ctx.currentTime + 0.015;
@@ -587,20 +836,18 @@ const [linkCopied, setLinkCopied] = useState(false);
         const at = startAt + (note.delay || 0);
         osc.type = note.w;
         osc.frequency.setValueAtTime(note.f, at);
-        if (kind === "reveal" && note.f === 784) {
-          osc.frequency.exponentialRampToValueAtTime(1046, at + note.d);
+        if (note.slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(note.slideTo, at + note.d);
         }
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.linearRampToValueAtTime(note.v, at + 0.012);
+        gain.gain.linearRampToValueAtTime(note.v, at + 0.015);
         gain.gain.exponentialRampToValueAtTime(0.0001, at + note.d);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(at);
-        osc.stop(at + note.d + 0.02);
+        osc.stop(at + note.d + 0.03);
       });
-    } catch (error) {
-      console.warn("ODDORA sound could not play:", error);
-    }
+    } catch {}
   }
 
   function toggleSound() {
@@ -638,11 +885,33 @@ const [linkCopied, setLinkCopied] = useState(false);
         setResult("SYSTEM BREACHED! 😂 Just kidding. Your biggest vulnerability is opening one more tab when you already have 47 tabs open.");
         setStep(2);
         playSound("reveal");
+        triggerHaptic([30, 40, 30]);
       }
     }, 100);
 
     return () => clearInterval(timer);
+  }, [item.id, step, hackerRunId]);
+
+  useEffect(() => {
+    if (item.id !== "update" || step !== 9) return;
+
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setUpdateElapsed(elapsed);
+
+      if (elapsed >= 23) {
+        clearInterval(timer);
+        setResult("Update complete! 😂 Your device is completely safe. This was just an ODDORA prank!");
+        setStep(2);
+        playSound("reveal");
+        triggerHaptic([25, 35, 25]);
+      }
+    }, 250);
+
+    return () => clearInterval(timer);
   }, [item.id, step]);
+
   const currentPuzzle = mindPuzzles[mindPuzzleIndex];
   const isCodePuzzle = ["agecode", "birthdaycode"].includes(currentPuzzle.type);
   const prediction = currentPuzzle.type === "steps" ? currentPuzzle.answer : result;
@@ -660,6 +929,7 @@ const [linkCopied, setLinkCopied] = useState(false);
 
   function choosePuzzle(index) {
     playSound("magic");
+    triggerHaptic(12);
     setMindPuzzleIndex(index);
     resetMind();
     setStep(5);
@@ -677,8 +947,10 @@ const [linkCopied, setLinkCopied] = useState(false);
     setHackerElapsed(0);
     lastHackerToneRef.current = -1;
     setResult("");
+    setHackerRunId(r => r + 1);
     setStep(1);
     playSound("boot");
+    triggerHaptic([20, 30, 40]);
   }
 
   function getRandomAward() {
@@ -689,107 +961,125 @@ const [linkCopied, setLinkCopied] = useState(false);
       "Certified Professional Daydreamer 🌟",
       "CEO of 'I'll Do It Tomorrow' 👑"
     ];
+    playSound("reveal");
+    triggerHaptic(20);
     setResult(awards[Math.floor(Math.random() * awards.length)]);
     setStep(2);
   }
 
-  function getWhatIf() {
-    const endings = [
-      "You buy a private island, then spend the week looking for the Wi-Fi password. 🏝️",
-      "You fund a space mission, but insist on taking your favourite snacks. 🚀",
-      "You build a dream home with a room dedicated entirely to naps. 🛌"
-    ];
-    setResult(endings[Math.floor(Math.random() * endings.length)]);
-    setStep(2);
-  }
-useEffect(() => {
-  if (item.id !== "update" || step !== 9) return;
+  async function createFriendLink() {
+    const cleanName = senderName.trim().slice(0, 30);
 
-  const startedAt = Date.now();
-
-  const timer = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    setUpdateElapsed(elapsed);
-
-    if (elapsed >= 23) {
-      clearInterval(timer);
-      setResult("Update complete! 😂 Your device is completely safe. This was just an ODDORA prank!");
-      setStep(2);
-      playSound("reveal");
+    if (!cleanName) {
+      setLinkError("Enter your name first so your friend knows who pranked them.");
+      triggerHaptic([20, 30, 20]);
+      return;
     }
-  }, 250);
+    setLinkError("");
 
-  return () => clearInterval(timer);
-}, [item.id, step]);
-async function createFriendLink() {
-  const cleanName = senderName.trim().slice(0, 30);
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("prank", item.id);
+    url.searchParams.set("mode", "friend");
+    url.searchParams.set("from", cleanName);
 
-  if (!cleanName) {
-    alert("Please enter your name first.");
-    return;
-  }
+    const shareUrl = url.toString();
 
-  const url = new URL(window.location.href);
-  url.search = "";
-  url.searchParams.set("prank", item.id);
-  url.searchParams.set("mode", "friend");
-  url.searchParams.set("from", cleanName);
-
-  const shareUrl = url.toString();
-
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: "A little prank for you!",
-        text: `${cleanName} sent you an ODDORA prank. Open it if you dare! 😂`,
-        url: shareUrl
-      });
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2500);
-    }
-  } catch (error) {
-    if (error.name !== "AbortError") {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${cleanName} sent you something`,
+          text: `${cleanName} wants you to see this 👀`,
+          url: shareUrl
+        });
+      } else {
+        await navigator.clipboard.writeText(`${cleanName} wants you to see this 👀\n${shareUrl}`);
         setLinkCopied(true);
-      } catch {
-        alert("Unable to copy the link. Please try again.");
+        playSound("reveal");
+        setTimeout(() => setLinkCopied(false), 2500);
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          setLinkCopied(true);
+          setTimeout(() => setLinkCopied(false), 2500);
+        } catch {
+          setLinkError("Unable to copy automatically. Please copy the link manually.");
+        }
       }
     }
   }
-}
+
   function startExperience() {
+    triggerHaptic(15);
+    if (item.category === "OD PRANKS") {
+      enterDeviceFullscreen();
+    }
     if (item.id === "hacker") return runHacker();
     if (item.id === "update") {
-  setUpdateElapsed(0);
-  setStep(9);
-  return;
-}
-    if (item.id === "virus") return setStep(10);
+      setUpdateElapsed(0);
+      playSound("suspense");
+      setStep(9);
+      return;
+    }
+    if (item.id === "virus") {
+      playSound("alert");
+      return setStep(10);
+    }
     if (item.id === "button") {
       setButtonClicks(0);
+      playSound("tap");
       return setStep(11);
     }
     if (item.id === "iq") {
       setIqQuestion(0);
       setIqAnswers([]);
+      playSound("step");
       return setStep(12);
     }
     if (item.id === "mind") return setStep(0);
     if (item.id === "xo") return setStep(13);
     if (item.id === "catch-heart") return setStep(14);
     if (item.id === "award") return getRandomAward();
-    if (item.id === "whatif") return getWhatIf();
+    if (item.id === "whatif") {
+      setWhatIfStep(0);
+      setWhatIfScores([]);
+      playSound("step");
+      return setStep(15);
+    }
 
     if (item.id === "surprise") {
+      playSound("reveal");
       setResult(randomResults[Math.floor(Math.random() * randomResults.length)]);
       return setStep(2);
     }
 
-    if (item.id === "personality") return setStep(4);
+    if (item.id === "personality") {
+      playSound("step");
+      return setStep(4);
+    }
   }
+
+
+  useEffect(() => {
+    if (sharedPrank?.autoStart && !autoStartedRef.current && item.category === "OD PRANKS") {
+      autoStartedRef.current = true;
+      startExperience();
+    }
+  }, [sharedPrank, item.id]);
+
+  useEffect(() => {
+    if (item.category !== "OD PRANKS" || step === 0) return undefined;
+    const unlockImmersive = () => {
+      enterDeviceFullscreen();
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", unlockImmersive, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockImmersive);
+  }, [item.category, step]);
 
   function revealBirthYear() {
     const age = Number(birthAge);
@@ -823,12 +1113,14 @@ async function createFriendLink() {
     const value = Number(puzzleCode);
     if (!Number.isInteger(value) || value <= 0) {
       setError("Please enter a valid number.");
+      playSound("wrong");
       return;
     }
 
     if (currentPuzzle.type === "agecode") {
       if (value % 100 !== 0 || value / 100 < 1 || value / 100 > 120) {
         setError("That number doesn't match the trick. Check your calculation!");
+        playSound("wrong");
         return;
       }
       setResult(`Your age is ${value / 100}!`);
@@ -849,6 +1141,7 @@ async function createFriendLink() {
 
       if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
         setError("That doesn't look like a valid birthday. Check your calculation!");
+        playSound("wrong");
         return;
       }
       setResult(`Your birthday is ${months[month - 1]} ${day}!`);
@@ -860,6 +1153,7 @@ async function createFriendLink() {
 
   function revealMagic() {
     setShowMagicPopup(false);
+    playSound("magic");
     setStep(7);
   }
 
@@ -870,14 +1164,15 @@ async function createFriendLink() {
     marginTop: "8px",
     borderRadius: "12px",
     border: "1px solid rgba(190,160,255,.25)",
-    background: "#100d1b",
-    color: "#f7f3ff",
+    background: "var(--input-bg, #100d1b)",
+    color: "inherit",
     font: "inherit"
   };
 
   function sharePrediction() {
     onShare(`${currentPuzzle.title}: ${prediction}\nTry ODDORA!`);
   }
+
   if (item.id === "hacker" && step >= 1) {
     const phase = hackerElapsed < 3
       ? "boot"
@@ -911,29 +1206,27 @@ async function createFriendLink() {
           <div className="hacker-brand"><span>◈</span> ODDORA <small>CYBER LAB</small></div>
           <div className="hacker-top-actions">
             <button onClick={toggleSound}>{soundEnabled ? "🔊 SOUND ON" : "🔇 SOUND OFF"}</button>
-            <button onClick={onClose}>EXIT ✕</button>
+            <button onClick={() => { exitDeviceFullscreen(); onClose(); }}>EXIT ✕</button>
           </div>
         </div>
 
         {step === 2 ? (
-          <div className="hacker-reveal-screen">
-            <div className="hacker-reveal-icon">😂</div>
-            <div className="hacker-kicker">SYSTEM REPORT · ODDORA CLASSIFIED</div>
-            {sharedPrank?.mode === "friend" && (
-  <p className="hacker-reveal-message">
-    Don't worry! Your friend {sharedPrank.sender} pranked you! 😂
-  </p>
-)}
-            <h1>YOU GOT <span>HACKED.</span></h1>
-            <p className="hacker-reveal-message">{result}</p>
-            <div className="hacker-stamp">100% HARMLESS PRANK</div>
-            <div className="hacker-reveal-actions">
-              <button className="hacker-launch-again" onClick={() => {
-                setHackerElapsed(0);
-                setResult("");
-                setStep(0);
-              }}>↻ RUN IT AGAIN</button>
-              <button className="hacker-exit" onClick={onClose}>BACK TO ODDORA</button>
+          <div className="hacker-main">
+            <div className="hacker-reveal-screen">
+              <div className="hacker-reveal-icon">😂</div>
+              <div className="hacker-kicker">SYSTEM REPORT · ODDORA CLASSIFIED</div>
+              {sharedPrank?.mode === "friend" && (
+                <p className="hacker-reveal-message">
+                  Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you! 😂
+                </p>
+              )}
+              <h1>YOU GOT <span>HACKED.</span></h1>
+              <p className="hacker-reveal-message">{result}</p>
+              <div className="hacker-stamp">100% HARMLESS PRANK</div>
+              <div className="hacker-reveal-actions">
+                <button className="hacker-launch-again" onClick={runHacker}>↻ RUN IT AGAIN</button>
+                <button className="hacker-exit" onClick={() => { exitDeviceFullscreen(); onClose(); }}>BACK TO ODDORA</button>
+              </div>
             </div>
           </div>
         ) : (
@@ -966,7 +1259,7 @@ async function createFriendLink() {
                       <div className="hacker-terminal-intro">ODDORA VIRTUAL TERMINAL v4.09</div>
                       <div className="hacker-terminal-intro">Copyright © ODDORA Cyber Lab</div>
                       <div className="hacker-terminal-gap" />
-                      {visibleMessages.map((message, index) => (
+                      {visibleMessages.map(message => (
                         <div className={`hacker-line ${message.type}`} key={message.time}>
                           <span className="hacker-prompt">root@oddora:~$</span> {message.text}
                         </div>
@@ -1018,13 +1311,14 @@ async function createFriendLink() {
       </div>
     );
   }
+
   return (
     <div className="modal-backdrop" onMouseDown={e => {
       if (e.target === e.currentTarget) onClose();
     }}>
       <div className="experience-modal" role="dialog" aria-modal="true"
         aria-labelledby="modal-title" style={{ position: "relative" }}>
-        <button className="modal-close" onClick={onClose} aria-label="Close">
+        <button className="modal-close" onClick={() => { exitDeviceFullscreen(); onClose(); }} aria-label="Close">
           <X size={20}/>
         </button>
 
@@ -1049,14 +1343,13 @@ async function createFriendLink() {
               🎲 Surprise me with a random puzzle
             </button>
             <div className="eyebrow muted" style={{ marginTop: 8 }}>OR PICK YOUR MYSTERY</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
               {mindPuzzles.map((puzzle, index) => (
                 <button key={puzzle.id} className="choice" onClick={() => choosePuzzle(index)}
                   style={{
                     minHeight: 88, padding: 12, display: "flex", flexDirection: "column",
                     alignItems: "flex-start", justifyContent: "center", gap: 7,
-                    textAlign: "left", border: "1px solid rgba(190,160,255,.2)",
-                    background: "rgba(255,255,255,.035)"
+                    textAlign: "left"
                   }}>
                   <span style={{ fontSize: 22 }}>{puzzle.icon}</span>
                   <strong style={{ fontSize: 13 }}>{puzzle.title}</strong>
@@ -1067,160 +1360,135 @@ async function createFriendLink() {
         )}
 
         {/* INTRO FOR OTHER EXPERIENCES */}
-{step === 0 && item.id !== "mind" && (
-  <div className="modal-stage intro-stage">
-    <div className="stage-orb">{item.icon}</div>
+        {step === 0 && item.id !== "mind" && (
+          <div className="modal-stage intro-stage">
+            <div className="stage-orb">{item.icon}</div>
 
-    {item.category === "OD PRANKS" ? (
-      <>
-        {sharedPrank?.mode === "friend" ? (
-          <>
-            <div className="eyebrow muted">A PRANK FROM YOUR FRIEND</div>
-            <h3>{sharedPrank.sender} has a surprise for you!</h3>
-            <p>Ready to see what they sent you?</p>
-            <button className="primary-btn" onClick={startExperience}>
-              Start the prank <Zap size={17}/>
-            </button>
-          </>
-        ) : (
-          <>
-            <p>How do you want to enjoy this prank?</p>
+            {item.category === "OD PRANKS" ? (
+              <>
+                {sharedPrank?.mode === "friend" ? (
+                  <>
+                    <div className="eyebrow muted">A PRANK FROM YOUR FRIEND</div>
+                    <h3>{sharedPrank.sender} has a surprise for you!</h3>
+                    <p>Ready to see what they sent you?</p>
+                    <button className="primary-btn" onClick={startExperience}>
+                      Start the prank <Zap size={17}/>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>How do you want to enjoy this prank?</p>
 
-            <div className="prank-mode-options">
-              <button
-                type="button"
-                className={prankMode === "self" ? "prank-mode-card active" : "prank-mode-card"}
-                onClick={() => setPrankMode("self")}
-              >
-                <span>😈</span>
-                <strong>Prank Myself</strong>
-                <small>Experience the prank yourself</small>
-              </button>
+                    <div className="prank-mode-options">
+                      <button
+                        type="button"
+                        className={prankMode === "self" ? "prank-mode-card active" : "prank-mode-card"}
+                        onClick={() => { setPrankMode("self"); setLinkError(""); }}
+                      >
+                        <span>😈</span>
+                        <strong>Prank Myself</strong>
+                        <small>Experience the prank yourself</small>
+                      </button>
 
-              <button
-                type="button"
-                className={prankMode === "friend" ? "prank-mode-card active" : "prank-mode-card"}
-                onClick={() => setPrankMode("friend")}
-              >
-                <span>🫣</span>
-                <strong>Prank a Friend</strong>
-                <small>Send a surprise link to someone</small>
-              </button>
-            </div>
+                      <button
+                        type="button"
+                        className={prankMode === "friend" ? "prank-mode-card active" : "prank-mode-card"}
+                        onClick={() => { setPrankMode("friend"); setLinkError(""); }}
+                      >
+                        <span>🫣</span>
+                        <strong>Prank a Friend</strong>
+                        <small>Send a surprise link to someone</small>
+                      </button>
+                    </div>
 
-            {prankMode === "self" ? (
-              <button className="primary-btn" onClick={startExperience}>
-                Let's do this <Zap size={17}/>
-              </button>
+                    {prankMode === "self" ? (
+                      <button className="primary-btn" onClick={startExperience}>
+                        Let's do this <Zap size={17}/>
+                      </button>
+                    ) : (
+                      <div className="friend-link-form">
+                        <input
+                          type="text"
+                          maxLength={30}
+                          value={senderName}
+                          onChange={e => { setSenderName(e.target.value); setLinkError(""); }}
+                          placeholder="Enter your name"
+                          aria-label="Your name"
+                        />
+                        {linkError && <small style={{ color: "#ff8585" }}>{linkError}</small>}
+                        <button
+                          className="primary-btn"
+                          onClick={createFriendLink}
+                          disabled={!senderName.trim()}
+                        >
+                          <Share2 size={17}/>
+                          {linkCopied ? "Link copied!" : "Create prank link"}
+                        </button>
+                        <small>Share the link with your friend. The prank starts when they open it.</small>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             ) : (
-              <div className="friend-link-form">
-                <input
-                  type="text"
-                  maxLength={30}
-                  value={senderName}
-                  onChange={e => setSenderName(e.target.value)}
-                  placeholder="Enter your name"
-                  aria-label="Your name"
-                />
-                <button
-                  className="primary-btn"
-                  onClick={createFriendLink}
-                  disabled={!senderName.trim()}
-                >
-                  <Share2 size={17}/>
-                  {linkCopied ? "Link copied!" : "Create prank link"}
+              <>
+                <p>{item.id === "hacker"
+                  ? "A suspicious terminal is waiting. Ready to see what it finds?"
+                  : "Ready? This is a harmless visual experience."}</p>
+                <button className="primary-btn" onClick={startExperience}>
+                  Let's do this <Zap size={17}/>
                 </button>
-                <small>Share the link with your friend. The prank starts when they open it.</small>
-              </div>
+              </>
             )}
-          </>
-        )}
-      </>
-    ) : (
-      <>
-        <p>{item.id === "hacker"
-          ? "A suspicious terminal is waiting. Ready to see what it finds?"
-          : "Ready? This is a harmless visual experience."}</p>
-        <button className="primary-btn" onClick={startExperience}>
-          Let's do this <Zap size={17}/>
-        </button>
-      </>
-    )}
-  </div>
-)}
-
-        {/* FAKE HACKER */}
-        {step === 1 && (
-          <div className="terminal">
-            <div className="terminal-head"><span></span><span></span><span></span><label>ODDORA_TERMINAL.exe</label></div>
-            {terminalLines.map((line, i) => (
-              <p key={i} style={{ animationDelay: `${i * .35}s` }}><span>›</span> {line}</p>
-            ))}
-            <button className="terminal-reveal" onClick={() => {
-              setResult("Relax! 😂 Your only crime is spending too much time online.");
-              setStep(2);
-            }}>Reveal the truth</button>
           </div>
         )}
 
         {/* FAKE SOFTWARE UPDATE */}
-{step === 9 && item.id === "update" && (() => {
-  const progress = updateElapsed < 4
-    ? 12
-    : updateElapsed < 9
-      ? 38
-      : updateElapsed < 15
-        ? 67
-        : updateElapsed < 20
-          ? 99
-          : 100;
+        {step === 9 && item.id === "update" && (() => {
+          const progress = updateElapsed < 4
+            ? 12
+            : updateElapsed < 9
+              ? 38
+              : updateElapsed < 15
+                ? 67
+                : updateElapsed < 20
+                  ? 99
+                  : 100;
 
-  const restarting = updateElapsed >= 20;
+          const restarting = updateElapsed >= 20;
 
-  return (
-    <div className="software-update-screen">
-      {!restarting ? (
-        <>
-          <div className="windows-update-logo">◈</div>
-
-          <h2>Working on updates</h2>
-
-          <p className="update-subtitle">
-            Your device is installing important updates
-          </p>
-
-          <div className="software-update-percent">
-            {progress}%
-          </div>
-
-          <div className="software-update-track">
-            <span style={{ width: `${progress}%` }} />
-          </div>
-
-          <p className="software-update-message">
-            {progress === 99
-              ? "Almost there. Please don't turn off your device."
-              : "Please keep your device turned on."}
-          </p>
-
-          <p className="software-update-warning">
-            Do not turn off your device
-          </p>
-        </>
-      ) : (
-        <div className="fake-restart">
-          <div className="restart-spinner"></div>
-          <h2>Restarting...</h2>
-          <p>Preparing your device</p>
-        </div>
-      )}
-    </div>
-  );
-})()}
+          return (
+            <div className="software-update-screen">
+              {!restarting ? (
+                <>
+                  <div className="windows-update-logo">◈</div>
+                  <h2>Working on updates</h2>
+                  <p className="update-subtitle">Your device is installing important updates</p>
+                  <div className="software-update-percent">{progress}%</div>
+                  <div className="software-update-track">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className="software-update-message">
+                    {progress === 99
+                      ? "Almost there. Please don't turn off your device."
+                      : "Please keep your device turned on."}
+                  </p>
+                  <p className="software-update-warning">Do not turn off your device</p>
+                </>
+              ) : (
+                <div className="fake-restart">
+                  <div className="restart-spinner"></div>
+                  <h2>Restarting...</h2>
+                  <p>Preparing your device</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* HARMLESS VIRUS SCANNER */}
         {step === 10 && item.id === "virus" && (
-          <div className="prank-stage scanner-stage">
+          <div className="prank-stage scanner-stage prank-fullscreen-takeover">
             <div className="scanner-orb"><span>⌁</span></div>
             <div className="eyebrow muted">ODDORA SECURITY SIMULATOR</div>
             <h3>Scanning your digital habits...</h3>
@@ -1233,6 +1501,7 @@ async function createFriendLink() {
             <button className="primary-btn" onClick={() => {
               setResult("THREAT DETECTED: Excessive scrolling. Recommended action: touch grass for 5 minutes. 🌱");
               playSound("alert");
+              triggerHaptic([20, 40, 20]);
               setStep(2);
             }}>Reveal scan result</button>
             <p className="prank-disclaimer">This is a fictional scan. It does not access your phone or files.</p>
@@ -1241,7 +1510,7 @@ async function createFriendLink() {
 
         {/* DON'T TOUCH THE BUTTON */}
         {step === 11 && item.id === "button" && (
-          <div className="prank-stage forbidden-stage">
+          <div className="prank-stage forbidden-stage prank-fullscreen-takeover">
             <div className="eyebrow muted">THE FORBIDDEN BUTTON</div>
             <h3>{buttonClicks === 0 ? "Whatever you do..." : "You really did it?!"}</h3>
             <p className="result-text">{buttonClicks === 0 ? "Don't press the button. Seriously." : [
@@ -1251,11 +1520,16 @@ async function createFriendLink() {
               "Achievement unlocked: Professional button presser.",
               "The button requests a day off."
             ][(buttonClicks - 1) % 5]}</p>
-            <button className="forbidden-button" onClick={() => { playSound("tap"); setButtonClicks(c => c + 1); }}>
+            <button className="forbidden-button" onClick={() => {
+              playSound("tap");
+              triggerHaptic(18);
+              setButtonClicks(c => c + 1);
+            }}>
               {buttonClicks === 0 ? "DO NOT PRESS" : "PRESS AGAIN"}
             </button>
             <span className="tap-counter">Button presses: {buttonClicks}</span>
             <button className="secondary-btn dark" onClick={() => {
+              playSound("reveal");
               setResult(`You pressed the forbidden button ${buttonClicks} times. The button will remember. 🔴`);
               setStep(2);
             }}>I'm done causing trouble</button>
@@ -1264,56 +1538,96 @@ async function createFriendLink() {
 
         {/* FAKE IQ TEST */}
         {step === 12 && item.id === "iq" && (
-          <div className="prank-stage iq-stage">
+          <div className={item.id === "iq" ? "prank-stage iq-stage prank-fullscreen-takeover" : "prank-stage iq-stage"}>
             <div className="eyebrow muted">TOTALLY UNOFFICIAL IQ TEST</div>
             <div className="iq-count">QUESTION {Math.min(iqQuestion + 1, 3)} / 3</div>
-            {[
-              { q:"What has many keys but can't open a door?", a:["A piano","A secret agent","Your keyboard"], correct:0 },
-              { q:"What gets wetter the more it dries?", a:["A towel","A cloud","Your phone"], correct:0 },
-              { q:"Which month has 28 days?", a:["February","All of them","None"], correct:1 }
-            ][iqQuestion] && (
-              <>
-                <h3>{[
-                  "What has many keys but can't open a door?",
-                  "What gets wetter the more it dries?",
-                  "Which month has 28 days?"
-                ][iqQuestion]}</h3>
-                <div className="iq-options">
-                  {[
-                    ["A piano","A secret agent","Your keyboard"],
-                    ["A towel","A cloud","Your phone"],
-                    ["February","All of them","None"]
-                  ][iqQuestion].map((answer, index) => (
-                    <button key={answer} className="choice" onClick={() => {
-                      playSound("tap");
-                      const nextAnswers = [...iqAnswers, index];
-                      setIqAnswers(nextAnswers);
-                      if (iqQuestion === 2) {
-                        const score = nextAnswers.reduce((total, value, qIndex) =>
-                          total + (value === [0, 0, 1][qIndex] ? 1 : 0), 0);
-                        playSound("reveal");
-                        setResult(`Your completely unofficial ODDORA IQ score: ${82 + score * 17}. ${score === 3 ? "Genius energy detected!" : "The test is confused. You are probably too powerful."} 😂`);
-                        setStep(2);
-                      } else {
-                        setIqQuestion(q => q + 1);
-                      }
-                    }}>{answer}</button>
-                  ))}
-                </div>
-              </>
-            )}
+            <>
+              <h3>{[
+                "What has many keys but can't open a door?",
+                "What gets wetter the more it dries?",
+                "Which month has 28 days?"
+              ][iqQuestion]}</h3>
+              <div className="iq-options">
+                {[
+                  ["A piano","A secret agent","Your keyboard"],
+                  ["A towel","A cloud","Your phone"],
+                  ["February","All of them","None"]
+                ][iqQuestion].map((answer, index) => (
+                  <button key={answer} className="choice" onClick={() => {
+                    playSound("tap");
+                    triggerHaptic(12);
+                    const nextAnswers = [...iqAnswers, index];
+                    setIqAnswers(nextAnswers);
+                    if (iqQuestion === 2) {
+                      const score = nextAnswers.reduce((total, value, qIndex) =>
+                        total + (value === [0, 0, 1][qIndex] ? 1 : 0), 0);
+                      playSound("reveal");
+                      setResult(`Your completely unofficial ODDORA IQ score: ${82 + score * 17}. ${score === 3 ? "Genius energy detected!" : "The test is confused. You are probably too powerful."} 😂`);
+                      setStep(2);
+                    } else {
+                      setIqQuestion(q => q + 1);
+                    }
+                  }}>{answer}</button>
+                ))}
+              </div>
+            </>
             <p className="prank-disclaimer">Just a silly quiz, not a real IQ assessment.</p>
           </div>
         )}
 
-        {/* XO MULTIPLAYER */}
-        {step === 13 && item.id === "xo" && (
-          <XOMultiplayer onBack={onBackToGames} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={xoInviteCode} />
+        {/* WHAT IF 3-CHOICE SIMULATOR */}
+        {step === 15 && item.id === "whatif" && (
+          <div className={item.id === "iq" ? "prank-stage iq-stage prank-fullscreen-takeover" : "prank-stage iq-stage"}>
+            <div className="eyebrow muted">{whatIfQuestions[whatIfStep].step}</div>
+            <h3>{whatIfQuestions[whatIfStep].question}</h3>
+            <div className="iq-options">
+              {whatIfQuestions[whatIfStep].options.map(opt => (
+                <button
+                  key={opt.label}
+                  className="choice"
+                  onClick={() => {
+                    playSound("tap");
+                    triggerHaptic(12);
+                    const updated = [...whatIfScores, opt.score];
+                    setWhatIfScores(updated);
+                    if (whatIfStep < whatIfQuestions.length - 1) {
+                      setWhatIfStep(s => s + 1);
+                    } else {
+                      const counts = updated.reduce((acc, k) => ({ ...acc, [k]: (acc[k] || 0) + 1 }), {});
+                      const topKey = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "chaotic";
+                      playSound("reveal");
+                      setResult(whatIfOutcomes[topKey]);
+                      setStep(2);
+                    }
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* CATCH MY HEART MULTIPLAYER */}
+        {/* XO MULTIPLAYER + SOLO AI */}
+        {step === 13 && item.id === "xo" && (
+          <XOMultiplayer
+            onBack={onBackToGames}
+            onExplore={onExplore}
+            onCreateChallenge={onCreateChallenge}
+            initialRoomCode={xoInviteCode}
+            playSound={playSound}
+          />
+        )}
+
+        {/* CATCH MY HEART MULTIPLAYER + SOLO AI */}
         {step === 14 && item.id === "catch-heart" && (
-          <CatchMyHeart onBack={onBackToGames} onExplore={onExplore} onCreateChallenge={onCreateChallenge} initialRoomCode={heartInviteCode} />
+          <CatchMyHeart
+            onBack={onBackToGames}
+            onExplore={onExplore}
+            onCreateChallenge={onCreateChallenge}
+            initialRoomCode={heartInviteCode}
+            playSound={playSound}
+          />
         )}
 
         {/* GENERAL RESULT */}
@@ -1322,22 +1636,22 @@ async function createFriendLink() {
             <div className="result-spark">✨</div>
             <div className="eyebrow muted">YOUR OFFICIAL RESULT</div>
             {item.category === "OD PRANKS" && (
-  <div className="prank-final-reveal">
-    {sharedPrank?.mode === "friend" ? (
-      <>
-        <span>😂</span>
-        <h3>YOU GOT PRANKED!</h3>
-        <p>Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you!</p>
-      </>
-    ) : (
-      <>
-        <span>😄</span>
-        <h3>JUST A PRANK!</h3>
-        <p>Your device is safe. Nothing was accessed or changed.</p>
-      </>
-    )}
-  </div>
-)}
+              <div className="prank-final-reveal">
+                {sharedPrank?.mode === "friend" ? (
+                  <>
+                    <span>😂</span>
+                    <h3>YOU GOT PRANKED!</h3>
+                    <p>Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you!</p>
+                  </>
+                ) : (
+                  <>
+                    <span>😄</span>
+                    <h3>JUST A PRANK!</h3>
+                    <p>Your device is safe. Nothing was accessed or changed.</p>
+                  </>
+                )}
+              </div>
+            )}
             <p className="result-text">{result}</p>
             <div className="result-actions">
               <button className="primary-btn" onClick={() => { playSound("tap"); onShare(result); }}>
@@ -1347,19 +1661,6 @@ async function createFriendLink() {
                 <RotateCcw size={16}/> Play again
               </button>
             </div>
-          </div>
-        )}
-
-        {/* ENDLESS LOADING */}
-        {step === 3 && (
-          <div className="result-stage">
-            <div className="loader-ring"></div>
-            <div className="eyebrow muted">LOADING YOUR PATIENCE...</div>
-            <p className="result-text">Still loading. Still loading. Okay, we admit it. We just wanted you to take a tiny break. 😅</p>
-            <button className="primary-btn" onClick={() => {
-              setResult("You passed the patience test. Your reward: absolutely nothing. 😂");
-              setStep(2);
-            }}>I'm done waiting</button>
           </div>
         )}
 
@@ -1421,12 +1722,12 @@ async function createFriendLink() {
           <div className="result-stage" style={{ textAlign: "left" }}>
             <div className="result-spark" style={{ textAlign: "center" }}>🎂</div>
             <h3 style={{ textAlign: "center" }}>Let's decode your birth year</h3>
-            <label style={{ display: "block", marginTop: 14 }}>
+            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
               How old are you today?
               <input type="number" min="1" max="120" value={birthAge}
                 onChange={e => setBirthAge(e.target.value)} placeholder="Enter your age" style={fieldStyle}/>
             </label>
-            <label style={{ display: "block", marginTop: 14 }}>
+            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
               Has your birthday happened already this year?
               <select value={birthdayPassed} onChange={e => setBirthdayPassed(e.target.value)} style={fieldStyle}>
                 <option value="">Choose one</option>
@@ -1448,7 +1749,7 @@ async function createFriendLink() {
           <div className="result-stage" style={{ textAlign: "left" }}>
             <div className="result-spark" style={{ textAlign: "center" }}>📅</div>
             <h3 style={{ textAlign: "center" }}>When were you born?</h3>
-            <label style={{ display: "block", marginTop: 14 }}>
+            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
               Your date of birth
               <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={fieldStyle}/>
             </label>
@@ -1472,14 +1773,14 @@ async function createFriendLink() {
             <p className="modal-description" style={{ textAlign: "center" }}>
               Enter only the final number from your calculation.
             </p>
-            <label style={{ display: "block", marginTop: 14 }}>
+            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
               Your final number
               <input type="number" inputMode="numeric" value={puzzleCode}
                 onChange={e => { setPuzzleCode(e.target.value); setError(""); }}
                 placeholder={currentPuzzle.type === "agecode" ? "Example: 2500" : "Example: 1107"}
                 style={fieldStyle}/>
             </label>
-            {error && <p style={{ color: "#ffb6b6", marginTop: 10 }}>{error}</p>}
+            {error && <p style={{ color: "#ff8585", marginTop: 10 }}>{error}</p>}
             <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
               disabled={!puzzleCode.trim()} onClick={decodePuzzleCode}>Decode my answer 🔮</button>
             <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
@@ -1488,7 +1789,7 @@ async function createFriendLink() {
           </div>
         )}
 
-        {/* PREDICTION RESULT - SHARE BEFORE REVEAL */}
+        {/* PREDICTION RESULT */}
         {step === 6 && item.id === "mind" && (
           <div className="result-stage">
             <div className="result-spark">🔮</div>
@@ -1523,11 +1824,7 @@ async function createFriendLink() {
             <p className="result-text">
               {currentPuzzle.type === "steps" ? currentPuzzle.reveal : result}
             </p>
-            <div style={{
-              width: "100%", padding: 16, marginTop: 8, borderRadius: 16,
-              textAlign: "left", background: "rgba(255,255,255,.045)",
-              border: "1px solid rgba(190,160,255,.2)"
-            }}>
+            <div className="mind-explain-box">
               <div className="eyebrow muted">WHY IT WORKS</div>
               <p className="modal-description" style={{ marginTop: 8 }}>{currentPuzzle.explanation}</p>
             </div>
@@ -1553,7 +1850,7 @@ async function createFriendLink() {
           }}>
             <div style={{
               width: "100%", maxWidth: 340, padding: 24, borderRadius: 20,
-              textAlign: "center", background: "#191528",
+              textAlign: "center", background: "#191528", color: "#fff",
               border: "1px solid rgba(190,160,255,.3)",
               boxShadow: "0 20px 70px rgba(0,0,0,.5)"
             }}>
@@ -1586,7 +1883,31 @@ const XO_WIN_LINES = [
   [0, 4, 8], [2, 4, 6]
 ];
 
-function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode = "" }) {
+function getSmartAIMove(board) {
+  const empty = board.map((v, i) => (v === "" ? i : null)).filter(v => v !== null);
+  if (empty.length === 0) return -1;
+
+  for (const idx of empty) {
+    const test = [...board];
+    test[idx] = "O";
+    if (XO_WIN_LINES.some(line => line.every(c => test[c] === "O"))) return idx;
+  }
+  for (const idx of empty) {
+    const test = [...board];
+    test[idx] = "X";
+    if (XO_WIN_LINES.some(line => line.every(c => test[c] === "X"))) return idx;
+  }
+  if (board[4] === "" && Math.random() > 0.25) return 4;
+  return empty[Math.floor(Math.random() * empty.length)];
+}
+
+function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode = "", playSound }) {
+  const [mode, setMode] = useState(initialRoomCode ? "multi" : "select");
+  const [soloBoard, setSoloBoard] = useState(["", "", "", "", "", "", "", "", ""]);
+  const [soloWinner, setSoloWinner] = useState("");
+  const [soloThinking, setSoloThinking] = useState(false);
+  const [botBanter, setBotBanter] = useState("Your move, human. Don't overthink it.");
+
   const [uid, setUid] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -1597,10 +1918,14 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (initialRoomCode) setJoinCode(initialRoomCode);
+    if (initialRoomCode) {
+      setJoinCode(initialRoomCode);
+      setMode("multi");
+    }
   }, [initialRoomCode]);
 
   useEffect(() => {
+    if (mode !== "multi") return undefined;
     let alive = true;
     signInPlayer()
       .then(credential => {
@@ -1608,27 +1933,89 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
         setUid(credential.user.uid);
         setNotice("You're connected. Choose your name and start playing.");
       })
-      .catch(error => {
-        console.error("ODDORA anonymous sign-in failed:", error);
-        if (alive) setNotice("Could not connect to Firebase. Check your internet and try again.");
+      .catch(() => {
+        if (alive) setNotice("Could not connect to Firebase. Check your internet or play Solo AI mode.");
       });
     return () => { alive = false; };
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
-    if (!roomCode) return undefined;
+    if (!roomCode || mode !== "multi") return undefined;
     const roomRef = ref(database, `rooms/${roomCode}`);
     const unsubscribe = onValue(roomRef, snapshot => {
-      if (snapshot.exists()) setRoom(snapshot.val());
-      else { setRoom(null); setNotice("This room no longer exists."); }
-    }, error => {
-      console.error("ODDORA room listener failed:", error);
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        if (val.status === "finished" && room?.status === "playing") {
+          playSound?.("reveal");
+        }
+        setRoom(val);
+      } else {
+        setRoom(null);
+        setNotice("This room no longer exists.");
+      }
+    }, () => {
       setNotice("Unable to read this room. Check your Realtime Database rules.");
     });
     return () => unsubscribe();
-  }, [roomCode]);
+  }, [roomCode, mode]);
 
-  function cleanName(value) { return value.trim().replace(/\s+/g, " ").slice(0, 18); }
+  function handleSoloCell(index) {
+    if (soloBoard[index] || soloWinner || soloThinking) return;
+    playSound?.("tap");
+    triggerHaptic(12);
+
+    const nextBoard = [...soloBoard];
+    nextBoard[index] = "X";
+    setSoloBoard(nextBoard);
+
+    const playerWon = XO_WIN_LINES.some(line => line.every(c => nextBoard[c] === "X"));
+    if (playerWon) {
+      setSoloWinner("X");
+      setBotBanter("Okay fine, you got lucky. Rematch? 🙄");
+      playSound?.("reveal");
+      triggerHaptic([20, 30, 20]);
+      return;
+    }
+    if (nextBoard.every(Boolean)) {
+      setSoloWinner("draw");
+      setBotBanter("A tie! Great minds think alike.");
+      playSound?.("step");
+      return;
+    }
+
+    setSoloThinking(true);
+    setBotBanter("Calculating 14,000,605 outcomes...");
+    window.setTimeout(() => {
+      const aiIdx = getSmartAIMove(nextBoard);
+      if (aiIdx >= 0) nextBoard[aiIdx] = "O";
+      setSoloBoard([...nextBoard]);
+      setSoloThinking(false);
+      playSound?.("step");
+
+      const aiWon = XO_WIN_LINES.some(line => line.every(c => nextBoard[c] === "O"));
+      if (aiWon) {
+        setSoloWinner("O");
+        setBotBanter("Too easy! Want another shot? 😎");
+        playSound?.("wrong");
+      } else if (nextBoard.every(Boolean)) {
+        setSoloWinner("draw");
+        setBotBanter("Stalemate! Nobody wins.");
+      } else {
+        const quips = ["Interesting choice...", "Are you sure about that?", "Your turn!", "I saw that coming."];
+        setBotBanter(quips[Math.floor(Math.random() * quips.length)]);
+      }
+    }, 450);
+  }
+
+  function resetSolo() {
+    playSound?.("tap");
+    setSoloBoard(["", "", "", "", "", "", "", "", ""]);
+    setSoloWinner("");
+    setSoloThinking(false);
+    setBotBanter("Fresh board. Your move!");
+  }
+
+  const cleanName = value => value.trim().replace(/\s+/g, " ").slice(0, 18);
 
   async function createRoom() {
     const name = cleanName(playerName);
@@ -1652,17 +2039,14 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       };
       await set(ref(database, `rooms/${code}`), newRoom);
       setRoomCode(code);
+      playSound?.("magic");
       setNotice("Challenge created! Share the invitation link with your friend.");
       const url = new URL(window.location.href);
-      url.searchParams.delete("heart");
-      url.searchParams.delete("prank");
-      url.searchParams.delete("mode");
-      url.searchParams.delete("from");
+      url.search = "";
       url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA create room failed:", error);
-      setNotice(error.message || "Could not create the room. Check Firebase rules.");
+      setNotice(error.message || "Could not create the room.");
     } finally { setBusy(false); }
   }
 
@@ -1671,14 +2055,8 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
     const name = cleanName(playerName);
 
     if (!uid || busy) return;
-    if (!name) {
-      setNotice("Enter your display name before joining.");
-      return;
-    }
-    if (code.length !== 6) {
-      setNotice("Enter a valid 6-character room code.");
-      return;
-    }
+    if (!name) { setNotice("Enter your display name before joining."); return; }
+    if (code.length !== 6) { setNotice("Enter a valid 6-character room code."); return; }
 
     setBusy(true);
     setNotice("Joining your friend's challenge...");
@@ -1688,11 +2066,10 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       const existingSnapshot = await get(roomRef);
 
       if (!existingSnapshot.exists()) {
-        throw new Error("Room not found. Ask your friend to create a new challenge and share the latest link.");
+        throw new Error("Room not found. Ask your friend to create a new challenge.");
       }
 
       const existingRoom = existingSnapshot.val();
-
       if (!Array.isArray(existingRoom.board) || existingRoom.gameType === "catch-heart") {
         throw new Error("That code belongs to a different game. Use an XO invitation link.");
       }
@@ -1700,82 +2077,48 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
       if (existingRoom.players?.X === uid) {
         setRoomCode(code);
         setNotice("Welcome back! You're Player X.");
-        const url = new URL(window.location.href);
-        url.searchParams.delete("heart");
-        url.searchParams.delete("prank");
-        url.searchParams.delete("mode");
-        url.searchParams.delete("from");
-        url.searchParams.set("xo", code);
-        window.history.replaceState({}, "", url.toString());
         return;
       }
 
       if (existingRoom.players?.O && existingRoom.players.O !== uid) {
-        throw new Error("This room is already full. Ask your friend to create a new challenge.");
+        throw new Error("This room is already full.");
       }
 
-      // Important: Firebase may call the first transaction update with null
-      // before the server value is loaded. Use the confirmed preflight snapshot
-      // once as a fallback, exactly as in the previously working XO version.
       let usedPreflightFallback = false;
-
       const result = await runTransaction(roomRef, current => {
         if (!current) {
           if (usedPreflightFallback) return;
           usedPreflightFallback = true;
           current = existingRoom;
         }
-
         if (!Array.isArray(current.board) || current.gameType === "catch-heart") return;
         if (current.players?.X === uid) return current;
-
         if (current.players?.O === uid) {
-          return {
-            ...current,
-            playerNames: { ...(current.playerNames || {}), O: name }
-          };
+          return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
         }
-
         if (current.status !== "waiting" || current.players?.O) return;
 
         return {
           ...current,
           players: { ...current.players, O: uid },
           playerNames: { ...(current.playerNames || {}), O: name },
-          status: "playing",
-          startedAt: Date.now(),
-          endsAt: Date.now() + 60000,
-          finishReason: null
+          status: "playing"
         };
       });
 
       if (!result.committed || !result.snapshot.exists()) {
-        throw new Error("Could not join this room. It may have just been filled or closed. Ask your friend for a new invitation.");
-      }
-
-      const data = result.snapshot.val();
-
-      if (data.players?.X !== uid && data.players?.O !== uid) {
-        throw new Error("This room is already full.");
+        throw new Error("Could not join this room. It may have just been filled.");
       }
 
       setRoomCode(code);
-      setNotice(
-        data.players?.X === uid
-          ? "Welcome back! You're Player X."
-          : "Joined! You're Player O. Your friend starts as X."
-      );
-
+      playSound?.("magic");
+      setNotice("Joined! You're Player O. Your friend starts as X.");
       const url = new URL(window.location.href);
-      url.searchParams.delete("heart");
-      url.searchParams.delete("prank");
-      url.searchParams.delete("mode");
-      url.searchParams.delete("from");
+      url.search = "";
       url.searchParams.set("xo", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA join room failed:", error);
-      setNotice(error.message || "Could not join the room. Check Firebase rules.");
+      setNotice(error.message || "Could not join the room.");
     } finally {
       setBusy(false);
     }
@@ -1790,51 +2133,63 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
   async function playCell(index) {
     const symbol = mySymbol();
     if (!roomCode || !uid || !room || !symbol || room.status !== "playing" || room.turn !== symbol || room.board?.[index]) return;
+    playSound?.("tap");
+    triggerHaptic(12);
     try {
-      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
         if (!current || current.status !== "playing" || current.turn !== symbol || current.board?.[index]) return;
-        const board = [...current.board]; board[index] = symbol;
+        const board = [...current.board];
+        board[index] = symbol;
         const winningLine = XO_WIN_LINES.find(line => line.every(cell => board[cell] === symbol));
         const draw = !winningLine && board.every(Boolean);
-        return { ...current, board, turn: symbol === "X" ? "O" : "X", status: winningLine || draw ? "finished" : "playing", winner: winningLine ? symbol : draw ? "draw" : "" };
+        return {
+          ...current,
+          board,
+          turn: symbol === "X" ? "O" : "X",
+          status: winningLine || draw ? "finished" : "playing",
+          winner: winningLine ? symbol : draw ? "draw" : ""
+        };
       });
-      if (!result.committed) setNotice("That move was not accepted. Wait for your turn and try again.");
-    } catch (error) { console.error("ODDORA move failed:", error); setNotice("Move could not be saved. Check your connection."); }
+    } catch {
+      setNotice("Move could not be saved. Check your connection.");
+    }
   }
 
   async function restartGame(swapSides = false) {
     if (!roomCode || !room || room.status !== "finished" || !mySymbol()) return;
     setBusy(true);
     try {
-      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
         if (!current || current.status !== "finished" || !current.players?.X || !current.players?.O) return;
         const players = swapSides ? { X: current.players.O, O: current.players.X } : current.players;
         const playerNames = swapSides
           ? { X: current.playerNames?.O || "Player O", O: current.playerNames?.X || "Player X" }
           : (current.playerNames || {});
-        return { ...current, players, playerNames, board: ["", "", "", "", "", "", "", "", ""], turn: "X", status: "playing", winner: "", gamesPlayed: (current.gamesPlayed || 0) + 1 };
+        return {
+          ...current,
+          players,
+          playerNames,
+          board: ["", "", "", "", "", "", "", "", ""],
+          turn: "X",
+          status: "playing",
+          winner: "",
+          gamesPlayed: (current.gamesPlayed || 0) + 1
+        };
       });
-      if (!result.committed) setNotice("Another player has already restarted this game. Please wait for the board to update.");
-    } catch (error) { console.error("ODDORA rematch failed:", error); setNotice("Could not restart the game. Please try again."); }
-    finally { setBusy(false); }
+    } finally { setBusy(false); }
   }
 
   async function shareInvitation() {
     if (!roomCode) return;
     const url = new URL(window.location.href);
-    url.searchParams.delete("heart");
-    url.searchParams.delete("prank");
-    url.searchParams.delete("mode");
-    url.searchParams.delete("from");
+    url.search = "";
     url.searchParams.set("xo", roomCode);
     const shareUrl = url.toString();
     const text = `${room?.playerNames?.X || playerName || "Your friend"} challenged you to XO on ODDORA! Join the game:`;
     try {
       if (navigator.share) await navigator.share({ title: "XO Challenge – ODDORA", text, url: shareUrl });
       else { await navigator.clipboard.writeText(`${text}\n${shareUrl}`); setCopied(true); setTimeout(() => setCopied(false), 1800); }
-    } catch (error) {
-      if (error?.name !== "AbortError") setNotice("Copy the invitation link from your browser address bar.");
-    }
+    } catch {}
   }
 
   async function shareXOResult() {
@@ -1868,16 +2223,87 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       }
-    } catch (error) {
-      if (error?.name !== "AbortError") setNotice("Could not share the result image. Please try again.");
-    }
+    } catch {}
+  }
+
+  if (mode === "select") {
+    return (
+      <div className="xo-game-wrap">
+        <div className="xo-welcome">
+          <div className="xo-mark">❎⭕</div>
+          <h3>Choose how you want to play</h3>
+          <p className="modal-description">Play solo right now against ODDORA AI or invite a friend.</p>
+        </div>
+        <div className="prank-mode-options">
+          <button type="button" className="prank-mode-card active" onClick={() => { playSound?.("tap"); setMode("solo"); }}>
+            <span><Bot size={28}/></span>
+            <strong>Solo vs ODDORA AI</strong>
+            <small>Instant match · Zero wait</small>
+          </button>
+          <button type="button" className="prank-mode-card" onClick={() => { playSound?.("tap"); setMode("multi"); }}>
+            <span><Users size={28}/></span>
+            <strong>Challenge a Friend</strong>
+            <small>Live room · Share link</small>
+          </button>
+        </div>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
+  }
+
+  if (mode === "solo") {
+    return (
+      <div className="xo-game-wrap">
+        <div className="xo-players">
+          <div className={!soloThinking && !soloWinner ? "xo-player active" : "xo-player"}>
+            <b className="xo-player-symbol">X</b><span>You</span>
+          </div>
+          <div className={soloThinking ? "xo-player active" : "xo-player"}>
+            <b className="xo-player-symbol xo-o">O</b><span>ODDORA AI</span>
+          </div>
+        </div>
+        <div className="xo-status">
+          <span className="eyebrow muted">SOLO ARENA</span>
+          <strong>{soloWinner === "X" ? "You beat ODDORA AI! 🎉" : soloWinner === "O" ? "ODDORA AI wins! 🤖" : soloWinner === "draw" ? "It's a draw! 🤝" : botBanter}</strong>
+        </div>
+        <div className="xo-board">
+          {soloBoard.map((cell, index) => (
+            <button
+              key={index}
+              className={`xo-cell ${cell ? `played ${cell.toLowerCase()}` : ""}`}
+              onClick={() => handleSoloCell(index)}
+              disabled={Boolean(cell) || Boolean(soloWinner) || soloThinking}
+            >
+              {cell}
+            </button>
+          ))}
+        </div>
+        {soloWinner && (
+          <button className="primary-btn xo-wide" onClick={resetSolo}>
+            <RotateCcw size={16}/> Play again vs AI
+          </button>
+        )}
+        <button className="secondary-btn dark xo-wide" onClick={() => setMode("multi")}>
+          <Users size={15}/> Switch to Friend Multiplayer
+        </button>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
   }
 
   const symbol = mySymbol();
   const myName = symbol ? (room?.playerNames?.[symbol] || (symbol === "X" ? "Player X" : "Player O")) : "";
   const opponentSymbol = symbol === "X" ? "O" : "X";
   const opponentName = room?.playerNames?.[opponentSymbol] || (opponentSymbol === "X" ? "Player X" : "Player O");
-  const statusText = !room ? "Create a challenge or join your friend's invitation." : room.status === "waiting" ? "Waiting for your friend to join..." : room.status === "finished" ? (room.winner === "draw" ? "It's a draw! Great game." : room.winner === symbol ? `${myName} wins! 🎉` : `${opponentName} wins this round!`) : room.turn === symbol ? `${myName}, it's your turn!` : `Waiting for ${opponentName}...`;
+  const statusText = !room
+    ? "Create a challenge or join your friend's invitation."
+    : room.status === "waiting"
+      ? "Waiting for your friend to join..."
+      : room.status === "finished"
+        ? (room.winner === "draw" ? "It's a draw! Great game." : room.winner === symbol ? `${myName} wins! 🎉` : `${opponentName} wins this round!`)
+        : room.turn === symbol
+          ? `${myName}, it's your turn!`
+          : `Waiting for ${opponentName}...`;
 
   return (
     <div className="xo-game-wrap">
@@ -1899,6 +2325,7 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
               <div className="xo-or"><span/> OR JOIN A FRIEND <span/></div>
               <input className="xo-input xo-code-input" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))} placeholder="6-character invite code" maxLength={6} />
               <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>{busy ? "Joining..." : "Join friend's challenge"}</button>
+              <button className="secondary-btn dark xo-wide" onClick={() => setMode("solo")}><Bot size={15}/> Play Solo vs ODDORA AI instead</button>
             </>
           )}
         </>
@@ -1916,7 +2343,16 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
           </div>
           <div className="xo-status"><span className="eyebrow muted">YOU ARE {symbol || "CONNECTING"}</span><strong>{statusText}</strong></div>
           <div className="xo-board">
-            {(room?.board || ["", "", "", "", "", "", "", "", ""]).map((cell, index) => <button key={index} className={`xo-cell ${cell ? `played ${cell.toLowerCase()}` : ""}`} onClick={() => playCell(index)} disabled={!symbol || room?.status !== "playing" || room?.turn !== symbol || Boolean(cell)} aria-label={`Square ${index + 1}${cell ? ` ${cell}` : " empty"}`}>{cell}</button>)}
+            {(room?.board || ["", "", "", "", "", "", "", "", ""]).map((cell, index) => (
+              <button
+                key={index}
+                className={`xo-cell ${cell ? `played ${cell.toLowerCase()}` : ""}`}
+                onClick={() => playCell(index)}
+                disabled={!symbol || room?.status !== "playing" || room?.turn !== symbol || Boolean(cell)}
+              >
+                {cell}
+              </button>
+            ))}
           </div>
           {room?.status === "finished" && (
             <div role="dialog" aria-modal="true" aria-labelledby="xo-result-title" style={{
@@ -1934,7 +2370,7 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
                   {room.winner === "draw" ? "IT'S A DRAW!" : room.winner === symbol ? "YOU WIN!" : "YOU LOST!"}
                 </h2>
                 <p style={{ color: "#c8bfdc", fontSize: 14, lineHeight: 1.6, margin: "0 0 20px" }}>
-                  {room.winner === "draw" ? "Perfectly matched. Nobody is leaving without a rematch!" : room.winner === symbol ? "You conquered the board! Enjoy your victory. Your friend wants a rematch." : "Revenge starts in the next round. Don't let your friend celebrate for too long!"}
+                  {room.winner === "draw" ? "Perfectly matched. Nobody is leaving without a rematch!" : room.winner === symbol ? "You conquered the board! Enjoy your victory." : "Revenge starts in the next round!"}
                 </p>
                 <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
                   <button className="primary-btn xo-wide" disabled={busy} onClick={() => restartGame(false)}>↻ Rematch – Same sides</button>
@@ -1945,8 +2381,6 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
                 </div>
                 <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
                   <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
-                  <h3 style={{ fontSize: 21, margin: "0 0 6px", color: "#fff" }}>START YOUR OD ADVENTURE.</h3>
-                  <p style={{ fontSize: 13, color: "#aaa1bd", lineHeight: 1.5, margin: "0 0 14px" }}>One game down. A whole playground to explore.</p>
                   <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>✨ Create Your Own Challenge</button>
                   <button className="secondary-btn dark xo-wide" style={{ marginTop: 9 }} onClick={onExplore}>🎮 Explore ODDORA</button>
                 </div>
@@ -1954,16 +2388,14 @@ function XOMultiplayer({ onBack, onExplore, onCreateChallenge, initialRoomCode =
             </div>
           )}
           {room?.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Link copied" : "Share invitation link"}</button>}
-          <button className="secondary-btn dark xo-wide" onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. The room remains available to your friend."); const url = new URL(window.location.href); url.searchParams.delete("xo"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
+          <button className="secondary-btn dark xo-wide" onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); const url = new URL(window.location.href); url.searchParams.delete("xo"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
         </>
       )}
       <p className="modal-description xo-notice">{notice}</p>
       <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
-      <p className="xo-footnote">Live multiplayer powered by Firebase. Use any display name you like.</p>
     </div>
   );
 }
-
 
 const HEART_CHOICES = ["❤️", "💖", "💜", "💙", "💚", "💛", "🧡", "🩷", "🤍"];
 
@@ -1972,7 +2404,13 @@ function heartAttemptScore(attempts) {
   return Math.max(10, 100 - extraPicks * 5);
 }
 
-function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = "" }) {
+function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = "", playSound }) {
+  const [mode, setMode] = useState(initialRoomCode ? "multi" : "select");
+  const [soloPick, setSoloPick] = useState(null);
+  const [aiPick, setAiPick] = useState(null);
+  const [soloAttempts, setSoloAttempts] = useState(0);
+  const [soloMatched, setSoloMatched] = useState(false);
+
   const [uid, setUid] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -1983,37 +2421,48 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
   const [copied, setCopied] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
 
-  useEffect(() => { if (initialRoomCode) setJoinCode(initialRoomCode); }, [initialRoomCode]);
+  useEffect(() => {
+    if (initialRoomCode) {
+      setJoinCode(initialRoomCode);
+      setMode("multi");
+    }
+  }, [initialRoomCode]);
 
   useEffect(() => {
+    if (mode !== "multi") return undefined;
     let alive = true;
     signInPlayer().then(credential => {
       if (!alive) return;
       setUid(credential.user.uid);
       setNotice("You're connected. Create a heart challenge or join your friend's link.");
-    }).catch(error => {
-      console.error("ODDORA heart sign-in failed:", error);
-      if (alive) setNotice("Could not connect. Check your internet and try again.");
+    }).catch(() => {
+      if (alive) setNotice("Could not connect. Check your internet or play Solo AI mode.");
     });
     return () => { alive = false; };
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
-    if (!roomCode) return undefined;
+    if (!roomCode || mode !== "multi") return undefined;
     const roomRef = ref(database, `rooms/${roomCode}`);
     const unsubscribe = onValue(roomRef, snapshot => {
-      if (snapshot.exists()) setRoom(snapshot.val());
-      else { setRoom(null); setNotice("This heart room no longer exists."); }
-    }, error => {
-      console.error("ODDORA heart room listener failed:", error);
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        if (val.status === "finished" && room?.status === "playing") {
+          playSound?.("reveal");
+        }
+        setRoom(val);
+      } else {
+        setRoom(null);
+        setNotice("This heart room no longer exists.");
+      }
+    }, () => {
       setNotice("Unable to read this room. Check your Realtime Database rules.");
     });
     return () => unsubscribe();
-  }, [roomCode]);
-
+  }, [roomCode, mode]);
 
   useEffect(() => {
-    if (!roomCode || room?.status !== "playing" || !room?.endsAt) return undefined;
+    if (!roomCode || room?.status !== "playing" || !room?.endsAt || mode !== "multi") return undefined;
 
     const updateClock = () => {
       const remaining = Math.max(0, Math.ceil((Number(room.endsAt) - Date.now()) / 1000));
@@ -2024,14 +2473,39 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
           if (!current || current.gameType !== "catch-heart" || current.status !== "playing") return;
           if (Number(current.endsAt || 0) > Date.now()) return;
           return { ...current, status: "finished", finishReason: "timeout" };
-        }).catch(error => console.error("ODDORA heart timer failed:", error));
+        }).catch(() => {});
       }
     };
 
     updateClock();
     const timerId = window.setInterval(updateClock, 250);
     return () => window.clearInterval(timerId);
-  }, [roomCode, room?.status, room?.endsAt]);
+  }, [roomCode, room?.status, room?.endsAt, mode]);
+
+  function handleSoloHeart(index) {
+    if (soloMatched) return;
+    playSound?.("tap");
+    triggerHaptic(14);
+    const botIndex = Math.floor(Math.random() * HEART_CHOICES.length);
+    const attempts = soloAttempts + 1;
+    setSoloPick(index);
+    setAiPick(botIndex);
+    setSoloAttempts(attempts);
+
+    if (index === botIndex) {
+      setSoloMatched(true);
+      playSound?.("reveal");
+      triggerHaptic([25, 40, 25]);
+    }
+  }
+
+  function resetSoloHeart() {
+    playSound?.("tap");
+    setSoloPick(null);
+    setAiPick(null);
+    setSoloAttempts(0);
+    setSoloMatched(false);
+  }
 
   const cleanName = value => value.trim().replace(/\s+/g, " ").slice(0, 18);
   const mySide = room?.players?.X === uid ? "X" : room?.players?.O === uid ? "O" : "";
@@ -2057,12 +2531,13 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
         attempts: 0, status: "waiting", round: 1, createdAt: Date.now()
       };
       await set(ref(database, `rooms/${code}`), newRoom);
-      setRoomCode(code); setNotice("Your heart challenge is ready. Invite your friend!");
+      setRoomCode(code);
+      playSound?.("magic");
+      setNotice("Your heart challenge is ready. Invite your friend!");
       const url = new URL(window.location.href); url.search = ""; url.searchParams.set("heart", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA heart create failed:", error);
-      setNotice(error.message || "Could not create the challenge. Please try again.");
+      setNotice(error.message || "Could not create the challenge.");
     } finally { setBusy(false); }
   }
 
@@ -2087,49 +2562,26 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
       }
 
       const existingRoom = existingSnapshot.val();
-
       if (existingRoom.gameType !== "catch-heart") {
-        throw new Error("That code belongs to a different game. Use a Catch My Heart invite.");
+        throw new Error("That code belongs to a different game.");
       }
 
       if (existingRoom.players?.X === uid) {
-        throw new Error("You created this room. Open the invitation on another device or browser to join as Player 2.");
+        throw new Error("You created this room. Open the invitation on another browser to join as Player 2.");
       }
 
-      if (existingRoom.status !== "waiting" || existingRoom.players?.O) {
-        if (existingRoom.players?.O === uid) {
-          setRoomCode(code);
-          setNotice("Welcome back! You're Player 2.");
-          const url = new URL(window.location.href);
-          url.search = "";
-          url.searchParams.set("heart", code);
-          window.history.replaceState({}, "", url.toString());
-          return;
-        }
-        throw new Error("This heart room is already full. Ask your friend to create a new challenge.");
-      }
-
-      // Use the confirmed room snapshot once if Firebase's first local
-      // transaction callback is null. Later retries use Firebase's live value.
       let usedPreflightFallback = false;
-
       const result = await runTransaction(roomRef, current => {
         if (!current) {
           if (usedPreflightFallback) return;
           usedPreflightFallback = true;
           current = existingRoom;
         }
-
         if (current.gameType !== "catch-heart") return;
         if (current.players?.X === uid) return current;
-
         if (current.players?.O === uid) {
-          return {
-            ...current,
-            playerNames: { ...(current.playerNames || {}), O: name }
-          };
+          return { ...current, playerNames: { ...(current.playerNames || {}), O: name } };
         }
-
         if (current.status !== "waiting" || current.players?.O) return;
 
         return {
@@ -2145,25 +2597,18 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
       });
 
       if (!result.committed || !result.snapshot.exists()) {
-        throw new Error("Could not join. The code may be wrong or the room is already full.");
-      }
-
-      const data = result.snapshot.val();
-
-      if (data.players?.X !== uid && data.players?.O !== uid) {
-        throw new Error("This heart room is already full.");
+        throw new Error("Could not join. The room may already be full.");
       }
 
       setRoomCode(code);
+      playSound?.("magic");
       setNotice("You're in! Choose a heart when you're ready.");
-
       const url = new URL(window.location.href);
       url.search = "";
       url.searchParams.set("heart", code);
       window.history.replaceState({}, "", url.toString());
     } catch (error) {
-      console.error("ODDORA heart join failed:", error);
-      setNotice(error.message || "Could not join this room. Ask your friend for a fresh link.");
+      setNotice(error.message || "Could not join this room.");
     } finally {
       setBusy(false);
     }
@@ -2171,11 +2616,12 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
 
   async function chooseHeart(index) {
     if (!roomCode || !mySide || room?.status !== "playing" || busy) return;
-
+    playSound?.("tap");
+    triggerHaptic(12);
     setBusy(true);
 
     try {
-      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
         if (!current || current.gameType !== "catch-heart" || current.status !== "playing") return;
         if (Number(current.endsAt || 0) <= Date.now()) {
           return { ...current, status: "finished", finishReason: "timeout" };
@@ -2198,13 +2644,6 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
           finishReason: matched ? "match" : null
         };
       });
-
-      if (!result.committed) {
-        setNotice("Your heart could not be saved. Please try again.");
-      }
-    } catch (error) {
-      console.error("ODDORA heart choice failed:", error);
-      setNotice("Your heart could not be saved. Check your connection.");
     } finally {
       setBusy(false);
     }
@@ -2214,7 +2653,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
     if (!roomCode || !room || room.status !== "finished" || !mySide || busy) return;
     setBusy(true);
     try {
-      const result = await runTransaction(ref(database, `rooms/${roomCode}`), current => {
+      await runTransaction(ref(database, `rooms/${roomCode}`), current => {
         if (!current || current.gameType !== "catch-heart" || current.status !== "finished" || !current.players?.X || !current.players?.O) return;
         const players = swapSides ? { X: current.players.O, O: current.players.X } : current.players;
         const playerNames = swapSides
@@ -2227,10 +2666,6 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
           endsAt: Date.now() + 60000, round: (current.round || 1) + 1
         };
       });
-      if (!result.committed) setNotice("Please wait for the next round to start.");
-    } catch (error) {
-      console.error("ODDORA heart rematch failed:", error);
-      setNotice("Could not start another round. Please try again.");
     } finally { setBusy(false); }
   }
 
@@ -2242,9 +2677,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
     try {
       if (navigator.share) await navigator.share({ title: "Catch My Heart · ODDORA", text: shareText, url: shareUrl });
       else { await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`); setCopied(true); setTimeout(() => setCopied(false), 1800); }
-    } catch (error) {
-      if (error?.name !== "AbortError") setNotice("Copy the invitation link from your browser address bar.");
-    }
+    } catch {}
   }
 
   async function shareHeartResult() {
@@ -2282,9 +2715,81 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       }
-    } catch (error) {
-      if (error?.name !== "AbortError") setNotice("Could not share the result image. Please try again.");
-    }
+    } catch {}
+  }
+
+  if (mode === "select") {
+    return (
+      <div className="heart-game-wrap">
+        <div className="heart-welcome">
+          <div className="heart-welcome-icon">💘</div>
+          <h3>Choose your heart mode</h3>
+          <p className="modal-description">Test your intuition against ODDORA AI solo or sync up with a friend.</p>
+        </div>
+        <div className="prank-mode-options">
+          <button type="button" className="prank-mode-card active" onClick={() => { playSound?.("tap"); setMode("solo"); }}>
+            <span><Bot size={28}/></span>
+            <strong>Solo vs ODDORA AI</strong>
+            <small>Mind-sync intuition test</small>
+          </button>
+          <button type="button" className="prank-mode-card" onClick={() => { playSound?.("tap"); setMode("multi"); }}>
+            <span><Users size={28}/></span>
+            <strong>Play with a Friend</strong>
+            <small>60s live heart sync</small>
+          </button>
+        </div>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
+  }
+
+  if (mode === "solo") {
+    const score = heartAttemptScore(soloAttempts + 1);
+    return (
+      <div className="heart-game-wrap">
+        <div className="heart-pick-status">
+          <strong>{soloMatched ? "💞 HEARTS IN SYNC!" : "Pick the same heart as ODDORA AI 💗"}</strong>
+          <span>
+            {soloPick !== null
+              ? `You picked ${HEART_CHOICES[soloPick]} · AI picked ${HEART_CHOICES[aiPick]} (Picks: ${soloAttempts})`
+              : "Tap any heart below to test your intuition"}
+          </span>
+        </div>
+
+        {soloMatched ? (
+          <div className="heart-result">
+            <div className="heart-burst">💞</div>
+            <h3>MATCHED IN {soloAttempts} {soloAttempts === 1 ? "PICK" : "PICKS"}!</h3>
+            <div className="heart-score-card">
+              <strong>{score}%</strong>
+              <span>INTUITION SYNC SCORE</span>
+              <small>You and ODDORA AI chose {HEART_CHOICES[soloPick]}</small>
+            </div>
+            <button className="primary-btn xo-wide" onClick={resetSoloHeart}>
+              <RotateCcw size={16}/> Play again vs AI
+            </button>
+          </div>
+        ) : (
+          <div className="heart-grid">
+            {HEART_CHOICES.map((heart, index) => (
+              <button
+                key={heart}
+                type="button"
+                className={`heart-choice ${soloPick === index ? "selected" : ""}`}
+                onClick={() => handleSoloHeart(index)}
+              >
+                {heart}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button className="secondary-btn dark xo-wide" onClick={() => setMode("multi")}>
+          <Users size={15}/> Challenge a Friend Live
+        </button>
+        <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
+      </div>
+    );
   }
 
   const sameHeart = bothPicked && room.choices.X === room.choices.O;
@@ -2315,6 +2820,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
               <button className="secondary-btn dark xo-wide" disabled={!uid || busy || joinCode.length !== 6 || !cleanName(playerName)} onClick={joinRoom}>
                 {busy ? "Joining..." : "Join friend's challenge"}
               </button>
+              <button className="secondary-btn dark xo-wide" onClick={() => setMode("solo")}><Bot size={15}/> Play Solo vs ODDORA AI instead</button>
             </>
           )}
         </>
@@ -2365,40 +2871,38 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
                   boxShadow: "0 24px 90px rgba(0,0,0,.6)"
                 }}
               >
-              <div className="heart-burst">{sameHeart ? "💞" : "⏰"}</div>
-              <div className="eyebrow muted">ODDORA · CATCH MY HEART</div>
-              <h3 id="heart-result-title">{sameHeart ? "HEARTS IN SYNC!" : "TIME'S UP!"}</h3>
-              <p className="heart-result-copy">
-                {sameHeart
-                  ? "You both found the same heart. Now that's a lovely coincidence!"
-                  : "The clock ran out! Different picks, same team — try another round."}
-              </p>
-              {sameHeart && (
-                <div className="heart-score-card">
-                  <strong>{matchScore}%</strong>
-                  <span>ODDORA MATCH SCORE</span>
-                  <small>Matched in {totalAttempts} heart {totalAttempts === 1 ? "pick" : "picks"}</small>
+                <div className="heart-burst">{sameHeart ? "💞" : "⏰"}</div>
+                <div className="eyebrow muted">ODDORA · CATCH MY HEART</div>
+                <h3 id="heart-result-title">{sameHeart ? "HEARTS IN SYNC!" : "TIME'S UP!"}</h3>
+                <p className="heart-result-copy">
+                  {sameHeart
+                    ? "You both found the same heart. Now that's a lovely coincidence!"
+                    : "The clock ran out! Different picks, same team — try another round."}
+                </p>
+                {sameHeart && (
+                  <div className="heart-score-card">
+                    <strong>{matchScore}%</strong>
+                    <span>ODDORA MATCH SCORE</span>
+                    <small>Matched in {totalAttempts} heart {totalAttempts === 1 ? "pick" : "picks"}</small>
+                  </div>
+                )}
+                <p className="heart-result-quote">
+                  {sameHeart
+                    ? "“Some hearts just know where to meet.” 💗"
+                    : "“Different choices, same lovely chaos.” 💞"}
+                </p>
+                <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+                  <button className="primary-btn xo-wide" disabled={busy} onClick={() => playAgain(false)}>↻ Rematch – Same sides</button>
+                  <button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => playAgain(true)}>⇄ Rematch – Swap sides</button>
+                  <button className="secondary-btn dark xo-wide" onClick={shareHeartResult}>
+                    <Share2 size={15}/> {copied ? "Result copied" : "Share your result"}
+                  </button>
                 </div>
-              )}
-              <p className="heart-result-quote">
-                {sameHeart
-                  ? "“Some hearts just know where to meet.” 💗"
-                  : "“Different choices, same lovely chaos.” 💞"}
-              </p>
-              <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-                <button className="primary-btn xo-wide" disabled={busy} onClick={() => playAgain(false)}>↻ Rematch – Same sides</button>
-                <button className="secondary-btn dark xo-wide" disabled={busy} onClick={() => playAgain(true)}>⇄ Rematch – Swap sides</button>
-                <button className="secondary-btn dark xo-wide" onClick={shareHeartResult}>
-                  <Share2 size={15}/> {copied ? "Result copied" : "Share your result"}
-                </button>
-              </div>
-              <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
-                <h3 style={{ fontSize: 21, margin: "0 0 6px", color: "#fff" }}>START YOUR OD ADVENTURE.</h3>
-                <p style={{ fontSize: 13, color: "#aaa1bd", lineHeight: 1.5, margin: "0 0 14px" }}>One game down. A whole playground to explore.</p>
-                <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>✨ Create Your Own Challenge</button>
-                <button className="secondary-btn dark xo-wide" style={{ marginTop: 9 }} onClick={onExplore}>🎮 Explore ODDORA</button>
-              </div>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 18, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, letterSpacing: 2, color: "#b9a0ff", fontWeight: 800, marginBottom: 7 }}>GAME OVER. THE FUN ISN'T.</div>
+                  <button className="secondary-btn dark xo-wide" onClick={onCreateChallenge}>✨ Create Your Own Challenge</button>
+                  <button className="secondary-btn dark xo-wide" style={{ marginTop: 9 }} onClick={onExplore}>🎮 Explore ODDORA</button>
+                </div>
               </div>
             </div>
           ) : (
@@ -2429,12 +2933,11 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
             </>
           )}
           {room.status === "waiting" && <button className="secondary-btn dark xo-wide" onClick={shareInvitation}><Share2 size={15}/> {copied ? "Link copied" : "Share invitation link"}</button>}
-          <button className="secondary-btn dark xo-wide" style={{ marginTop: 10 }} onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); setNotice("You left the room view. Your friend can still use the invitation."); const url = new URL(window.location.href); url.searchParams.delete("heart"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
+          <button className="secondary-btn dark xo-wide" style={{ marginTop: 10 }} onClick={() => { setRoomCode(""); setRoom(null); setJoinCode(""); const url = new URL(window.location.href); url.searchParams.delete("heart"); window.history.replaceState({}, "", url.toString()); }}>Leave room</button>
         </>
       )}
       <p className="modal-description xo-notice">{notice}</p>
       <button className="secondary-btn dark xo-wide" onClick={onBack}>Back to OD Games</button>
-      <p className="xo-footnote">Live heart challenge powered by Firebase. Score is for fun only.</p>
     </div>
   );
 }
