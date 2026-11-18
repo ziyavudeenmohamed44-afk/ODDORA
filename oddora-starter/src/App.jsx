@@ -7,11 +7,11 @@ import { database, signInPlayer } from "./firebase";
 import { get, onValue, push, ref, runTransaction, set } from "firebase/database";
 
 const experiences = [
-  { id:"hacker", title:"Fake Hacker", category:"OD PRANKS", icon:"🖥️", tag:"Cinematic prank", description:"A dramatic fake terminal scan with a ridiculous reveal.", color:"purple", type:"prank" },
-  { id:"update", title:"Fake Software Update", category:"OD PRANKS", icon:"📲", tag:"99% suspense", description:"A suspiciously dramatic update with a silly ending.", color:"blue", type:"prank" },
-  { id:"virus", title:"Virus Scanner", category:"OD PRANKS", icon:"🦠", tag:"Harmless scan", description:"Scan your digital habits. Discover your scrolling virus.", color:"green", type:"prank" },
-  { id:"button", title:"Don't Touch the Button", category:"OD PRANKS", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new ridiculous reaction.", color:"pink", type:"prank" },
-  { id:"iq", title:"Fake IQ Test", category:"OD PRANKS", icon:"🧠", tag:"Unofficial score", description:"Answer a few silly questions and get a very unofficial IQ result.", color:"gold", type:"prank" },
+  { id:"hacker", title:"Cyber Terminal", category:"OD CHAOS", icon:"🖥️", tag:"Live root scan", description:"An intense live terminal breach simulation with an unexpected twist.", color:"purple", type:"sim" },
+  { id:"update", title:"System OS Update", category:"OD CHAOS", icon:"📲", tag:"99% suspense", description:"A critical system firmware installation that takes a dramatic turn.", color:"blue", type:"sim" },
+  { id:"virus", title:"Device Habit Scanner", category:"OD CHAOS", icon:"🦠", tag:"Deep diagnostic", description:"Scan your digital activity and uncover your real screen-time diagnosis.", color:"green", type:"sim" },
+  { id:"button", title:"Don't Touch the Button", category:"OD CHAOS", icon:"🔴", tag:"Tap at your own risk", description:"Every tap triggers a new escalating system reaction.", color:"pink", type:"sim" },
+  { id:"iq", title:"Brain Reflex IQ Test", category:"OD CHAOS", icon:"🧠", tag:"3-question benchmark", description:"Answer three rapid-fire logic riddles and get your official brain score.", color:"gold", type:"sim" },
   { id:"mind", title:"Mind Reader", category:"OD MIND", icon:"🔮", tag:"A little magic", description:"Think of a number. Follow the steps. Prepare to be amazed.", color:"orange", type:"game" },
   { id:"xo", title:"XO Multiplayer & AI", category:"OD GAMES", icon:"❎", tag:"Solo AI or Friend", description:"Challenge the witty ODDORA Bot solo or invite a friend live.", color:"blue", type:"game" },
   { id:"catch-heart", title:"Catch My Heart", category:"OD GAMES", icon:"💘", tag:"Solo AI or Friend", description:"Match hearts against ODDORA AI or play live with a friend.", color:"pink", type:"game" },
@@ -19,11 +19,11 @@ const experiences = [
   { id:"od-invite", title:"OD Invite", category:"OD CREATE", icon:"💌", tag:"Runaway No link", description:"Create a custom Yes/No invite where the No button dodges 8 times.", color:"pink", type:"create" },
   { id:"od-propose", title:"OD Propose", category:"OD CREATE", icon:"💍", tag:"3-step interactive flow", description:"Build a 3-step crush, bestie, or funny proposal with custom outcomes.", color:"purple", type:"create" },
   { id:"personality", title:"Your Secret Superpower", category:"OD MIND", icon:"🦸", tag:"Quick personality quiz", description:"Discover the completely unofficial power you possess.", color:"green", type:"game" },
-  { id:"od-fun-coming", title:"OD Fun Area", category:"OD FUN", icon:"🎁", tag:"Under Construction", description:"We are working to treat you with best fun activities. Drop how do you want to have fun! ✨", color:"purple", type:"fun" },
+  { id:"od-fun-coming", title:"OD Fun Area", category:"OD FUN", icon:"🎁", tag:"Coming Soon", description:"We are working to treat you with best fun activities. Drop how do you want to have fun! ✨", color:"purple", type:"fun" },
   { id:"surprise", title:"Surprise Me", category:"OD FUN", icon:"🎲", tag:"Random experience", description:"No plan. No warning. Just a little chaos.", color:"purple", type:"random" }
 ];
 
-const categories = ["All", "OD GAMES", "OD CREATE", "OD PRANKS", "OD MIND", "OD FUN"];
+const categories = ["All", "OD GAMES", "OD CREATE", "OD CHAOS", "OD MIND", "OD FUN"];
 
 const randomResults = [
   "You have been promoted to Chief Nap Officer. Your first assignment: do absolutely nothing.",
@@ -80,48 +80,8 @@ const mindPuzzles = [
   }
 ];
 
-const whatIfQuestions = [
-  {
-    step: "CHOICE 01 / FIRST PURCHASE",
-    question: "₹100 Crore just landed in your bank account. What is your first move?",
-    options: [
-      { label: "Buy a private island with zero Wi-Fi 🏝️", score: "chill" },
-      { label: "Launch a chaotic startup on Mars 🚀", score: "visionary" },
-      { label: "Order every item in my online cart 🛍️", score: "chaotic" },
-      { label: "Keep it secret and still ask for extra ketchup 🤫", score: "stealth" }
-    ]
-  },
-  {
-    step: "CHOICE 02 / DAILY ROUTINE",
-    question: "How does your average Tuesday look now?",
-    options: [
-      { label: "Waking up at 2 PM with zero alarms 🛌", score: "chill" },
-      { label: "Hiring a personal chef just for midnight snacks 🍕", score: "chaotic" },
-      { label: "Buying my old school and cancelling Mondays 📅", score: "visionary" },
-      { label: "Taking public transport just for the plot 🚌", score: "stealth" }
-    ]
-  },
-  {
-    step: "CHOICE 03 / SIGNATURE FLEX",
-    question: "What becomes your legendary billionaire habit?",
-    options: [
-      { label: "Tipping delivery riders the price of a scooter 🛵", score: "visionary" },
-      { label: "Building a secret underground gaming bunker 🎮", score: "chaotic" },
-      { label: "Disappearing to the mountains for 6 months 🏔️", score: "chill" },
-      { label: "Still splitting a ₹200 bill down to the rupee 🧾", score: "stealth" }
-    ]
-  }
-];
-
-const whatIfOutcomes = {
-  chill: "The Zen Couch Emperor 🛌 — You turned ₹100 Crore into a lifetime subscription to peace, naps, and never answering 'Are you free this weekend?'",
-  visionary: "The Chaotic Philanthropist 🚀 — You banned Mondays, funded weird inventions, and accidentally became a folklore legend.",
-  chaotic: "The Midnight Impulse Mogul 🍕 — Your mansion has a slide instead of stairs, 400 unopened gadgets, and zero regrets.",
-  stealth: "The Undercover Billionaire 🤫 — Nobody knows you're rich because you still argue over ₹10 delivery fees while owning the building."
-};
-
 const defaultVibes = [
-  { id: "seed-1", name: "Aarav", mood: "😂", text: "Sent the Fake Hacker link to my roommate and watched him unplug the Wi-Fi router!", createdAt: Date.now() - 3600000 },
+  { id: "seed-1", name: "Aarav", mood: "😂", text: "Sent the Cyber Terminal link to my roommate and watched him unplug the Wi-Fi router!", createdAt: Date.now() - 3600000 },
   { id: "seed-2", name: "Maya", mood: "🔮", text: "The 1089 Mind Reader genuinely broke my brain at 1 AM.", createdAt: Date.now() - 7200000 },
   { id: "seed-3", name: "Dev", mood: "💘", text: "Beat the ODDORA AI in Catch My Heart in 3 picks. Certified telepathy.", createdAt: Date.now() - 10800000 }
 ];
@@ -268,7 +228,7 @@ async function shareODDORAResultCard({ game, headline, subtitle, detail, quote, 
   // Footer Branding
   ctx.fillStyle = "#a78bfa";
   ctx.font = "700 22px 'DM Mono', Arial";
-  ctx.fillText("PLAY · CREATE · PRANK · VIRAL", 540, 1190);
+  ctx.fillText("PLAY · CREATE · DISCOVER · VIRAL", 540, 1190);
 
   ctx.fillStyle = "#77728e";
   ctx.font = "500 20px 'Space Grotesk', Arial";
@@ -303,6 +263,7 @@ function App() {
     link.href = canvas.toDataURL("image/png");
   }, []);
 
+  const [logoSpinning, setLogoSpinning] = useState(false);
   const [active, setActive] = useState("All");
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
@@ -315,7 +276,7 @@ function App() {
     }
   });
   const [copied, setCopied] = useState(false);
-  const [sharedPrank, setSharedPrank] = useState(null);
+  const [sharedSim, setSharedSim] = useState(null);
   const [xoInviteCode, setXoInviteCode] = useState("");
   const [heartInviteCode, setHeartInviteCode] = useState("");
   const [tapInviteCode, setTapInviteCode] = useState("");
@@ -330,7 +291,7 @@ function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const prankId = params.get("prank");
+    const simId = params.get("sim") || params.get("prank");
     const xoCode = (params.get("xo") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     const heartCode = (params.get("heart") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     const tapCode = (params.get("tap") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -366,15 +327,15 @@ function App() {
 
     const mode = params.get("mode");
     const sender = params.get("from");
-    if (mode !== "friend" || !prankId) return;
+    if (mode !== "friend" || !simId) return;
 
-    const prank = experiences.find(
-      item => item.id === prankId && item.category === "OD PRANKS"
+    const simItem = experiences.find(
+      item => item.id === simId && item.category === "OD CHAOS"
     );
-    if (!prank) return;
+    if (!simItem) return;
 
-    setSelected(prank);
-    setSharedPrank({
+    setSelected(simItem);
+    setSharedSim({
       mode: "friend",
       sender: (sender || "Your friend").slice(0, 30),
       gatePending: true
@@ -389,7 +350,7 @@ function App() {
   function openExperience(item) {
     triggerHaptic(12);
     setSelected(item);
-    setSharedPrank(null);
+    setSharedSim(null);
     setCopied(false);
   }
 
@@ -436,7 +397,7 @@ function App() {
           <a href="#home" onClick={() => { setMenuOpen(false); setActive("All"); setSelected(null); }}>Home</a>
           <button type="button" onClick={() => goToCategory("OD GAMES")}>OD Games</button>
           <button type="button" onClick={() => goToCategory("OD CREATE")}>OD Create</button>
-          <button type="button" onClick={() => goToCategory("OD PRANKS")}>OD Pranks</button>
+          <button type="button" onClick={() => goToCategory("OD CHAOS")}>OD Chaos</button>
           <button type="button" onClick={() => goToCategory("OD MIND")}>OD Mind</button>
           <button type="button" onClick={() => goToCategory("OD FUN")}>OD Fun</button>
         </nav>
@@ -481,7 +442,22 @@ function App() {
           <div className="hero-art" aria-label="Abstract glowing ODDORA portal illustration">
             <div className="orbit orbit-a"></div>
             <div className="orbit orbit-b"></div>
-            <div className="portal"><div className="portal-inner"><span>O</span></div></div>
+            <div
+              className={logoSpinning ? "portal is-spinning" : "portal"}
+              onMouseEnter={() => {
+                setLogoSpinning(false);
+                requestAnimationFrame(() => setLogoSpinning(true));
+              }}
+              onClick={() => {
+                triggerHaptic(14);
+                setLogoSpinning(false);
+                requestAnimationFrame(() => setLogoSpinning(true));
+              }}
+              onAnimationEnd={() => setLogoSpinning(false)}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="portal-inner"><span>O</span></div>
+            </div>
             <div className="float-card card-top"><span>✨</span> Reality optional</div>
             <div className="float-card card-bottom"><span>🎲</span> Expect the unexpected</div>
             <div className="spark spark-a">✦</div>
@@ -522,11 +498,11 @@ function App() {
               <span className="zone-desc">Build your own invites, proposals and challenges.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
-            <button className="zone-card zone-pink" onClick={() => goToCategory("OD PRANKS")}>
-              <span className="zone-icon">🃏</span>
+            <button className="zone-card zone-pink" onClick={() => goToCategory("OD CHAOS")}>
+              <span className="zone-icon">⚡</span>
               <span className="zone-number">03 / SURPRISE</span>
-              <strong>OD PRANKS</strong>
-              <span className="zone-desc">Harmless chaos. Unexpected reveals.</span>
+              <strong>OD CHAOS</strong>
+              <span className="zone-desc">Interactive simulations & unexpected reveals.</span>
               <ArrowUpRight className="zone-arrow"/>
             </button>
             <button className="zone-card zone-orange" onClick={() => goToCategory("OD MIND")}>
@@ -595,7 +571,7 @@ function App() {
           <div>
             <div className="eyebrow muted">A LITTLE DIFFERENT BY DESIGN</div>
             <h2>Ordinary is <span className="gradient-text">overrated.</span></h2>
-            <p>ODDORA is a playful corner of the internet for harmless pranks, curious minds and impossible ideas. No pressure. No sign-up. Just explore.</p>
+            <p>ODDORA is a playful corner of the internet for interactive simulations, curious minds and impossible ideas. No pressure. No sign-up. Just explore.</p>
           </div>
         </section>
       </main>
@@ -631,7 +607,7 @@ function App() {
           item={selected}
           onClose={() => {
             setSelected(null);
-            setSharedPrank(null);
+            setSharedSim(null);
             setXoInviteCode("");
             setHeartInviteCode("");
             setTapInviteCode("");
@@ -639,7 +615,7 @@ function App() {
           }}
           onShare={shareResult}
           copied={copied}
-          sharedPrank={sharedPrank}
+          sharedSim={sharedSim}
           xoInviteCode={xoInviteCode}
           heartInviteCode={heartInviteCode}
           tapInviteCode={tapInviteCode}
@@ -647,7 +623,7 @@ function App() {
             setSelected(null);
             setXoInviteCode("");
             setHeartInviteCode("");
-            setSharedPrank(null);
+            setSharedSim(null);
             setActive("All");
             window.history.replaceState({}, "", window.location.pathname);
             window.setTimeout(() => {
@@ -658,7 +634,7 @@ function App() {
             setSelected(null);
             setXoInviteCode("");
             setHeartInviteCode("");
-            setSharedPrank(null);
+            setSharedSim(null);
             setActive("OD CREATE");
             window.history.replaceState({}, "", window.location.pathname);
             window.setTimeout(() => {
@@ -742,7 +718,7 @@ function VibeWall() {
           <div className="eyebrow muted">LIVE CHAOS WALL</div>
           <h2>Visitor <span className="gradient-text">vibe check.</span></h2>
         </div>
-        <p>Drop a quick reaction after pranking a friend<br/>or beating the ODDORA AI.</p>
+        <p>Drop a quick reaction after surprising a friend<br/>or beating the ODDORA AI.</p>
       </div>
 
       <form className="vibe-form" onSubmit={submitVibe}>
@@ -769,7 +745,7 @@ function VibeWall() {
           className="vibe-text-input"
           value={text}
           onChange={e => setText(e.target.value.slice(0, 140))}
-          placeholder="How did your prank or game go? (140 chars)"
+          placeholder="How did your challenge or game go? (140 chars)"
           maxLength={140}
         />
         <button className="primary-btn" type="submit" disabled={!text.trim() || sending}>
@@ -809,15 +785,13 @@ function ExperienceCard({ item, index, onClick }) {
   );
 }
 
-function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInviteCode, heartInviteCode, tapInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
+function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCode, heartInviteCode, tapInviteCode, onExplore, onCreateChallenge, onBackToGames }) {
   const [step, setStep] = useState(item.id === "xo" && xoInviteCode ? 13 : item.id === "catch-heart" && heartInviteCode ? 14 : item.id === "tap-trap" && tapInviteCode ? 16 : 0);
-  const [prankMode, setPrankMode] = useState(sharedPrank?.mode === "friend" ? "friend" : "self");
+  const [simMode, setSimMode] = useState(sharedSim?.mode === "friend" ? "friend" : "self");
   const [senderName, setSenderName] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkError, setLinkError] = useState("");
   const [choice, setChoice] = useState("");
-  const [whatIfStep, setWhatIfStep] = useState(0);
-  const [whatIfScores, setWhatIfScores] = useState([]);
   const [mindPuzzleIndex, setMindPuzzleIndex] = useState(0);
   const [mindInstructionIndex, setMindInstructionIndex] = useState(0);
   const [result, setResult] = useState("");
@@ -839,6 +813,13 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
   const soundEnabledRef = useRef(true);
   const lastHackerToneRef = useRef(-1);
   const autoStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (sharedSim?.mode === "friend" && item.category === "OD CHAOS" && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      startExperience();
+    }
+  }, [sharedSim, item]);
 
   async function playSound(kind = "tap") {
     if (!soundEnabledRef.current) return;
@@ -935,7 +916,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
   }, []);
 
 
-  // Continuous atmospheric audio throughout active pranks
+  // Continuous atmospheric audio throughout active simulations
   useEffect(() => {
     if (!soundEnabled) return undefined;
     if (item.id === "hacker" && step === 1) {
@@ -996,7 +977,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
 
       if (elapsed >= 23) {
         clearInterval(timer);
-        setResult("Update complete! 😂 Your device is completely safe. This was just an ODDORA prank!");
+        setResult("Update complete! 😂 Relax—your device wasn't touched. That was an ODDORA interactive simulation!");
         setStep(2);
         playSound("reveal");
         triggerHaptic([25, 35, 25]);
@@ -1007,7 +988,6 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
   }, [item.id, step]);
 
   const currentPuzzle = mindPuzzles[mindPuzzleIndex];
-  const isCodePuzzle = ["agecode", "birthdaycode"].includes(currentPuzzle.type);
   const prediction = currentPuzzle.type === "steps" ? currentPuzzle.answer : result;
 
   function resetMind() {
@@ -1066,7 +1046,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
     const cleanName = senderName.trim().slice(0, 30);
 
     if (!cleanName) {
-      setLinkError("Enter your name first so your friend knows who pranked them.");
+      setLinkError("Enter your name first so your friend sees who sent this.");
       triggerHaptic([20, 30, 20]);
       return;
     }
@@ -1074,7 +1054,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
 
     const url = new URL(window.location.href);
     url.search = "";
-    url.searchParams.set("prank", item.id);
+    url.searchParams.set("sim", item.id);
     url.searchParams.set("mode", "friend");
     url.searchParams.set("from", cleanName);
 
@@ -1084,7 +1064,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
       if (navigator.share) {
         await navigator.share({
           title: `${cleanName} sent you something`,
-          text: `${cleanName} wants you to see this 👀`,
+          text: `${cleanName} wants you to see this 👀\n${shareUrl}`,
           url: shareUrl
         });
       } else {
@@ -1108,7 +1088,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
 
   function startExperience() {
     triggerHaptic(15);
-    if (item.category === "OD PRANKS") {
+    if (item.category === "OD CHAOS") {
       enterDeviceFullscreen();
     }
     if (item.id === "hacker") return runHacker();
@@ -1159,27 +1139,24 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
 
 
   useEffect(() => {
-    if (item.category !== "OD PRANKS" || step === 0) return undefined;
+    if (item.category !== "OD CHAOS" || step === 0) return undefined;
     const unlockImmersive = () => {
       enterDeviceFullscreen();
       if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume().catch(() => {});
+        audioContextRef.current.resume().then(() => {
+          if (item.id === "hacker" && step === 1) playSound("boot");
+          else if (item.id === "update" && step === 9) playSound("suspense");
+          else if (item.id === "virus" && step === 10) playSound("alert");
+        }).catch(() => {});
+      } else if (!audioContextRef.current && soundEnabledRef.current) {
+        if (item.id === "hacker" && step === 1) playSound("boot");
+        else if (item.id === "update" && step === 9) playSound("suspense");
+        else if (item.id === "virus" && step === 10) playSound("alert");
       }
     };
     window.addEventListener("pointerdown", unlockImmersive, { once: true });
     return () => window.removeEventListener("pointerdown", unlockImmersive);
-  }, [item.category, step]);
-
-  function revealBirthYear() {
-    const age = Number(birthAge);
-    if (!Number.isInteger(age) || age < 1 || age > 120 || !birthdayPassed) return;
-
-    const today = new Date();
-    const year = today.getFullYear() - age - (birthdayPassed === "no" ? 1 : 0);
-    setResult(`Your likely birth year is ${year}!`);
-    playSound("reveal");
-    setStep(6);
-  }
+  }, [item.category, item.id, step]);
 
   function revealWeekday() {
     if (!birthDate) return;
@@ -1196,48 +1173,6 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
     setResult(`You were born on a ${weekday}!`);
     playSound("reveal");
     setStep(6);
-  }
-
-  function decodePuzzleCode() {
-    const value = Number(puzzleCode);
-    if (!Number.isInteger(value) || value <= 0) {
-      setError("Please enter a valid number.");
-      playSound("wrong");
-      return;
-    }
-
-    if (currentPuzzle.type === "agecode") {
-      if (value % 100 !== 0 || value / 100 < 1 || value / 100 > 120) {
-        setError("That number doesn't match the trick. Check your calculation!");
-        playSound("wrong");
-        return;
-      }
-      setResult(`Your age is ${value / 100}!`);
-      setError("");
-      playSound("reveal");
-      setStep(6);
-      return;
-    }
-
-    if (currentPuzzle.type === "birthdaycode") {
-      const month = Math.floor(value / 100);
-      const day = value % 100;
-      const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-      const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-      if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
-        setError("That doesn't look like a valid birthday. Check your calculation!");
-        playSound("wrong");
-        return;
-      }
-      setResult(`Your birthday is ${months[month - 1]} ${day}!`);
-      setError("");
-      playSound("reveal");
-      setStep(6);
-    }
   }
 
   function revealMagic() {
@@ -1304,14 +1239,14 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
             <div className="hacker-reveal-screen">
               <div className="hacker-reveal-icon">😂</div>
               <div className="hacker-kicker">SYSTEM REPORT · ODDORA CLASSIFIED</div>
-              {sharedPrank?.mode === "friend" && (
+              {sharedSim?.mode === "friend" && (
                 <p className="hacker-reveal-message">
-                  Don't worry! Your friend <strong>{sharedPrank.sender}</strong> pranked you! 😂
+                  Relax! <strong>{sharedSim.sender}</strong> sent you this interactive simulation! 😂
                 </p>
               )}
-              <h1>YOU GOT <span>HACKED.</span></h1>
+              <h1>SIMULATION <span>COMPLETE.</span></h1>
               <p className="hacker-reveal-message">{result}</p>
-              <div className="hacker-stamp">100% HARMLESS PRANK</div>
+              <div className="hacker-stamp">100% HARMLESS SIMULATION</div>
               <div className="hacker-reveal-actions">
                 <button className="hacker-launch-again" onClick={runHacker}>↻ RUN IT AGAIN</button>
                 <button className="hacker-exit" onClick={() => { exitDeviceFullscreen(); onClose(); }}>BACK TO ODDORA</button>
@@ -1458,58 +1393,35 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           <div className="modal-stage intro-stage">
             <div className="stage-orb">{item.icon}</div>
 
-            {item.category === "OD PRANKS" ? (
+            {item.category === "OD CHAOS" ? (
               <>
-                {sharedPrank?.mode === "friend" ? (
-                  <div className="realistic-gate">
-                    <div className="gate-badge">
-                      {item.id === "update" ? "⚙️ SYSTEM FIRMWARE NOTICE" : item.id === "virus" ? "🛡️ DEVICE INTEGRITY CHECK" : "🔒 BROWSER SECURITY VERIFICATION"}
-                    </div>
-                    <h3>
-                      {item.id === "update"
-                        ? "Critical System Patch Queued"
-                        : item.id === "virus"
-                          ? "Suspicious Background Activity Flagged"
-                          : `Encrypted Session Shared by ${sharedPrank.sender}`}
-                    </h3>
-                    <p>
-                      {item.id === "update"
-                        ? "Your device requires an immediate stability & display calibration update before continuing."
-                        : item.id === "virus"
-                          ? "An automated diagnostic check was requested for this browser session. Tap below to inspect."
-                          : `${sharedPrank.sender} granted you temporary access to a protected terminal session. Verify your browser to proceed.`}
-                    </p>
-                    <button className="primary-btn gate-btn" onClick={startExperience}>
-                      {item.id === "update" ? "Install Update Now" : item.id === "virus" ? "Run Quick Diagnostic" : "Verify & Continue"} <ChevronRight size={17}/>
-                    </button>
-                  </div>
-                ) : (
+                {sharedSim?.mode === "friend" ? null : (
                   <>
-                    <p>How do you want to enjoy this prank?</p>
+                    <p>How do you want to run this experience?</p>
 
                     <div className="prank-mode-options">
                       <button
                         type="button"
-                        className={prankMode === "self" ? "prank-mode-card active" : "prank-mode-card"}
-                        onClick={() => { setPrankMode("self"); setLinkError(""); }}
+                        className={simMode === "self" ? "prank-mode-card active" : "prank-mode-card"}
+                        onClick={() => { setSimMode("self"); setLinkError(""); }}
                       >
-                        <span>😈</span>
-                        <strong>Prank Myself</strong>
-                        <small>Experience the prank yourself</small>
+                        <span>⚡</span>
+                        <strong>Try Myself</strong>
+                        <small>Launch interactive mode now</small>
                       </button>
 
                       <button
                         type="button"
-                        className={prankMode === "friend" ? "prank-mode-card active" : "prank-mode-card"}
-                        onClick={() => { setPrankMode("friend"); setLinkError(""); }}
+                        className={simMode === "friend" ? "prank-mode-card active" : "prank-mode-card"}
+                        onClick={() => { setSimMode("friend"); setLinkError(""); }}
                       >
                         <span>🫣</span>
-                        <strong>Prank a Friend</strong>
-                        <small>Send a surprise link to someone</small>
+                        <strong>Send to a Friend</strong>
+                        <small>Generate a direct surprise link</small>
                       </button>
                     </div>
 
-                    {prankMode === "self" ? (
+                    {simMode === "self" ? (
                       <button className="primary-btn" onClick={startExperience}>
                         Let's do this <Zap size={17}/>
                       </button>
@@ -1530,9 +1442,9 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
                           disabled={!senderName.trim()}
                         >
                           <Share2 size={17}/>
-                          {linkCopied ? "Link copied!" : "Create prank link"}
+                          {linkCopied ? "Link copied!" : "Create share link"}
                         </button>
-                        <small>Share the link with your friend. The prank starts when they open it.</small>
+                        <small>Share this link with your friend. The experience launches when they open it.</small>
                       </div>
                     )}
                   </>
@@ -1551,7 +1463,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* FAKE SOFTWARE UPDATE */}
+        {/* OS SYSTEM UPDATE */}
         {step === 9 && item.id === "update" && (() => {
           const progress = updateElapsed < 4
             ? 12
@@ -1584,7 +1496,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
                   <p className="software-update-warning">Do not turn off your device</p>
                 </>
               ) : (
-                <div className="fake-restart">
+                <div className="sim-restart">
                   <div className="restart-spinner"></div>
                   <h2>Restarting...</h2>
                   <p>Preparing your device</p>
@@ -1644,7 +1556,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* FAKE IQ TEST */}
+        {/* BRAIN REFLEX TEST */}
         {step === 12 && item.id === "iq" && (
           <div className={item.id === "iq" ? "prank-stage iq-stage prank-fullscreen-takeover" : "prank-stage iq-stage"}>
             <div className="eyebrow muted">TOTALLY UNOFFICIAL IQ TEST</div>
@@ -1683,38 +1595,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* WHAT IF 3-CHOICE SIMULATOR */}
-        {step === 15 && item.id === "whatif" && (
-          <div className={item.id === "iq" ? "prank-stage iq-stage prank-fullscreen-takeover" : "prank-stage iq-stage"}>
-            <div className="eyebrow muted">{whatIfQuestions[whatIfStep].step}</div>
-            <h3>{whatIfQuestions[whatIfStep].question}</h3>
-            <div className="iq-options">
-              {whatIfQuestions[whatIfStep].options.map(opt => (
-                <button
-                  key={opt.label}
-                  className="choice"
-                  onClick={() => {
-                    playSound("tap");
-                    triggerHaptic(12);
-                    const updated = [...whatIfScores, opt.score];
-                    setWhatIfScores(updated);
-                    if (whatIfStep < whatIfQuestions.length - 1) {
-                      setWhatIfStep(s => s + 1);
-                    } else {
-                      const counts = updated.reduce((acc, k) => ({ ...acc, [k]: (acc[k] || 0) + 1 }), {});
-                      const topKey = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "chaotic";
-                      playSound("reveal");
-                      setResult(whatIfOutcomes[topKey]);
-                      setStep(2);
-                    }
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* XO MULTIPLAYER + SOLO AI */}
         {step === 13 && item.id === "xo" && (
@@ -1760,27 +1641,14 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* CUSTOM VIP INCOMING CALL */}
-        {step === 17 && item.id === "vip-call" && (
-          <VIPCallExperience onBack={onBackToGames} playSound={playSound} sharedPrank={sharedPrank} />
-        )}
 
-        {/* BILLIONAIRE VAULT ALERT */}
-        {step === 18 && item.id === "billionaire-alert" && (
-          <BillionaireAlertExperience onBack={onBackToGames} playSound={playSound} sharedPrank={sharedPrank} />
-        )}
-
-        {/* BUY THE UNIVERSE LUXURY FLEX */}
-        {step === 19 && item.id === "buy-universe" && (
-          <BuyUniverseExperience onBack={onBackToGames} playSound={playSound} />
-        )}
 
         {/* GENERAL RESULT */}
         {step === 2 && (
           <div className="result-stage">
             <div className="result-spark">✨</div>
             <div className="eyebrow muted">YOUR OFFICIAL RESULT</div>
-            {item.category === "OD PRANKS" && (() => {
+            {item.category === "OD CHAOS" && (() => {
               const verdicts = {
                 update: { badge: "HEART RATE: +140 BPM 💓", title: "100% SCREEN ILLUSION", sub: "Zero files touched. Your phone didn't even blink." },
                 virus: { badge: "DIAGNOSIS: CHRONIC SCROLLING 📱", title: "QUARANTINE COMPLETE", sub: "No actual viruses found—just unmatched screen time." },
@@ -1790,10 +1658,10 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
               const v = verdicts[item.id] || { badge: "SIMULATION COMPLETE ⚡", title: "GOTCHA!", sub: "Completely harmless visual chaos." };
               return (
                 <div className="prank-final-reveal">
-                  <span>{sharedPrank?.mode === "friend" ? "🎯" : "⚡"}</span>
+                  <span>{sharedSim?.mode === "friend" ? "🎯" : "⚡"}</span>
                   <div className="eyebrow muted" style={{ justifyContent: "center", marginTop: 6 }}>{v.badge}</div>
-                  <h3>{sharedPrank?.mode === "friend" ? `${sharedPrank.sender.toUpperCase()} GOT YOU!` : v.title}</h3>
-                  <p>{sharedPrank?.mode === "friend" ? `${sharedPrank.sender} sent you this trap. ${v.sub}` : v.sub}</p>
+                  <h3>{sharedSim?.mode === "friend" ? `${sharedSim.sender.toUpperCase()} GOT YOU!` : v.title}</h3>
+                  <p>{sharedSim?.mode === "friend" ? `${sharedSim.sender} sent you this trap. ${v.sub}` : v.sub}</p>
                 </div>
               );
             })()}
@@ -1995,33 +1863,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedPrank, xoInvite
           </div>
         )}
 
-        {/* ENTER THE FINAL NUMBER */}
-        {step === 8 && item.id === "mind" && (
-          <div className="result-stage" style={{ textAlign: "left" }}>
-            <div className="result-spark" style={{ textAlign: "center" }}>
-              {currentPuzzle.type === "agecode" ? "🎯" : "🎂"}
-            </div>
-            <h3 style={{ textAlign: "center" }}>
-              {currentPuzzle.type === "agecode" ? "What final number did you get?" : "Enter your final birthday code"}
-            </h3>
-            <p className="modal-description" style={{ textAlign: "center" }}>
-              Enter only the final number from your calculation.
-            </p>
-            <label style={{ display: "block", marginTop: 14, width: "100%" }}>
-              Your final number
-              <input type="number" inputMode="numeric" value={puzzleCode}
-                onChange={e => { setPuzzleCode(e.target.value); setError(""); }}
-                placeholder={currentPuzzle.type === "agecode" ? "Example: 2500" : "Example: 1107"}
-                style={fieldStyle}/>
-            </label>
-            {error && <p style={{ color: "#ff8585", marginTop: 10 }}>{error}</p>}
-            <button className="primary-btn" style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
-              disabled={!puzzleCode.trim()} onClick={decodePuzzleCode}>Decode my answer 🔮</button>
-            <p className="modal-description" style={{ textAlign: "center", marginTop: 10 }}>
-              Your entry is processed locally and is not saved.
-            </p>
-          </div>
-        )}
+
 
         {/* PREDICTION RESULT */}
         {step === 6 && item.id === "mind" && (
@@ -3179,7 +3021,7 @@ function CatchMyHeart({ onBack, onExplore, onCreateChallenge, initialRoomCode = 
 
 const TAP_DIFFICULTIES = {
   easy:   { label: "Easy",   interval: 950,  trapChance: 0.20, bonusChance: 0.14, desc: "Relaxed pace · Fewer decoy traps" },
-  medium: { label: "Medium", interval: 720,  trapChance: 0.30, bonusChance: 0.16, desc: "Balanced speed · Fakeout traps" },
+  medium: { label: "Medium", interval: 720,  trapChance: 0.30, bonusChance: 0.16, desc: "Balanced speed · Decoy traps" },
   hard:   { label: "Hard",   interval: 540,  trapChance: 0.38, bonusChance: 0.18, desc: "Fast spawns · High trap density" },
   chaos:  { label: "Chaos",  interval: 400,  trapChance: 0.45, bonusChance: 0.22, desc: "Hyper-speed · Rapid trap shifts" }
 };
@@ -4080,7 +3922,7 @@ function ODCreateStudio({ initialTab = "invite" }) {
   const [dressCode, setDressCode] = useState("Black / Pastel Aesthetic ✨");
   const [datePlace, setDatePlace] = useState("Sunset Coffee & Long Drive ☕");
   const [yesAckMessage, setYesAckMessage] = useState("It's official! Tap Share Result Card below and send it to me 💌");
-  const [noPrankMessage, setNoPrankMessage] = useState("😂 YOU GOT PRANKED! Relax, this was just an ODDORA social experiment! Nice reflexes though 💀");
+  const [noTwistMessage, setNoTwistMessage] = useState("😂 PLOT TWIST! Relax, this was an ODDORA interactive social experiment! Nice reflexes though 💀");
 
   function applyInviteTemplate(tpl) {
     setInviteTitle(tpl.title);
@@ -4149,7 +3991,7 @@ function ODCreateStudio({ initialTab = "invite" }) {
         dressCode: (dressCode.trim() || "Your best vibe ✨").slice(0, 80),
         datePlace: (datePlace.trim() || "Surprise spot 📍").slice(0, 80),
         yesAckMessage: (yesAckMessage.trim() || "Confirmed! Share the result card back 💌").slice(0, 220),
-        noPrankMessage: (noPrankMessage.trim() || "😂 YOU GOT PRANKED! Just a harmless ODDORA test!").slice(0, 220)
+        noTwistMessage: (noTwistMessage.trim() || "😂 PLOT TWIST! Just a harmless ODDORA interactive test!").slice(0, 220)
       }
     };
   }
@@ -4429,7 +4271,7 @@ Open here: ${publishedUrl}`;
               <input value={propYesLabel} onChange={e => setPropYesLabel(e.target.value)} maxLength={28}/>
             </label>
             <label className="odc-field">
-              <span>NO BUTTON (Prank Escape)</span>
+              <span>NO BUTTON (Plot-Twist Escape)</span>
               <input value={propNoLabel} onChange={e => setPropNoLabel(e.target.value)} maxLength={28}/>
             </label>
           </div>
@@ -4451,8 +4293,8 @@ Open here: ${publishedUrl}`;
           </label>
 
           <label className="odc-field">
-            <span>IF NO → PLAYFUL PRANK REVEAL MESSAGE</span>
-            <input value={noPrankMessage} onChange={e => setNoPrankMessage(e.target.value)} maxLength={220}/>
+            <span>IF NO → PLAYFUL TWIST REVEAL MESSAGE</span>
+            <input value={noTwistMessage} onChange={e => setNoTwistMessage(e.target.value)} maxLength={220}/>
           </label>
 
           <div className="odc-action-row">
@@ -4473,7 +4315,7 @@ function InteractiveCreationView({ data, isPreview = false, onReplyCreate }) {
   const [dodgeCount, setDodgeCount] = useState(0);
   const [noOffset, setNoOffset] = useState({ x: 0, y: 0 });
   const [inviteOutcome, setInviteOutcome] = useState(""); // "" | "yes"
-  const [propStage, setPropStage] = useState(0); // 0=Q1, 1=Q2, 2=Final, 3=YesResult, 4=NoPrankResult
+  const [propStage, setPropStage] = useState(0); // 0=Q1, 1=Q2, 2=Final, 3=YesResult, 4=NoTwistResult
   const [acknowledged, setAcknowledged] = useState(false);
   const [cardShared, setCardShared] = useState(false);
 
@@ -4694,18 +4536,18 @@ function InteractiveCreationView({ data, isPreview = false, onReplyCreate }) {
       ) : (
         <div className="odc-outcome-box">
           <div className="heart-burst">😂</div>
-          <h3>YOU GOT PRANKED!</h3>
-          <p className="result-text">{p.noPrankMessage}</p>
+          <h3>PLOT TWIST! 😂</h3>
+          <p className="result-text">{p.noTwistMessage}</p>
           <div className="result-actions">
             <button
               type="button"
               className="primary-btn"
               onClick={() => handleShareOutcomeCard(
                 "OD Propose",
-                "YOU GOT PRANKED! 😂",
+                "PLOT TWIST! 😂",
                 `${data.creatorName} caught ${data.recipientName} in an ODDORA trap!`,
                 "100% HARMLESS EXPERIMENT",
-                p.noPrankMessage
+                p.noTwistMessage
               )}
             >
               <Share2 size={16}/> {cardShared ? "Card Saved ✓" : "Share Result Card"}

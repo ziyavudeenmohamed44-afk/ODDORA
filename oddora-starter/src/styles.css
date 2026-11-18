@@ -2446,199 +2446,96 @@ a {
   }
 }
 
-/* VIP CALL & BILLIONAIRE ALERT STYLES */
-.vip-call-screen {
-  position:relative;
-  min-height:360px;
-  background:#050508;
-  border-radius:18px;
-  padding:35px 20px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  overflow:hidden;
-  color:#fff;
-  border:1px solid rgba(167,139,250,.3);
+/* Ensure readable light text inside dark-themed OD Create cards in Light Mode */
+.odc-player-card,
+.odc-player-card .result-text,
+.odc-player-card h2,
+.odc-player-card h3,
+.odc-player-card p {
+  color: #f5f3ff !important;
 }
-.vip-call-glow {
-  position:absolute;
-  inset:0;
-  background:radial-gradient(circle at 50% 30%,rgba(74,222,128,.18),transparent 70%);
-  pointer-events:none;
-}
-.vip-caller-avatar {
-  width:88px;
-  height:88px;
-  border-radius:50%;
-  background:rgba(255,255,255,.1);
-  border:2px solid rgba(255,255,255,.25);
-  display:grid;
-  place-items:center;
-  font-size:42px;
-  margin-bottom:14px;
-  box-shadow:0 0 35px rgba(255,255,255,.15);
-}
-.vip-call-status {
-  font:11px 'DM Mono',monospace;
-  color:#4ade80;
-  letter-spacing:1px;
-  margin:6px 0 28px;
-}
-.vip-call-actions {
-  display:flex;
-  gap:24px;
-  width:100%;
-  justify-content:center;
-}
-.vip-decline-btn,
-.vip-accept-btn {
-  border:0;
-  border-radius:999px;
-  padding:14px 26px;
-  font-weight:700;
-  font-size:14px;
-}
-.vip-decline-btn {
-  background:#ef4444;
-  color:#fff;
-  box-shadow:0 8px 25px rgba(239,68,68,.35);
-}
-.vip-accept-btn {
-  background:#4ade80;
-  color:#050508;
-  box-shadow:0 8px 25px rgba(74,222,128,.35);
-}
-.bank-push-popup {
-  background:var(--panel);
-  border:1px solid rgba(74,222,128,.35);
-  border-radius:16px;
-  padding:22px;
-  text-align:left;
-  display:grid;
-  gap:10px;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-}
-.bank-push-head {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font:500 11px 'DM Mono',monospace;
-  color:var(--muted);
-  border-bottom:1px solid var(--line);
-  padding-bottom:8px;
-}
-.bank-push-popup h4 {
-  margin:0;
-  font-size:18px;
-  color:#4ade80;
-}
-.bank-push-popup p {
-  margin:0;
-  font-size:13px;
-  color:var(--text-main);
-  line-height:1.5;
-}
-.bank-receipt-box {
-  background:var(--surface-alt);
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:10px 12px;
-  display:grid;
-  gap:6px;
-  font-size:11px;
-  font-family:'DM Mono',monospace;
-}
-.bank-receipt-box div {
-  display:flex;
-  justify-content:space-between;
-}
-.bank-receipt-box span {
-  color:var(--muted);
+.odc-player-card .muted {
+  color: #c8c0dc !important;
 }
 
-/* VIP CALL FULLSCREEN STYLES */
-.vip-call-fullscreen {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 99999 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  background: #050508;
+
+/* 3D Coin Spin Animation for Hero Big O Portal (Zero layout/alignment impact) */
+.hero-art {
+  perspective: 1000px;
+}
+.portal {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.portal:hover,
+.portal.is-spinning {
+  animation: portalCoinSpin 0.85s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes portalCoinSpin {
+  0%   { transform: rotate(25deg) rotateY(0deg) scale(1); }
+  50%  { transform: rotate(25deg) rotateY(180deg) scale(1.06); box-shadow: 0 0 110px #a78bfaaa, 0 0 210px #44d6e966; }
+  100% { transform: rotate(25deg) rotateY(360deg) scale(1); }
+}
+
+/* Missing utility & animation classes used in App.jsx */
+.ticker-track {
+  display: inline-flex;
+  min-width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.green-text {
+  color: #5cff9b !important;
+}
+.hacker-cursor {
+  animation: hackerBlink .9s steps(1) infinite;
+}
+.hacker-terminal-intro {
+  color: #60d990;
+  font-size: 10px;
+}
+.hacker-terminal-gap {
+  height: 12px;
+}
+.hacker-typing-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.hacker-typing-line i {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: #5cff9b;
+  animation: hackerBlink .8s infinite;
+}
+.update-subtitle,
+.software-update-message {
+  font-size: 15px;
+  opacity: .92;
+  margin: 6px 0;
+}
+.sim-restart {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 14px;
+}
+.xo-invite-note {
   text-align: center;
-  padding: 30px;
-  color: #fff;
-  overflow-y: auto;
-}
-.vip-caller-avatar-lg {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.12);
-  border: 3px solid rgba(255,255,255,.3);
-  display: grid;
-  place-items: center;
-  font-size: 52px;
-  margin-bottom: 18px;
-  box-shadow: 0 0 50px rgba(74,222,128,.3);
-}
-.bank-dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  padding: 14px;
-  border-radius: 12px;
-}
-.bank-balance-card {
-  background: linear-gradient(135deg, rgba(74,222,128,.15), rgba(56,189,248,.1));
-  border: 1px solid rgba(74,222,128,.35);
-  border-radius: 14px;
-  padding: 18px;
-  display: grid;
-  gap: 6px;
-  margin: 10px 0;
-}
-.bank-balance-card span {
-  font: 10px 'DM Mono', monospace;
+  font-size: 11px;
   color: var(--muted);
-  letter-spacing: 1px;
+  margin: 4px 0 0;
 }
-.bank-balance-card h2 {
-  margin: 0;
-  font-size: 28px;
-  color: #4ade80;
+.heart-result-copy {
+  font-size: 13px;
+  color: #d5cce6;
+  line-height: 1.6;
+  margin: 6px 0 12px;
 }
-.bank-statement-row {
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  padding: 10px 12px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-}
-
-/* Brand mark coin spin animation on hover / tap */
-.brand-mark {
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-}
-.brand:hover .brand-mark,
-.brand-mark:active {
-  transform: rotateY(360deg);
-}
-
-/* Fix mobile and desktop top spacing alignment */
-@media(max-width: 620px) {
-  .hero {
-    padding-top: 18px !important;
-  }
+.heart-result-quote {
+  font-size: 13px;
+  font-style: italic;
+  color: #f3a7db;
+  margin: 10px 0 16px;
 }
