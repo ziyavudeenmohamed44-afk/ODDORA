@@ -814,12 +814,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCo
   const lastHackerToneRef = useRef(-1);
   const autoStartedRef = useRef(false);
 
-  useEffect(() => {
-    if (sharedSim?.mode === "friend" && item.category === "OD CHAOS" && !autoStartedRef.current) {
-      autoStartedRef.current = true;
-      startExperience();
-    }
-  }, [sharedSim, item]);
+
 
   async function playSound(kind = "tap") {
     if (!soundEnabledRef.current) return;
@@ -901,10 +896,18 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCo
   }
 
   function toggleSound() {
+    if (item.category === "OD CHAOS") {
+      enterDeviceFullscreen();
+    }
     setSoundEnabled(current => {
       const next = !current;
       soundEnabledRef.current = next;
-      if (next) playSound("reveal");
+      if (next) {
+        if (item.id === "hacker" && step === 1) playSound("boot");
+        else if (item.id === "update" && step === 9) playSound("suspense");
+        else if (item.id === "virus" && step === 10) playSound("alert");
+        else playSound("reveal");
+      }
       return next;
     });
   }
@@ -1139,23 +1142,36 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCo
 
 
   useEffect(() => {
-    if (item.category !== "OD CHAOS" || step === 0) return undefined;
+    if (item.category !== "OD CHAOS" || step === 0 || step === 2) return undefined;
+    let audioUnlocked = false;
     const unlockImmersive = () => {
-      enterDeviceFullscreen();
-      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume().then(() => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        enterDeviceFullscreen();
+      }
+      if (!audioUnlocked && soundEnabledRef.current) {
+        audioUnlocked = true;
+        const triggerActiveAudio = () => {
           if (item.id === "hacker" && step === 1) playSound("boot");
           else if (item.id === "update" && step === 9) playSound("suspense");
           else if (item.id === "virus" && step === 10) playSound("alert");
-        }).catch(() => {});
-      } else if (!audioContextRef.current && soundEnabledRef.current) {
-        if (item.id === "hacker" && step === 1) playSound("boot");
-        else if (item.id === "update" && step === 9) playSound("suspense");
-        else if (item.id === "virus" && step === 10) playSound("alert");
+          else if (item.id === "button" && step === 11) playSound("tap");
+          else if (item.id === "iq" && step === 12) playSound("step");
+        };
+        if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+          audioContextRef.current.resume().then(triggerActiveAudio).catch(() => { audioUnlocked = false; });
+        } else {
+          triggerActiveAudio();
+        }
       }
     };
-    window.addEventListener("pointerdown", unlockImmersive, { once: true });
-    return () => window.removeEventListener("pointerdown", unlockImmersive);
+    window.addEventListener("click", unlockImmersive, true);
+    window.addEventListener("touchend", unlockImmersive, true);
+    window.addEventListener("keydown", unlockImmersive, true);
+    return () => {
+      window.removeEventListener("click", unlockImmersive, true);
+      window.removeEventListener("touchend", unlockImmersive, true);
+      window.removeEventListener("keydown", unlockImmersive, true);
+    };
   }, [item.category, item.id, step]);
 
   function revealWeekday() {
@@ -1336,6 +1352,57 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCo
     );
   }
 
+  if (sharedSim?.mode === "friend" && item.category === "OD CHAOS" && step === 0) {
+    const alertCopy = {
+      hacker: {
+        title: "System Security Alert",
+        body: `Unusual remote session activity detected via shared link from ${sharedSim.sender}. Tap OK to run immediate diagnostic.`
+      },
+      update: {
+        title: "Critical System Update",
+        body: "Important display & security firmware patch is ready to install. Do not close this window."
+      },
+      virus: {
+        title: "Device Protection Warning",
+        body: "Potential background anomaly flagged in browser memory. Tap OK to scan immediately."
+      },
+      button: {
+        title: "Restricted System Control",
+        body: `${sharedSim.sender} shared a restricted system trigger. Tap OK to inspect.`
+      },
+      iq: {
+        title: "Cognitive Calibration Check",
+        body: `${sharedSim.sender} challenged your device reflex benchmark. Tap OK to begin.`
+      }
+    }[item.id] || {
+      title: "System Alert",
+      body: "Unusual activity detected. Tap OK to continue."
+    };
+
+    return (
+      <div className="sys-alert-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="sys-alert-title">
+        <div className="sys-alert-box">
+          <div className="sys-alert-head">
+            <span className="sys-alert-warn">⚠️</span>
+            <strong id="sys-alert-title">{alertCopy.title}</strong>
+          </div>
+          <p className="sys-alert-body">{alertCopy.body}</p>
+          <div className="sys-alert-actions">
+            <button
+              type="button"
+              className="sys-alert-ok"
+              onClick={() => {
+                startExperience();
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-backdrop" onMouseDown={e => {
       if (e.target === e.currentTarget) onClose();
@@ -1478,7 +1545,7 @@ function ExperienceModal({ item, onClose, onShare, copied, sharedSim, xoInviteCo
           const restarting = updateElapsed >= 20;
 
           return (
-            <div className="software-update-screen">
+            <div className="software-update-screen" onClick={() => enterDeviceFullscreen()}>
               {!restarting ? (
                 <>
                   <div className="windows-update-logo">◈</div>

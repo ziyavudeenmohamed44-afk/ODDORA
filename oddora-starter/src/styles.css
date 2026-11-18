@@ -2539,3 +2539,72 @@ a {
   color: #f3a7db;
   margin: 10px 0 16px;
 }
+
+
+/* Native OS System Alert Popup for Friend Ambush Links (Option 2) */
+.sys-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.sys-alert-box {
+  width: min(100%, 340px);
+  background: #1c1c1e;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+  animation: fadeUp 0.18s ease-out;
+}
+.sys-alert-head {
+  padding: 20px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.sys-alert-warn {
+  font-size: 30px;
+  line-height: 1;
+}
+.sys-alert-head strong {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #ffffff;
+}
+.sys-alert-body {
+  margin: 0;
+  padding: 0 22px 20px;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+}
+.sys-alert-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+}
+.sys-alert-ok {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #0a84ff;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 14px 16px;
+  transition: background 0.15s ease;
+}
+.sys-alert-ok:hover,
+.sys-alert-ok:active {
+  background: rgba(255, 255, 255, 0.08);
+}
