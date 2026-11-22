@@ -1,7 +1,7 @@
 import React, { Component, useEffect, useRef, useState } from "react";
 import {
   Share2, RotateCcw, Bot, Users, Send,
-  Zap, Check, Copy, Trophy, X, Inbox, ArrowRight, ArrowLeft, Maximize2
+  Zap, Check, Copy, Trophy, X, Inbox, ArrowRight, ArrowLeft, Maximize2, Radio
 } from "lucide-react";
 import { database, signInPlayer } from "./firebase";
 import { get, onValue, push, ref, runTransaction, set } from "firebase/database";
@@ -20,6 +20,12 @@ function safeGetStorage(key, fallback = "") {
 function safeSetStorage(key, value) {
   try {
     window.localStorage.setItem(key, value);
+  } catch {}
+}
+
+function safeRemoveStorage(key) {
+  try {
+    window.localStorage.removeItem(key);
   } catch {}
 }
 
@@ -114,6 +120,14 @@ function requestAppFullscreen() {
     if (!document.fullscreenElement && el.requestFullscreen) {
       el.requestFullscreen().catch(() => {});
     }
+  } catch {}
+}
+
+function focusScrollCenter(e) {
+  try {
+    setTimeout(() => {
+      e?.target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 220);
   } catch {}
 }
 
@@ -238,8 +252,7 @@ function UniversalShareBar({ url, shareText, title = "ODDORA Link" }) {
     fx("tap", 14);
     try {
       if (navigator.share) {
-        await navigator.share({ title, text: `${shareText}
-${url}`, url });
+        await navigator.share({ title, text: `${shareText}\n${url}`, url });
       } else {
         handleCopy();
       }
@@ -248,8 +261,7 @@ ${url}`, url });
 
   function handleWhatsApp() {
     fx("tap", 14);
-    const full = `${shareText}
-${url}`;
+    const full = `${shareText}\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(full)}`, "_blank", "noopener,noreferrer");
   }
 
@@ -269,7 +281,7 @@ ${url}`;
 }
 
 /* ============================================================================
-   3. QUICK SPARKS & ANY-LANGUAGE SMART GENERATOR (OD Trap & OD Trick)
+   3. QUICK SPARKS, LANGUAGE DETECTOR & CONTEXT-AWARE MULTILINGUAL GENERATOR
 ============================================================================ */
 const TRAP_SPARKS = [
   { id: "treat", tag: "🍕 Treat Trap", cardColor: "lime", title: "You owe me food today 🍕", yesLabel: "Fine, I'll pay 💸", noLabel: "No", yesMessage: "Screenshot locked! See you at the food spot 🍕🔥" },
@@ -285,22 +297,59 @@ const TRICK_SPARKS = [
   { id: "gold", label: "👑 Bestie", defaultQ: "Best friends for life—no take-backs? 👑" }
 ];
 
-const DODGE_TAUNTS = ["Too slow 👀", "Nice try 😏", "Button glitched ⚡", "Why chasing No?! 😂", "Almost caught it 🏃‍♂️💨", "Can't touch this 🔥"];
+const TALKING_NO_EN = ["Catch me 👀", "Too slow 😜", "Almost! 🏃‍♂️", "Okay fine..."];
+const TALKING_NO_TA = ["Vandhu thodu 👀", "Mudinja va 🔥", "Ayyo miss! 😂", "Seri okay..."];
+const SENDER_QUICK_REPLIES = ["Caught in 4K 📸", "Treat locked 🍕", "Haha gotcha 😂", "No take-backs! ⚡"];
 const DUEL_TAUNTS = ["Too slow 💀", "Sweating? 😅", "Calculated 🧠", "Rematch rn 🔥"];
 const XO_WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const HEART_CHOICES = ["❤️", "💖", "💜", "💙", "💚", "💛", "🧡", "🩷", "🤍"];
 
+function isTamilOrTanglish(text = "") {
+  const s = String(text || "");
+  if (/[\u0B80-\u0BFF]/.test(s)) return true;
+  if (/\b(da|di|va|vaa|vaada|venam|vendam|mudiyadhu|mudinja|pudichiruka|pudikuma|saapda|sapda|saapadu|sapadu|polama|pogalama|povoma|varriya|variya|sandai|machan|machi|mapla|mappillai|nanba|thala|unga|ungaluku|enna|ena|illa|aama|seri|vaangi|tharen|thariya|panra|pannuveenga|idhu|nalla|iruku|sollu|padam|padathuku|sarakku|ennudhu|unnodadhu|unaku|enaku|kodu|kudupa|vaanga|ponga)\b/i.test(s)) {
+    return true;
+  }
+  return /(lama|viya|riya|veenga|duven|poren|varen|kitta|iruku|aagum)\b/i.test(s);
+}
+
 function generateWarmupQuestions(mainQuestion, themeId, variantIndex = 0) {
   const q = String(mainQuestion || "").toLowerCase();
+  const tanglish = isTamilOrTanglish(q);
+
+  // Context-aware pools — NEVER gives romantic options to a website/app/general question!
   const pools = {
-    fight: [
+    website: tanglish ? [
+      [
+        { q: "1. First impression-la idhu epdi iruku?", options: ["Semma clean-a iruku 🔥", "Konjam vibe-a iruku 👀", "Paathutu solren 😎"] },
+        { q: "2. Friends group-la share panna worth-ah?", options: ["100% Share pannuven 🚀", "Kandippa prank pannuven 😂", "First naane try panren ⚡"] }
+      ]
+    ] : [
+      [
+        { q: "1. Honest first impression of this?", options: ["Super clean & fun 🔥", "Actually pretty cool 👀", "Let me test more 😎"] },
+        { q: "2. Would you drop this in your group chat?", options: ["100% Yes 🚀", "Only to prank friends 😂", "Already thinking who 👀"] }
+      ]
+    ],
+    fight: tanglish ? [
+      [
+        { q: "1. Indha sandaiku unoda weapon enna?", options: ["Sarcasm & Roasts 💀", "Odi poiduven 🏃‍♂️", "Biryani vaangi tharen 🍗"] },
+        { q: "2. Honest-a sollu, eppovum yaar win pannuva?", options: ["Obviously Naan dhaan 👑", "Nee (cheating panni) 🙄", "50-50 Chaos 🤝"] }
+      ]
+    ] : [
       [
         { q: "1. Pick your weapon for this showdown:", options: ["Sarcasm & Roasts 💀", "Running away fast 🏃‍♂️", "Buying me biryani 🍗"] },
         { q: "2. Honestly, who wins 99% of our fights?", options: ["Obviously Me 👑", "You (by cheating) 🙄", "50-50 Chaos 🤝"] }
-      ],
+      ]
+    ],
+    food: tanglish ? [
       [
-        { q: "1. Ground & time for the battle?", options: ["Right now in DMs ⚡", "After snacks 🍕", "I surrender already 🏳️"] },
-        { q: "2. Loser treats the winner. Deal?", options: ["Deal, bring it 🔥", "Wait no 💀", "Easy win for me 😎"] }
+        { q: "1. Ippo treat-na unoda first choice enna?", options: ["Biryani / Shawarma 🍗", "Pizza & Fries 🍕", "Cold Coffee & Snacks ☕"] },
+        { q: "2. Bill varumbodhu nee enna pannuva?", options: ["GPay ready-a irukkum 💸", "Phone silent poiduven 😂", "Split pannikalam 🤝"] }
+      ]
+    ] : [
+      [
+        { q: "1. What's the #1 craving right now?", options: ["Pizza / Burgers 🍕", "Biryani feast 🍗", "Iced coffee & dessert ☕"] },
+        { q: "2. When the bill arrives, you usually:", options: ["Pay like a boss 💸", "Pretend to check phone 😂", "Rock-paper-scissors ✌️"] }
       ]
     ],
     marry: [
@@ -313,10 +362,6 @@ function generateWarmupQuestions(mainQuestion, themeId, variantIndex = 0) {
       [
         { q: "1. Ideal vibe for hanging out tonight?", options: ["Iced coffee + long drive ☕", "Street food hopping 🌮", "Late-night playlist & chill 🎧"] },
         { q: "2. Be honest—how fast do you get ready?", options: ["10 mins flat ⚡", "Fashionably late 😎", "Depends on the person 👀"] }
-      ],
-      [
-        { q: "1. What makes a hangout unforgettable?", options: ["The right company ✨", "Zero awkward silence 💬", "Spontaneous plans 🚀"] },
-        { q: "2. Do some connections happen for a reason?", options: ["100% Yes 💫", "Prove it 😏", "Destiny knows 👀"] }
       ]
     ],
     ldr: [
@@ -330,16 +375,36 @@ function generateWarmupQuestions(mainQuestion, themeId, variantIndex = 0) {
         { q: "1. Who brings 90% of the chaotic energy?", options: ["Definitely You 😎", "100% Me 👑", "50-50 Partners in Crime 🤝"] },
         { q: "2. Rule #1 of this friendship:", options: ["Never snitch 🔒", "Always share food 🍟", "Roast each other daily 💀"] }
       ]
+    ],
+    general: tanglish ? [
+      [
+        { q: "1. Honest-a answer pannuviya?", options: ["100% Honest-a solren 💯", "Question paathutu solren 👀", "No tension, kelunga ⚡"] },
+        { q: "2. Ready-ah? Next dhaan main question!", options: ["Ready, drop it 🔥", "Konjam bayama iruku 😅", "Bring it on 😎"] }
+      ]
+    ] : [
+      [
+        { q: "1. Promise to answer 100% honestly?", options: ["100% Honest 💯", "Depends on the question 👀", "No fear, ask away ⚡"] },
+        { q: "2. Ready? Next card is the real question!", options: ["Drop it 🔥", "Slightly nervous 😅", "Bring it on 😎"] }
+      ]
     ]
   };
 
-  let bucket = "date";
-  if (/(sandai|fight|clash|va da|vaada|beat|roast|challenge|dare|risk|bet)/i.test(q) || themeId === "lime") bucket = "fight";
+  let bucket = "general";
+  if (/(website|app|site|link|design|ui|ux|project|product|share|pudichiruka|pudikuma|feedback)/i.test(q)) bucket = "website";
+  else if (/(sandai|fight|clash|va da|vaada|beat|roast|challenge|dare|risk|bet)/i.test(q)) bucket = "fight";
+  else if (/(food|treat|pizza|biryani|shawarma|pay|gpay|money|saapda|sapda|saapadu|sapadu|tiffin|lunch|dinner|breakfast|snacks|hotel|restaurant|bill|coffee|tea|tea shop)/i.test(q)) bucket = "food";
   else if (/(marry|wedding|kalyanam|shaadi|wife|husband|forever)/i.test(q)) bucket = "marry";
-  else if (themeId === "cyan" || /(miss|distance|meet|flight|london|usa|uk)/i.test(q)) bucket = "ldr";
-  else if (themeId === "gold" || /(bestie|friend|bro|machan|machi|nanba|duo)/i.test(q)) bucket = "bestie";
+  else if (/(date|crush|love|valentine|propose|drive|hangout)/i.test(q)) bucket = "date";
+  else if (/(miss|distance|meet|flight|london|usa|uk|airport)/i.test(q)) bucket = "ldr";
+  else if (/(bestie|friend|bro|brother|machan|machi|nanba|duo)/i.test(q)) bucket = "bestie";
+  else if (!q.trim()) {
+    if (themeId === "pink") bucket = "date";
+    else if (themeId === "lime") bucket = "fight";
+    else if (themeId === "cyan") bucket = "ldr";
+    else if (themeId === "gold") bucket = "bestie";
+  }
 
-  const list = pools[bucket];
+  const list = pools[bucket] || pools.general;
   return list[variantIndex % list.length];
 }
 
@@ -347,6 +412,12 @@ function generateSmartOutcomes(questionText, senderName) {
   const q = String(questionText || "").toLowerCase();
   const from = (senderName || "your friend").trim();
 
+  if (/(website|app|site|link|design|ui|ux|project|pudichiruka|pudikuma)/i.test(q)) {
+    return {
+      yesMsg: `Awesome! ${from} is pumped you loved it — screenshot & share! ⚡🔥`,
+      noTwist: `😂 GOTCHA! ${from} caught you trying to say No — honest review locked 💀`
+    };
+  }
   if (/(sandai|fight|clash|va da|vaada|beat|roast)/i.test(q)) {
     return {
       yesMsg: `Challenge accepted! ${from} is officially ready for the showdown 🔥🥊`,
@@ -359,7 +430,7 @@ function generateSmartOutcomes(questionText, senderName) {
       noTwist: `😂 OD TRICK! Relax—you just got pranked by ${from}! Screenshot saved 💀💍`
     };
   }
-  if (/(food|treat|pizza|biryani|shawarma|pay|gpay|money|saapadu|bill)/i.test(q)) {
+  if (/(food|treat|pizza|biryani|shawarma|pay|gpay|money|saapda|sapda|saapadu|sapadu|tiffin|lunch|dinner|breakfast|snacks|hotel|bill|coffee)/i.test(q)) {
     return {
       yesMsg: `Deal locked! Screenshot saved—${from} is officially waiting for that treat 🍕💸`,
       noTwist: `😂 OD TRICK! Relax—pranked by ${from}! You dodged the bill, not the screenshot 💀`
@@ -372,9 +443,34 @@ function generateSmartOutcomes(questionText, senderName) {
     };
   }
   return {
-    yesMsg: `I have accepted ${from}'s link! Officially locked in—no take-backs 💘✨`,
+    yesMsg: `Locked in with ${from}! Screenshot saved — no take-backs ⚡✨`,
     noTwist: `😂 OD TRICK! Relax, you just got pranked by ${from}! Caught in an ODDORA trick 💀`
   };
+}
+
+// Optional Cloudflare Worker + Gemini AI call (if VITE_ODDORA_AI_URL is configured), instant smart fallback otherwise
+async function fetchAIWarmups(mainQuestion, themeId, variantIndex) {
+  const endpoint = import.meta?.env?.VITE_ODDORA_AI_URL;
+  if (endpoint && mainQuestion.trim().length > 3) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 3500);
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({ question: mainQuestion.trim() })
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.questions) && json.questions.length >= 2) {
+          return json.questions.slice(0, 2);
+        }
+      }
+    } catch {}
+  }
+  return generateWarmupQuestions(mainQuestion, themeId, variantIndex);
 }
 
 /* ============================================================================
@@ -552,18 +648,121 @@ async function createCollectibleReceipt({ badge, headline, subline, statPill, qu
 }
 
 /* ============================================================================
-   5. MAIN APP SHELL
+   5. REUSABLE 📡 LIVE RADAR + 2-WAY SENDER REPLY PANEL
+============================================================================ */
+function LiveRadarPanel({ code, recipientName, senderName }) {
+  const [events, setEvents] = useState([]);
+  const [replyText, setReplyText] = useState("");
+  const [sentFlash, setSentFlash] = useState("");
+
+  useEffect(() => {
+    if (!code) return undefined;
+    let initialCount = -1;
+    return onValue(
+      ref(database, `live/${code}`),
+      snap => {
+        const list = snap.exists() ? Object.values(snap.val()) : [];
+        if (initialCount !== -1 && list.length > initialCount) {
+          fx("notify", [35, 50, 35]);
+        }
+        initialCount = list.length;
+        setEvents(list.reverse());
+      },
+      () => {}
+    );
+  }, [code]);
+
+  function sendLiveReply(textToSend) {
+    const clean = String(textToSend || "").trim().slice(0, 120);
+    if (!clean || !code) return;
+    fx("tap", 14);
+    setReplyText("");
+    setSentFlash(`Sent: “${clean}” ✓`);
+    setTimeout(() => setSentFlash(""), 2600);
+    signInPlayer().catch(() => null).finally(() => {
+      push(ref(database, `senderReplies/${code}`), {
+        from: senderName || "Your friend",
+        text: clean,
+        ts: Date.now()
+      }).catch(() => {});
+      push(ref(database, `live/${code}`), {
+        msg: `📤 You replied: “${clean}”`,
+        ts: Date.now()
+      }).catch(() => {});
+    });
+  }
+
+  return (
+    <div className="pop-radar-box">
+      <div className="pop-radar-head">
+        <span className="pop-radar-dot" />
+        📡 LIVE RADAR · WATCHING {String(recipientName || "FRIEND").toUpperCase()}
+      </div>
+
+      <div className="pop-radar-feed">
+        {events.length === 0 ? (
+          <div className="pop-radar-event">⏳ Waiting for {recipientName || "them"} to open your link...</div>
+        ) : (
+          events.map((ev, idx) => (
+            <div className="pop-radar-event" key={idx}>{ev.msg}</div>
+          ))
+        )}
+      </div>
+
+      {/* 2-Way Live Reply back to Receiver! */}
+      <div className="pop-radar-reply-wrap">
+        <div className="pop-chips-row">
+          {SENDER_QUICK_REPLIES.map(chip => (
+            <button
+              key={chip}
+              type="button"
+              className="pop-chip dark-chip"
+              onClick={() => sendLiveReply(chip)}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+        <form
+          className="pop-react-form"
+          onSubmit={e => { e.preventDefault(); sendLiveReply(replyText); }}
+        >
+          <input
+            value={replyText}
+            onChange={e => setReplyText(e.target.value)}
+            onFocus={focusScrollCenter}
+            placeholder={`Send live reply to ${recipientName || "them"}...`}
+            maxLength={120}
+          />
+          <button type="submit" className="pop-btn yellow sm" disabled={!replyText.trim()}>
+            <Send size={14}/>
+          </button>
+        </form>
+        {sentFlash && <small style={{ color: "#A3E635", fontWeight: 700 }}>{sentFlash}</small>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
+   6. MAIN APP SHELL
 ============================================================================ */
 function MainApp() {
-  const [tab, setTab] = useState("links"); // "links" | "duels" | "wall"
-  const [pickerModalOpen, setPickerModalOpen] = useState(false); // Asks: OD - Trap or OD - Trick?
+  const [tab, setTab] = useState("links");
+  const [pickerModalOpen, setPickerModalOpen] = useState(false);
   const [activeStudioMode, setActiveStudioMode] = useState(""); // "" | "trap" | "trick"
+  const [watchLiveItem, setWatchLiveItem] = useState(null); // Reconnect Live Radar from Inbox!
   const [logoSpin, setLogoSpin] = useState(false);
   const [odcCode, setOdcCode] = useState("");
   const [duelRoute, setDuelRoute] = useState({ game: "", code: "" });
   const [inboxOpen, setInboxOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const knownReplyCountRef = useRef(-1);
+  const needsFsReenterRef = useRef(false);
+
+  const [pendingCard, setPendingCard] = useState(() => {
+    try { return JSON.parse(safeGetStorage("oddora_pending_card", "null")); } catch { return null; }
+  });
 
   const [myLinks, setMyLinks] = useState(() => {
     try { return JSON.parse(safeGetStorage("oddora_my_links", "[]")); } catch { return []; }
@@ -575,6 +774,27 @@ function MainApp() {
     { id: "t2", name: "Maya", label: "Miss Me? 🌍", count: 31 },
     { id: "t3", name: "Rohan", label: "OD Trick 🎭", count: 27 }
   ]);
+
+  // Keep Full-Screen Persistence when returning from WhatsApp / background tabs
+  useEffect(() => {
+    const onVisChange = () => {
+      if (document.visibilityState === "visible" && safeGetStorage("oddora_fs_pref") === "1") {
+        needsFsReenterRef.current = true;
+      }
+    };
+    const onFirstTap = () => {
+      if (needsFsReenterRef.current) {
+        needsFsReenterRef.current = false;
+        requestAppFullscreen();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+    window.addEventListener("click", onFirstTap, { passive: true });
+    return () => {
+      document.removeEventListener("visibilitychange", onVisChange);
+      window.removeEventListener("click", onFirstTap);
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -674,16 +894,28 @@ function MainApp() {
 
   function launchWizard(modeKey) {
     fx("tap", 14);
+    safeSetStorage("oddora_fs_pref", "1");
     requestAppFullscreen();
     setPickerModalOpen(false);
     setActiveStudioMode(modeKey);
   }
 
-  // 1. FULL-SCREEN RECIPIENT TAKEOVER (When opening ?odc= link)
+  function dismissPendingCard() {
+    fx("tap", 10);
+    setPendingCard(null);
+    safeRemoveStorage("oddora_pending_card");
+  }
+
+  // 1. FULL-SCREEN RECIPIENT TAKEOVER
   if (odcCode) {
     return (
       <FullScreenODRecipient
         code={odcCode}
+        onPendingUpdate={cardObj => {
+          setPendingCard(cardObj);
+          if (cardObj) safeSetStorage("oddora_pending_card", JSON.stringify(cardObj));
+          else safeRemoveStorage("oddora_pending_card");
+        }}
         onExit={creatorName => {
           setOdcCode("");
           const u = new URL(window.location.href);
@@ -700,7 +932,43 @@ function MainApp() {
     );
   }
 
-  // 2. FULL-SCREEN CREATOR WIZARD (Hides all tabs & outer layout!)
+  // 2. FULL-SCREEN WATCH LIVE RECONNECT (From Inbox!)
+  if (watchLiveItem) {
+    const shareUrl = (() => {
+      const u = new URL(window.location.href);
+      u.search = "";
+      u.searchParams.set("odc", watchLiveItem.code);
+      return u.toString();
+    })();
+    return (
+      <div className="pop-fs-stage theme-lime">
+        <div className="pop-fs-topbar">
+          <span className="pop-pill-black">📡 LIVE RADAR · {watchLiveItem.code}</span>
+          <button type="button" className="pop-btn pink sm" onClick={() => { fx("tap", 10); setWatchLiveItem(null); }}>
+            ✕ Back
+          </button>
+        </div>
+        <div className="pop-fs-content">
+          <div className="pop-ready-card" style={{ width: "100%" }}>
+            <span className="pop-pill-black">TO: {String(watchLiveItem.to || "FRIEND").toUpperCase()}</span>
+            <h2>{watchLiveItem.title}</h2>
+            <UniversalShareBar
+              url={shareUrl}
+              shareText={`${watchLiveItem.from || "Someone"} sent you a Secret OD Card 👀⚡`}
+              title="Secret OD Card"
+            />
+            <LiveRadarPanel
+              code={watchLiveItem.code}
+              recipientName={watchLiveItem.to}
+              senderName={watchLiveItem.from || "You"}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. FULL-SCREEN 2-STEP LIVE PREVIEW CREATOR WIZARD (Never exits fullscreen on Exit!)
   if (activeStudioMode) {
     return (
       <FullScreenCreatorWizard
@@ -709,9 +977,6 @@ function MainApp() {
         onClose={() => {
           fx("tap", 10);
           setActiveStudioMode("");
-          if (document.fullscreenElement && document.exitFullscreen) {
-            document.exitFullscreen().catch(() => {});
-          }
         }}
       />
     );
@@ -764,6 +1029,28 @@ function MainApp() {
       </header>
 
       <main className="pop-main" id="top">
+        {/* PENDING CARD REMINDER BANNER (If receiver accidentally closed before completing!) */}
+        {pendingCard && pendingCard.code && (
+          <div className="pop-pending-banner">
+            <div className="pop-pending-text">
+              <strong>⚡ {pendingCard.from || "A friend"} set a secret card for you!</strong>
+              <small>Tap to finish it without going back to WhatsApp.</small>
+            </div>
+            <div className="pop-pending-actions">
+              <button
+                type="button"
+                className="pop-btn yellow sm"
+                onClick={() => { fx("seal", 14); setOdcCode(pendingCard.code); }}
+              >
+                🔓 Complete
+              </button>
+              <button type="button" className="pop-btn white sm" onClick={dismissPendingCard} aria-label="Dismiss">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* HERO SECTION */}
         <section className="pop-hero">
           <div className="pop-hero-top">
@@ -806,7 +1093,7 @@ function MainApp() {
           </div>
         </section>
 
-        {/* MAIN 3 PILLAR TABS (OD Links | OD Duels | Flex Wall) */}
+        {/* MAIN 3 PILLAR TABS */}
         <div id="play-deck" className="pop-tabs" role="tablist">
           <button
             type="button"
@@ -837,12 +1124,12 @@ function MainApp() {
           </button>
         </div>
 
-        {/* SUB-CATEGORY LAUNCHER CARDS: OD - Trap & OD - Trick */}
+        {/* SUB-CATEGORY LAUNCHER CARDS */}
         {tab === "links" && (
           <section className="pop-box">
             <div className="pop-box-head">
-              <span>⚡ CHOOSE YOUR OD LINK</span>
-              <span className="pop-pill-black">FULL-SCREEN</span>
+              <span>⚡ CHOOSE YOUR MOVE</span>
+              <span className="pop-pill-black">10s SETUP</span>
             </div>
 
             <div className="pop-subcat-grid">
@@ -857,7 +1144,7 @@ function MainApp() {
                 </div>
                 <PopCharacterArt variant="lime" />
                 <h3>⚡ OD - Trap</h3>
-                <p>The “No” button runs across their whole screen until they give in!</p>
+                <p>The “No” button talks & runs away until they give in!</p>
               </button>
 
               <button
@@ -871,7 +1158,7 @@ function MainApp() {
                 </div>
                 <PopCharacterArt variant="pink" />
                 <h3>🎭 OD - Trick</h3>
-                <p>2 hype warm-ups → 1 big question → savage prank or date reveal!</p>
+                <p>2 hype warm-ups → 1 big question → prank or date reveal!</p>
               </button>
             </div>
           </section>
@@ -912,7 +1199,7 @@ function MainApp() {
         <span>Built for DMs, Stories & Long-Distance Duos.</span>
       </footer>
 
-      {/* OD - TRAP OR OD - TRICK POP-UP PICKER MODAL */}
+      {/* CLEAN GLOBAL MODE PICKER MODAL */}
       {pickerModalOpen && (
         <div className="pop-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setPickerModalOpen(false); }}>
           <div className="pop-modal-box">
@@ -921,8 +1208,7 @@ function MainApp() {
             </button>
             <div className="pop-ready-card">
               <span className="pop-pill-black">⚡ OD LINKS</span>
-              <h2>OD - Trap ah, OD - Trick ah? 👀</h2>
-              <p className="pop-muted">Pick one to open full-screen studio:</p>
+              <h2>Pick your move ⚡</h2>
 
               <div className="pop-stack" style={{ width: "100%" }}>
                 <button
@@ -945,7 +1231,7 @@ function MainApp() {
         </div>
       )}
 
-      {/* REPLIES INBOX MODAL */}
+      {/* REPLIES INBOX MODAL (With 📡 Watch Live, ⚡ Send Another & 🗑️ Delete) */}
       {inboxOpen && (
         <div className="pop-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setInboxOpen(false); }}>
           <div className="pop-modal-box">
@@ -980,17 +1266,28 @@ function MainApp() {
                         <div className="pop-inbox-actions">
                           <button
                             type="button"
+                            className="pop-btn blue sm"
+                            onClick={() => {
+                              fx("tap", 12);
+                              setInboxOpen(false);
+                              setWatchLiveItem(item);
+                            }}
+                          >
+                            <Radio size={13}/> Live
+                          </button>
+                          <button
+                            type="button"
                             className="pop-btn yellow sm"
                             onClick={() => sendAnotherTo(item.to)}
                           >
-                            ⚡ Send Another
+                            ⚡ New
                           </button>
                           <button
                             type="button"
                             className="pop-btn white sm"
                             onClick={() => deleteInboxItem(item.code)}
                           >
-                            🗑️ Delete
+                            🗑️
                           </button>
                         </div>
                       </div>
@@ -1007,11 +1304,11 @@ function MainApp() {
 }
 
 /* ============================================================================
-   6. HERO CENTER INTERACTIVE CARD
+   7. HERO CENTER INTERACTIVE CARD (Max 3–4 Dodges + Talking No!)
 ============================================================================ */
 function HeroLiveCard({ logoSpin, onSpinLogo }) {
   const [dodges, setDodges] = useState(0);
-  const [limit] = useState(() => 4 + Math.floor(Math.random() * 3));
+  const [limit] = useState(() => 3 + Math.floor(Math.random() * 2));
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [accepted, setAccepted] = useState(false);
 
@@ -1026,8 +1323,8 @@ function HeroLiveCard({ logoSpin, onSpinLogo }) {
       fx("win", [20, 35, 20]);
       return;
     }
-    const rx = Math.round((Math.random() - 0.5) * 60);
-    const ry = dodges % 2 === 0 ? -30 : 30;
+    const rx = dodges % 2 === 0 ? 12 : -10;
+    const ry = dodges % 2 === 0 ? 12 : -4;
     setOffset({ x: rx, y: ry });
   }
 
@@ -1061,11 +1358,11 @@ function HeroLiveCard({ logoSpin, onSpinLogo }) {
               onMouseEnter={() => { if (dodges < 2) dodgeNo(); }}
               onClick={dodgeNo}
             >
-              No
+              {dodges > 0 ? ["Nope 👀", "Miss! 😜", "Fast! 🏃"][Math.min(dodges - 1, 2)] : "No"}
             </button>
           </div>
           <small className="pop-hint">
-            {dodges > 0 ? DODGE_TAUNTS[Math.min(dodges - 1, DODGE_TAUNTS.length - 1)] : "Bet you can't tap No 👀"}
+            {dodges > 0 ? "Try catching it 😂" : "Bet you can't tap No 👀"}
           </small>
         </>
       )}
@@ -1074,15 +1371,18 @@ function HeroLiveCard({ logoSpin, onSpinLogo }) {
 }
 
 /* ============================================================================
-   7. FULL-SCREEN POP-UP CREATOR WIZARD (No Tabs, Step-by-Step Interactive!)
+   8. 2-SCREEN LIVE PREVIEW CREATOR WIZARD (Zero Backspace, Back-Safe!)
+   Screen 0 (1 of 2): Your Name, Their Name, & Your Question (with Sparks)
+   Screen 1 (2 of 2): Live Card Preview (Tap to customize buttons/replies/options)
+   Screen 2 (Ready): Armed & Ready + 📡 Live Radar + 2-Way Sender Reply
 ============================================================================ */
 function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClose }) {
   const [mode] = useState(initialMode); // "invite" (OD - Trap) | "propose" (OD - Trick)
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(0); // 0 -> 1 -> 2
   const [busy, setBusy] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [liveCode, setLiveCode] = useState("");
   const [shareUrl, setShareUrl] = useState("");
-  const [radarEvents, setRadarEvents] = useState([]);
   const [autoVariant, setAutoVariant] = useState(0);
 
   const [senderName, setSenderName] = useState("");
@@ -1095,69 +1395,81 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
   });
   const [cardColor, setCardColor] = useState(initialMode === "propose" ? "pink" : "lime");
 
-  // OD - Trap fields
-  const [title, setTitle] = useState(TRAP_SPARKS[0].title);
-  const [yesMessage, setYesMessage] = useState(TRAP_SPARKS[0].yesMessage);
-  const [yesLabel, setYesLabel] = useState(initialMode === "propose" ? "YES, 100% 💖" : TRAP_SPARKS[0].yesLabel);
-  const [noLabel, setNoLabel] = useState(initialMode === "propose" ? "No 🙈" : "No");
+  // Values start EMPTY so user NEVER has to backspace defaults — placeholders show suggestions!
+  const [questionInput, setQuestionInput] = useState("");
+  const [yesLabelInput, setYesLabelInput] = useState("");
+  const [noLabelInput, setNoLabelInput] = useState("");
+  const [yesMsgInput, setYesMsgInput] = useState("");
+  const [noTwistInput, setNoTwistInput] = useState("");
 
-  // OD - Trick fields
-  const [vibe, setVibe] = useState("pink");
-  const [finalQ, setFinalQ] = useState("Will you go on a date with me? 💘");
-  const [q1, setQ1] = useState("1. Ideal vibe for hanging out tonight?");
-  const [q1Opts, setQ1Opts] = useState(["Iced coffee + long drive ☕", "Street food hopping 🌮", "Late-night playlist & chill 🎧"]);
-  const [q2, setQ2] = useState("2. Be honest—how fast do you get ready?");
-  const [q2Opts, setQ2Opts] = useState(["10 mins flat ⚡", "Fashionably late 😎", "Depends on the person 👀"]);
-  const [yesAck, setYesAck] = useState("I have accepted! Date is officially locked in 💘✨");
-  const [noTwist, setNoTwist] = useState("😂 OD TRICK! Relax, you just got pranked! Screenshot saved 💀");
+  // Warm-up inputs stay EMPTY by default so suggestions appear as light-grey placeholders!
+  const [autoWarmups, setAutoWarmups] = useState(() => generateWarmupQuestions("", initialMode === "propose" ? "pink" : "lime", 0));
+  const [q1, setQ1] = useState("");
+  const [q1Opts, setQ1Opts] = useState(["", "", ""]);
+  const [q2, setQ2] = useState("");
+  const [q2Opts, setQ2Opts] = useState(["", "", ""]);
 
-  useEffect(() => {
-    if (!liveCode) return undefined;
-    let initialCount = -1;
-    return onValue(
-      ref(database, `live/${liveCode}`),
-      snap => {
-        const list = snap.exists() ? Object.values(snap.val()) : [];
-        if (initialCount !== -1 && list.length > initialCount) {
-          fx("notify", [35, 50, 35]);
-        }
-        initialCount = list.length;
-        setRadarEvents(list.reverse());
-      },
-      () => {}
-    );
-  }, [liveCode]);
+  // Dynamic 2-word demo placeholders & smart fallbacks
+  const demoQPlaceholder = mode === "invite" ? "Coffee tonight?" : "Saapda polama?";
+  const defaultQ = mode === "invite" ? TRAP_SPARKS[0].title : "Will you go on a date with me? 💘";
+  const effectiveQ = questionInput.trim() || defaultQ;
+  const smartOut = generateSmartOutcomes(effectiveQ, senderName.trim() || "your friend");
+  const defaultYesBtn = mode === "invite" ? "Yes, locked in ⚡" : "YES, 100% 💖";
+  const defaultNoBtn = mode === "invite" ? "No" : "No 🙈";
+
+  // Step-by-step guided spotlight on Screen 1: Your Name -> Their Name -> Question -> Next
+  const activeFieldStep = !senderName.trim()
+    ? "sender"
+    : !recipientName.trim()
+      ? "recipient"
+      : !questionInput.trim()
+        ? "question"
+        : "ready";
 
   function pickTrapSpark(p) {
     fx("tap", 10);
     setCardColor(p.cardColor);
-    setTitle(p.title);
-    setYesLabel(p.yesLabel);
-    setNoLabel(p.noLabel);
-    setYesMessage(p.yesMessage);
+    setQuestionInput(p.title);
+    setYesLabelInput(p.yesLabel);
+    setNoLabelInput(p.noLabel);
+    setYesMsgInput(p.yesMessage);
   }
 
   function pickTrickSpark(v) {
     fx("tap", 10);
-    setVibe(v.id);
     setCardColor(v.id);
-    setFinalQ(v.defaultQ);
+    setQuestionInput(v.defaultQ);
+  }
+
+  async function goToLivePreview() {
+    fx("tap", 12);
+    if (mode === "propose") {
+      setAiLoading(true);
+      const gen = await fetchAIWarmups(effectiveQ, cardColor, autoVariant);
+      setAutoWarmups(gen);
+      setAiLoading(false);
+    }
+    setStep(1);
+  }
+
+  async function shuffleWarmups() {
+    fx("tap", 12);
     const nextVar = autoVariant + 1;
     setAutoVariant(nextVar);
-    const gen = generateWarmupQuestions(v.defaultQ, v.id, nextVar);
-    setQ1(gen[0].q);
-    setQ1Opts(gen[0].options);
-    setQ2(gen[1].q);
-    setQ2Opts(gen[1].options);
-    const smart = generateSmartOutcomes(v.defaultQ, senderName || "your friend");
-    setYesAck(smart.yesMsg);
-    setNoTwist(smart.noTwist);
+    setAiLoading(true);
+    const gen = await fetchAIWarmups(effectiveQ, cardColor, nextVar);
+    setAutoWarmups(gen);
+    setQ1("");
+    setQ1Opts(["", "", ""]);
+    setQ2("");
+    setQ2Opts(["", "", ""]);
+    setAiLoading(false);
   }
 
   function buildData() {
     const from = (senderName.trim() || "Someone special").slice(0, 24);
     const to = (recipientName.trim() || "You").slice(0, 24);
-    const secretLimit = 5 + Math.floor(Math.random() * 3);
+    const secretLimit = 3 + Math.floor(Math.random() * 2); // Max 3 or 4 dodges!
 
     if (mode === "invite") {
       return {
@@ -1168,40 +1480,46 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
         yesCount: 0,
         createdAt: Date.now(),
         payload: {
-          title: (title.trim() || "Quick Question 👀").slice(0, 80),
+          title: effectiveQ.slice(0, 80),
           question: "Tap your answer below 👇",
-          yesLabel: (yesLabel.trim() || "Yes ⚡").slice(0, 28),
-          noLabel: (noLabel.trim() || "No").slice(0, 28),
-          yesMessage: (yesMessage.trim() || "Confirmed! See you soon 🎉").slice(0, 240),
+          yesLabel: (yesLabelInput.trim() || defaultYesBtn).slice(0, 28),
+          noLabel: (noLabelInput.trim() || defaultNoBtn).slice(0, 28),
+          yesMessage: (yesMsgInput.trim() || smartOut.yesMsg).slice(0, 240),
           maxDodges: secretLimit
         }
       };
     }
 
-    const cleanQ1Opts = q1Opts.map(o => o.trim().slice(0, 50)).filter(Boolean);
-    const cleanQ2Opts = q2Opts.map(o => o.trim().slice(0, 50)).filter(Boolean);
+    const finalQ1 = (q1.trim() || autoWarmups?.[0]?.q || "").slice(0, 140);
+    const finalQ2 = (q2.trim() || autoWarmups?.[1]?.q || "").slice(0, 140);
+    const cleanQ1Opts = [0, 1, 2]
+      .map(i => (q1Opts[i]?.trim() || autoWarmups?.[0]?.options?.[i] || "").slice(0, 50))
+      .filter(Boolean);
+    const cleanQ2Opts = [0, 1, 2]
+      .map(i => (q2Opts[i]?.trim() || autoWarmups?.[1]?.options?.[i] || "").slice(0, 50))
+      .filter(Boolean);
     const questions = [];
-    if (q1.trim() && q1.trim() !== "1." && cleanQ1Opts.length > 0) {
-      questions.push({ q: q1.trim().slice(0, 140), options: cleanQ1Opts });
+    if (finalQ1 && cleanQ1Opts.length > 0) {
+      questions.push({ q: finalQ1, options: cleanQ1Opts });
     }
-    if (q2.trim() && q2.trim() !== "2." && cleanQ2Opts.length > 0) {
-      questions.push({ q: q2.trim().slice(0, 140), options: cleanQ2Opts });
+    if (finalQ2 && cleanQ2Opts.length > 0) {
+      questions.push({ q: finalQ2, options: cleanQ2Opts });
     }
 
     return {
       type: "propose",
-      theme: vibe,
+      theme: cardColor,
       creatorName: from,
       recipientName: to,
       yesCount: 0,
       createdAt: Date.now(),
       payload: {
         questions,
-        finalQuestion: (finalQ.trim() || "Will you go on a date with me? 💘").slice(0, 160),
-        yesLabel: (yesLabel.trim() || "YES, 100% 💖").slice(0, 28),
-        noLabel: (noLabel.trim() || "No 🙈").slice(0, 28),
-        yesAckMessage: (yesAck.trim() || "Confirmed! Share the receipt back 💌").slice(0, 220),
-        noTwistMessage: (noTwist.trim() || "😂 OD TRICK! You got OD'd!").slice(0, 220)
+        finalQuestion: effectiveQ.slice(0, 160),
+        yesLabel: (yesLabelInput.trim() || defaultYesBtn).slice(0, 28),
+        noLabel: (noLabelInput.trim() || defaultNoBtn).slice(0, 28),
+        yesAckMessage: (yesMsgInput.trim() || smartOut.yesMsg).slice(0, 220),
+        noTwistMessage: (noTwistInput.trim() || smartOut.noTwist).slice(0, 220)
       }
     };
   }
@@ -1226,6 +1544,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
 
       onLinkCreated?.({
         code,
+        from: dataObj.creatorName,
         to: dataObj.recipientName,
         title: mode === "invite" ? dataObj.payload.title : dataObj.payload.finalQuestion,
         createdAt: Date.now()
@@ -1236,8 +1555,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
       u.searchParams.set("odc", code);
       setShareUrl(u.toString());
       setLiveCode(code);
-      setRadarEvents([]);
-      setStep(4);
+      setStep(2);
       fx("win", [20, 35, 20]);
     } catch {
       alert("Network issue. Please check your connection.");
@@ -1248,7 +1566,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
 
   return (
     <div className={`pop-fs-stage theme-${cardColor}`}>
-      {/* Full-Screen Top Bar — Zero Tabs! */}
+      {/* Full-Screen Top Bar */}
       <div className="pop-fs-topbar">
         <span className="pop-pill-black">
           {mode === "invite" ? "⚡ OD - TRAP" : "🎭 OD - TRICK"}
@@ -1264,260 +1582,237 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
       </div>
 
       <div className="pop-fs-content">
-        {step < 4 && (
+        {step < 2 && (
           <div className="pop-wizard-dots" style={{ width: "100%" }}>
-            {[0, 1, 2, 3].map(i => (
+            {[0, 1].map(i => (
               <span key={i} className={`pop-w-dot ${step === i ? "active" : step > i ? "done" : ""}`} />
             ))}
           </div>
         )}
 
-        {/* SCREEN 1: WHO ARE WE TRAPPING TODAY? */}
+        {/* SCREEN 1 (1 OF 2): NAMES + MAIN QUESTION (With Visual Highlighter!) */}
         {step === 0 && (
           <div className="pop-wizard-card" style={{ width: "100%" }} key="w-0">
-            <PopCharacterArt variant={cardColor} />
-            <span className="pop-pill-black">1 OF 4 · THE TARGET</span>
-            <h2 className="pop-wizard-prompt">Who are we trapping today? 👀</h2>
+            <span className="pop-pill-black">STEP 1 OF 2 · THE HOOK</span>
+            <h2 className="pop-wizard-prompt">Set up your card ⚡</h2>
+
             <div className="pop-grid-2">
-              <label className="pop-field">
+              <label className={`pop-field ${activeFieldStep === "sender" ? "pop-highlight-field" : ""}`}>
                 <span>YOUR NAME</span>
-                <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. Karthik" maxLength={24} />
+                <input
+                  value={senderName}
+                  onChange={e => setSenderName(e.target.value)}
+                  onFocus={focusScrollCenter}
+                  placeholder="Karthik"
+                  maxLength={24}
+                />
               </label>
-              <label className="pop-field">
+              <label className={`pop-field ${activeFieldStep === "recipient" ? "pop-highlight-field" : ""}`}>
                 <span>THEIR NAME</span>
-                <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="e.g. Ananya" maxLength={24} />
+                <input
+                  value={recipientName}
+                  onChange={e => setRecipientName(e.target.value)}
+                  onFocus={focusScrollCenter}
+                  placeholder="Ananya"
+                  maxLength={24}
+                />
               </label>
             </div>
-            <button type="button" className="pop-btn yellow full" onClick={() => { fx("tap", 12); setStep(1); }}>
-              Next <ArrowRight size={16}/>
+
+            <div className="pop-chips-row center">
+              {mode === "invite"
+                ? TRAP_SPARKS.map(p => (
+                    <button key={p.id} type="button" className="pop-chip" onClick={() => pickTrapSpark(p)}>
+                      {p.tag}
+                    </button>
+                  ))
+                : TRICK_SPARKS.map(v => (
+                    <button key={v.id} type="button" className={cardColor === v.id ? "pop-chip active" : "pop-chip"} onClick={() => pickTrickSpark(v)}>
+                      {v.label}
+                    </button>
+                  ))}
+            </div>
+
+            <label className={`pop-field ${activeFieldStep === "question" ? "pop-highlight-field" : ""}`}>
+              <span>YOUR QUESTION (ANY LANGUAGE)</span>
+              <input
+                value={questionInput}
+                onChange={e => setQuestionInput(e.target.value)}
+                onFocus={focusScrollCenter}
+                placeholder={demoQPlaceholder}
+                maxLength={140}
+              />
+            </label>
+
+            <button
+              type="button"
+              className={`pop-btn yellow full ${activeFieldStep === "ready" ? "pop-next-glow" : ""}`}
+              onClick={goToLivePreview}
+              disabled={aiLoading}
+            >
+              {aiLoading ? "Generating..." : <>Next: Live Preview <ArrowRight size={16}/></>}
             </button>
           </div>
         )}
 
-        {/* SCREEN 2: TELL WHAT YOU WANT TO ASK (YOUR QUESTION) */}
+        {/* SCREEN 2 (2 OF 2): LIVE CARD PREVIEW (Tap anything to customize, or hit Send!) */}
         {step === 1 && (
           <div className="pop-wizard-card" style={{ width: "100%" }} key="w-1">
-            <span className="pop-pill-black">2 OF 4 · YOUR QUESTION</span>
-            <h2 className="pop-wizard-prompt">Tell what you want to ask ⚡</h2>
+            {/* Pinned Main Question Reminder */}
+            <div className="pop-pinned-q">
+              <span>📌 Main Q:</span> <strong>“{effectiveQ}”</strong>
+            </div>
+
+            <div className="pop-chips-row center">
+              {[
+                { id: "lime", label: "😎 LIME" },
+                { id: "pink", label: "😍 PINK" },
+                { id: "cyan", label: "🌍 BLUE" },
+                { id: "gold", label: "👑 GOLD" }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={cardColor === t.id ? "pop-chip active" : "pop-chip"}
+                  onClick={() => { fx("tap", 10); setCardColor(t.id); }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
             {mode === "invite" ? (
-              <>
-                <div className="pop-chips-row center">
-                  {TRAP_SPARKS.map(p => (
-                    <button key={p.id} type="button" className="pop-chip" onClick={() => pickTrapSpark(p)}>
-                      {p.tag}
-                    </button>
-                  ))}
+              /* LIVE PREVIEW FOR OD - TRAP */
+              <div className="pop-live-preview-box">
+                <span className="pop-mini-tag">TAP ANY BOX TO EDIT (OPTIONAL)</span>
+
+                <div className="pop-grid-2">
+                  <label className="pop-field">
+                    <span>YES BUTTON</span>
+                    <input
+                      className="pop-dashed-input"
+                      value={yesLabelInput}
+                      onChange={e => setYesLabelInput(e.target.value)}
+                      onFocus={focusScrollCenter}
+                      placeholder={defaultYesBtn}
+                      maxLength={28}
+                    />
+                  </label>
+                  <label className="pop-field">
+                    <span>NO BUTTON (RUNS!)</span>
+                    <input
+                      className="pop-dashed-input"
+                      value={noLabelInput}
+                      onChange={e => setNoLabelInput(e.target.value)}
+                      onFocus={focusScrollCenter}
+                      placeholder={defaultNoBtn}
+                      maxLength={28}
+                    />
+                  </label>
                 </div>
+
                 <label className="pop-field">
-                  <span>YOUR QUESTION (ANY LANGUAGE)</span>
+                  <span>POP-UP MESSAGE AFTER THEY TAP YES</span>
                   <input
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder="Type anything in Tamil, Tanglish, English..."
-                    maxLength={80}
+                    className="pop-dashed-input"
+                    value={yesMsgInput}
+                    onChange={e => setYesMsgInput(e.target.value)}
+                    onFocus={focusScrollCenter}
+                    placeholder={smartOut.yesMsg}
+                    maxLength={240}
                   />
                 </label>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="pop-chips-row center">
-                  {TRICK_SPARKS.map(v => (
-                    <button key={v.id} type="button" className={vibe === v.id ? "pop-chip active" : "pop-chip"} onClick={() => pickTrickSpark(v)}>
-                      {v.label}
-                    </button>
-                  ))}
+              /* LIVE PREVIEW FOR OD - TRICK (Visible & Editable Q1, Q2 + ALL 3 OPTIONS!) */
+              <div className="pop-live-preview-box">
+                <div className="pop-row-between">
+                  <span className="pop-mini-tag">2 WARM-UPS + OPTIONS (EDITABLE)</span>
+                  <button type="button" className="pop-btn white sm" onClick={shuffleWarmups} disabled={aiLoading}>
+                    {aiLoading ? "..." : "✨ Shuffle"}
+                  </button>
                 </div>
-                <label className="pop-field">
-                  <span>YOUR BIG QUESTION (STEP 3)</span>
+
+                <div className="pop-inner-box">
                   <input
-                    value={finalQ}
-                    onChange={e => setFinalQ(e.target.value)}
-                    placeholder="Type anything in Tamil, Tanglish, English..."
-                    maxLength={160}
+                    className="pop-dashed-input"
+                    value={q1}
+                    onChange={e => setQ1(e.target.value)}
+                    onFocus={focusScrollCenter}
+                    placeholder={autoWarmups?.[0]?.q || "Warm-up Question 1"}
+                    maxLength={140}
+                  />
+                  <div className="pop-grid-3">
+                    {q1Opts.map((opt, i) => (
+                      <input
+                        key={i}
+                        className="pop-opt-input"
+                        value={opt}
+                        onChange={e => {
+                          const c = [...q1Opts]; c[i] = e.target.value; setQ1Opts(c);
+                        }}
+                        onFocus={focusScrollCenter}
+                        placeholder={autoWarmups?.[0]?.options?.[i] || `Opt ${i + 1}`}
+                        maxLength={50}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pop-inner-box">
+                  <input
+                    className="pop-dashed-input"
+                    value={q2}
+                    onChange={e => setQ2(e.target.value)}
+                    onFocus={focusScrollCenter}
+                    placeholder={autoWarmups?.[1]?.q || "Warm-up Question 2"}
+                    maxLength={140}
+                  />
+                  <div className="pop-grid-3">
+                    {q2Opts.map((opt, i) => (
+                      <input
+                        key={i}
+                        className="pop-opt-input"
+                        value={opt}
+                        onChange={e => {
+                          const c = [...q2Opts]; c[i] = e.target.value; setQ2Opts(c);
+                        }}
+                        onFocus={focusScrollCenter}
+                        placeholder={autoWarmups?.[1]?.options?.[i] || `Opt ${i + 1}`}
+                        maxLength={50}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <label className="pop-field">
+                  <span>IF THEY TAP YES</span>
+                  <input
+                    className="pop-dashed-input"
+                    value={yesMsgInput}
+                    onChange={e => setYesMsgInput(e.target.value)}
+                    onFocus={focusScrollCenter}
+                    placeholder={smartOut.yesMsg}
+                    maxLength={220}
                   />
                 </label>
-              </>
+
+                <label className="pop-field">
+                  <span>IF THEY TAP NO (PRANK REVEAL 😂)</span>
+                  <input
+                    className="pop-dashed-input"
+                    value={noTwistInput}
+                    onChange={e => setNoTwistInput(e.target.value)}
+                    onFocus={focusScrollCenter}
+                    placeholder={smartOut.noTwist}
+                    maxLength={220}
+                  />
+                </label>
+              </div>
             )}
 
             <div className="pop-grid-2">
               <button type="button" className="pop-btn white" onClick={() => { fx("tap", 10); setStep(0); }}>
-                <ArrowLeft size={16}/> Back
-              </button>
-              <button
-                type="button"
-                className="pop-btn yellow"
-                onClick={() => {
-                  fx("tap", 12);
-                  const smart = generateSmartOutcomes(mode === "invite" ? title : finalQ, senderName || "your friend");
-                  if (mode === "invite") setYesMessage(smart.yesMsg);
-                  else {
-                    setYesAck(smart.yesMsg);
-                    setNoTwist(smart.noTwist);
-                    const gen = generateWarmupQuestions(finalQ, vibe, autoVariant);
-                    setQ1(gen[0].q);
-                    setQ1Opts(gen[0].options);
-                    setQ2(gen[1].q);
-                    setQ2Opts(gen[1].options);
-                  }
-                  setStep(2);
-                }}
-              >
-                Next <ArrowRight size={16}/>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* SCREEN 3: OD - TRAP = MESSAGE ON YES | OD - TRICK = WARM-UP QUESTIONS */}
-        {step === 2 && (
-          <div className="pop-wizard-card" style={{ width: "100%" }} key="w-2">
-            {mode === "invite" ? (
-              <>
-                <span className="pop-pill-black">3 OF 4 · THE REVEAL</span>
-                <h2 className="pop-wizard-prompt">Message when they tap YES 🎉</h2>
-                <label className="pop-field">
-                  <span>MESSAGE ON YES</span>
-                  <textarea
-                    rows={2}
-                    value={yesMessage}
-                    onChange={e => setYesMessage(e.target.value)}
-                    placeholder="What pops up when they say YES?"
-                    maxLength={240}
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <span className="pop-pill-black">3 OF 4 · WARM-UP HYPE</span>
-                <h2 className="pop-wizard-prompt">2 Warm-Up Questions 🎭</h2>
-                <p className="pop-muted" style={{ margin: 0 }}>
-                  These 2 fun questions pop up first to build hype before your big question drops!
-                </p>
-
-                <div className="pop-inner-box">
-                  <div className="pop-row-between">
-                    <span className="pop-mini-tag">AUTO OR CUSTOM Q1 & Q2</span>
-                    <button
-                      type="button"
-                      className="pop-btn white sm"
-                      onClick={() => {
-                        const nextVar = autoVariant + 1;
-                        setAutoVariant(nextVar);
-                        const gen = generateWarmupQuestions(finalQ, vibe, nextVar);
-                        setQ1(gen[0].q);
-                        setQ1Opts(gen[0].options);
-                        setQ2(gen[1].q);
-                        setQ2Opts(gen[1].options);
-                        fx("tap", 10);
-                      }}
-                    >
-                      ✨ Shuffle Q1 & Q2
-                    </button>
-                  </div>
-                  <label className="pop-field">
-                    <span>QUESTION 1</span>
-                    <input value={q1} onChange={e => setQ1(e.target.value)} maxLength={140} />
-                  </label>
-                  <label className="pop-field">
-                    <span>QUESTION 2</span>
-                    <input value={q2} onChange={e => setQ2(e.target.value)} maxLength={140} />
-                  </label>
-                </div>
-
-                <div className="pop-chips-row center">
-                  {[
-                    { id: "lime", label: "😎 LIME" },
-                    { id: "pink", label: "😍 PINK" },
-                    { id: "cyan", label: "🌍 BLUE" },
-                    { id: "gold", label: "👑 GOLD" }
-                  ].map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={cardColor === t.id ? "pop-chip active" : "pop-chip"}
-                      onClick={() => { fx("tap", 10); setCardColor(t.id); setVibe(t.id); }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            <div className="pop-grid-2">
-              <button type="button" className="pop-btn white" onClick={() => { fx("tap", 10); setStep(1); }}>
-                <ArrowLeft size={16}/> Back
-              </button>
-              <button type="button" className="pop-btn yellow" onClick={() => { fx("tap", 12); setStep(3); }}>
-                Next <ArrowRight size={16}/>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* SCREEN 4: OD - TRAP = BUTTONS & VIBE | OD - TRICK = YES & NO OUTCOMES */}
-        {step === 3 && (
-          <div className="pop-wizard-card" style={{ width: "100%" }} key="w-3">
-            {mode === "invite" ? (
-              <>
-                <span className="pop-pill-black">4 OF 4 · BUTTONS & VIBE</span>
-                <h2 className="pop-wizard-prompt">What goes on Yes & No buttons? 🎛️</h2>
-                <div className="pop-grid-2">
-                  <label className="pop-field">
-                    <span>YES BUTTON</span>
-                    <input value={yesLabel} onChange={e => setYesLabel(e.target.value)} placeholder="e.g. Fine, I'll pay 💸" maxLength={28} />
-                  </label>
-                  <label className="pop-field">
-                    <span>NO BUTTON (ESCAPES)</span>
-                    <input value={noLabel} onChange={e => setNoLabel(e.target.value)} placeholder="e.g. No" maxLength={28} />
-                  </label>
-                </div>
-                <div className="pop-chips-row center">
-                  {[
-                    { id: "lime", label: "😎 LIME" },
-                    { id: "pink", label: "😍 PINK" },
-                    { id: "cyan", label: "🌍 BLUE" },
-                    { id: "gold", label: "👑 GOLD" }
-                  ].map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={cardColor === t.id ? "pop-chip active" : "pop-chip"}
-                      onClick={() => { fx("tap", 10); setCardColor(t.id); setVibe(t.id); }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <span className="pop-pill-black">4 OF 4 · YES & NO REVEAL</span>
-                <h2 className="pop-wizard-prompt">What happens on YES & NO? 🎉</h2>
-                <label className="pop-field">
-                  <span>IF THEY TAP YES</span>
-                  <input value={yesAck} onChange={e => setYesAck(e.target.value)} maxLength={220} />
-                </label>
-                <label className="pop-field">
-                  <span>IF THEY TAP NO (OD - TRICK REVEAL 😂)</span>
-                  <input value={noTwist} onChange={e => setNoTwist(e.target.value)} maxLength={220} />
-                </label>
-                <div className="pop-grid-2">
-                  <label className="pop-field">
-                    <span>YES BUTTON</span>
-                    <input value={yesLabel} onChange={e => setYesLabel(e.target.value)} maxLength={28} />
-                  </label>
-                  <label className="pop-field">
-                    <span>NO BUTTON</span>
-                    <input value={noLabel} onChange={e => setNoLabel(e.target.value)} maxLength={28} />
-                  </label>
-                </div>
-              </>
-            )}
-
-            <div className="pop-grid-2">
-              <button type="button" className="pop-btn white" onClick={() => { fx("tap", 10); setStep(2); }}>
                 <ArrowLeft size={16}/> Back
               </button>
               <button type="button" className="pop-btn lime" onClick={publishLink} disabled={busy}>
@@ -1527,9 +1822,9 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
           </div>
         )}
 
-        {/* SCREEN 5: ARMED & READY + 📡 LIVE RADAR */}
-        {step === 4 && (
-          <div className="pop-ready-card" style={{ width: "100%" }} key="w-4">
+        {/* SCREEN 3: ARMED & READY + 📡 LIVE RADAR + 2-WAY SENDER REPLY */}
+        {step === 2 && (
+          <div className="pop-ready-card" style={{ width: "100%" }} key="w-2">
             <PopCharacterArt variant={cardColor} />
             <span className="pop-pill-black">ARMED & READY ⚡</span>
             <h2>Send to {recipientName || "your person"}!</h2>
@@ -1544,26 +1839,26 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
               title="Secret OD Card"
             />
 
-            <div className="pop-radar-box">
-              <div className="pop-radar-head">
-                <span className="pop-radar-dot" />
-                📡 LIVE RADAR · WATCHING {String(recipientName || "FRIEND").toUpperCase()}
-              </div>
-              <div className="pop-radar-feed">
-                {radarEvents.length === 0 ? (
-                  <div className="pop-radar-event">⏳ Waiting for {recipientName || "them"} to open your link...</div>
-                ) : (
-                  radarEvents.map((ev, idx) => (
-                    <div className="pop-radar-event" key={idx}>{ev.msg}</div>
-                  ))
-                )}
-              </div>
-            </div>
+            <LiveRadarPanel
+              code={liveCode}
+              recipientName={recipientName || "Friend"}
+              senderName={senderName.trim() || "Your friend"}
+            />
 
             <button
               type="button"
               className="pop-btn white sm"
-              onClick={() => { fx("tap", 10); setStep(0); setLiveCode(""); }}
+              onClick={() => {
+                fx("tap", 10);
+                setStep(0);
+                setLiveCode("");
+                setQuestionInput("");
+                setYesLabelInput("");
+                setNoLabelInput("");
+                setYesMsgInput("");
+                setNoTwistInput("");
+                setQ1(""); setQ1Opts(["", "", ""]); setQ2(""); setQ2Opts(["", "", ""]);
+              }}
             >
               ✏️ Create Another
             </button>
@@ -1575,27 +1870,64 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
 }
 
 /* ============================================================================
-   8. FULL-SCREEN RECIPIENT TAKEOVER (Zero Tabs, Mystery Seal, Full-Screen Dodge)
+   9. FULL-SCREEN RECIPIENT TAKEOVER
+   - "Are you sure?" gate on instant YES
+   - Talking NO button (max 3–4 dodges) with ZERO overlap!
+   - Pending card auto-save/clear
+   - Live 2-Way Sender Reply Toast!
 ============================================================================ */
-function FullScreenODRecipient({ code, onExit }) {
+function FullScreenODRecipient({ code, onPendingUpdate, onExit }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sealed, setSealed] = useState(true);
   const [dodges, setDodges] = useState(0);
+  const [confirmSure, setConfirmSure] = useState(false); // "Are you sure?" gate on instant YES
   const [noPos, setNoPos] = useState(null);
   const [outcome, setOutcome] = useState("");
   const [propStep, setPropStep] = useState(0);
   const [reactionText, setReactionText] = useState("");
   const [reactionSent, setReactionSent] = useState(false);
   const [savingCard, setSavingCard] = useState(false);
+  const [liveSenderMsg, setLiveSenderMsg] = useState("");
+  const knownSenderCountRef = useRef(-1);
 
   useEffect(() => {
     let alive = true;
     get(ref(database, `creations/${code}`))
-      .then(snap => { if (alive && snap.exists()) setData(snap.val()); })
+      .then(snap => {
+        if (alive && snap.exists()) {
+          const val = snap.val();
+          setData(val);
+          // Auto-save as Pending until completed!
+          onPendingUpdate?.({
+            code,
+            from: val.creatorName || "A friend",
+            title: val.type === "invite" ? val.payload?.title : val.payload?.finalQuestion
+          });
+        }
+      })
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
+  }, [code]);
+
+  // Listen for 2-Way Live Replies from Sender!
+  useEffect(() => {
+    if (!code) return undefined;
+    return onValue(
+      ref(database, `senderReplies/${code}`),
+      snap => {
+        const list = snap.exists() ? Object.values(snap.val()) : [];
+        if (knownSenderCountRef.current !== -1 && list.length > knownSenderCountRef.current && list.length > 0) {
+          const latest = list[list.length - 1];
+          fx("notify", [35, 50, 35]);
+          setLiveSenderMsg(`⚡ ${latest.from || "Friend"}: “${latest.text}”`);
+          setTimeout(() => setLiveSenderMsg(""), 6000);
+        }
+        knownSenderCountRef.current = list.length;
+      },
+      () => {}
+    );
   }, [code]);
 
   function pushLiveEvent(msg) {
@@ -1606,6 +1938,7 @@ function FullScreenODRecipient({ code, onExit }) {
 
   function breakSeal() {
     fx("seal", [20, 30, 20]);
+    safeSetStorage("oddora_fs_pref", "1");
     requestAppFullscreen();
     setSealed(false);
     const who = data?.recipientName || "Your friend";
@@ -1627,7 +1960,7 @@ function FullScreenODRecipient({ code, onExit }) {
         <div className="pop-seal-card" style={{ maxWidth: 380 }}>
           <span className="pop-pill-black">⚡ ODDORA</span>
           <h2>Card expired or not found 👀</h2>
-          <button type="button" className="pop-btn yellow full" onClick={() => onExit("")}>
+          <button type="button" className="pop-btn yellow full" onClick={() => { onPendingUpdate?.(null); onExit(""); }}>
             Create Your Own OD
           </button>
         </div>
@@ -1636,47 +1969,69 @@ function FullScreenODRecipient({ code, onExit }) {
   }
 
   const cardTheme = data.theme || "lime";
-  const maxDodges = data?.payload?.maxDodges || 6;
+  const maxDodges = Math.min(4, data?.payload?.maxDodges || 4); // Always max 3–4 dodges!
   const converted = dodges >= maxDodges;
   const who = data.recipientName || "Your friend";
+  const talkingList = isTamilOrTanglish(data?.payload?.title) ? TALKING_NO_TA : TALKING_NO_EN;
 
   function handleFullScreenDodge(e) {
     if (e) e.preventDefault();
+    setConfirmSure(false);
     if (converted) {
-      confirmTrapYes();
+      confirmTrapYes(true);
       return;
     }
     const next = dodges + 1;
     setDodges(next);
     fx("dodge", 16);
-    pushLiveEvent(`😂 ${who} is struggling to press NO... (Dodge #${next}!)`);
+    pushLiveEvent(`😂 ${who} is chasing NO... (Dodge #${next}!)`);
 
     if (next >= maxDodges) {
       setNoPos(null);
       return;
     }
 
-    const padX = 24;
-    const padTop = 90;
-    const padBottom = 110;
-    const btnW = 120;
-    const btnH = 54;
+    // ZERO OVERLAP JUMP: Only jump in safe top band (80px..22% height) OR bottom band (76%..88% height)
+    const padX = 20;
+    const btnW = 156;
+    const btnH = 56;
     const maxL = Math.max(padX, window.innerWidth - btnW - padX);
-    const maxT = Math.max(padTop, window.innerHeight - btnH - padBottom);
     const left = Math.round(padX + Math.random() * (maxL - padX));
-    const top = Math.round(padTop + Math.random() * (maxT - padTop));
+
+    const useTopBand = next % 2 === 1;
+    const topBandMin = 78;
+    const topBandMax = Math.max(topBandMin + 20, Math.round(window.innerHeight * 0.22));
+    const botBandMin = Math.round(window.innerHeight * 0.76);
+    const botBandMax = Math.max(botBandMin + 10, window.innerHeight - btnH - 28);
+
+    const top = useTopBand
+      ? Math.round(topBandMin + Math.random() * (topBandMax - topBandMin))
+      : Math.round(botBandMin + Math.random() * (botBandMax - botBandMin));
+
     setNoPos({ left, top });
   }
 
-  function confirmTrapYes() {
+  function handleYesTap() {
+    // Playful "Are you sure?" gate if they click YES immediately without trying No!
+    if (dodges === 0 && !confirmSure) {
+      fx("tap", 14);
+      setConfirmSure(true);
+      pushLiveEvent(`👀 ${who} tapped YES right away — asking “Are you sure?”`);
+      return;
+    }
+    confirmTrapYes(false);
+  }
+
+  function confirmTrapYes(forcedByDodge = false) {
     fx("win", [25, 40, 25]);
     setOutcome("yes");
     setNoPos(null);
-    const isInstant = dodges === 0;
+    onPendingUpdate?.(null); // Clear pending reminder!
+    const isInstant = dodges === 0 && !forcedByDodge;
     pushLiveEvent(
       isInstant
         ? `⚡ ${who} didn't even hesitate — INSTANT YES!`
-        : `🎉 ${who} finally gave in after ${dodges} dodges & said YES!`
+        : `🎉 ${who} gave in after ${dodges} dodges & said YES!`
     );
     signInPlayer().catch(() => null).finally(() => {
       push(ref(database, `replies/${code}`), {
@@ -1694,7 +2049,7 @@ function FullScreenODRecipient({ code, onExit }) {
     if (!clean || reactionSent) return;
     fx("notify", [20, 30, 20]);
     setReactionSent(true);
-    pushLiveEvent(`💬 ${who} sent a reply: “${clean}”`);
+    pushLiveEvent(`💬 ${who} replied: “${clean}”`);
     signInPlayer().catch(() => null).finally(() => {
       push(ref(database, `replies/${code}`), {
         text: clean,
@@ -1736,9 +2091,22 @@ function FullScreenODRecipient({ code, onExit }) {
     }
   }
 
+  const noButtonText = converted
+    ? data.payload.yesLabel
+    : dodges > 0
+      ? talkingList[Math.min(dodges - 1, talkingList.length - 1)]
+      : data.payload.noLabel;
+
   return (
     <div className={`pop-fs-stage theme-${cardTheme}`}>
       {outcome === "yes" && <ConfettiRain />}
+
+      {/* 2-Way Live Reply Toast from Sender! */}
+      {liveSenderMsg && (
+        <div className="pop-toast" onClick={() => setLiveSenderMsg("")}>
+          {liveSenderMsg}
+        </div>
+      )}
 
       <div className="pop-fs-topbar">
         <span className="pop-pill-black">⚡ ODDORA · FROM {data.creatorName?.toUpperCase()}</span>
@@ -1764,19 +2132,18 @@ function FullScreenODRecipient({ code, onExit }) {
           outcome === "yes" ? (
             <div className="pop-outcome">
               <PopCharacterArt variant={cardTheme} />
-              <div className="pop-comic-banner">
-                {dodges === 0 ? "ZERO HESITATION! ⚡" : "LOCKED IN! 🎉"}
+              <div className="pop-outcome-meta">
+                <span className="pop-pill-black">
+                  {dodges === 0 ? "⚡ INSTANT YES" : `🎉 LOCKED IN · DODGED ${dodges}x`}
+                </span>
               </div>
-              {dodges === 0 ? (
-                <div className="pop-gold-badge">⚡ REAL ONE · INSTANT YES</div>
-              ) : (
-                <div className="pop-stamp-badge">DODGED {dodges}x · STILL YES</div>
-              )}
-              <p className="pop-fs-sub">{data.payload.yesMessage}</p>
+              <div className="pop-sender-hero-msg">
+                “{data.payload.yesMessage}”
+              </div>
 
               {!reactionSent ? (
                 <form className="pop-react-form" onSubmit={sendReactionNote}>
-                  <input value={reactionText} onChange={e => setReactionText(e.target.value)} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
+                  <input value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
                   <button type="submit" className="pop-btn yellow sm" disabled={!reactionText.trim()}><Send size={14}/></button>
                 </form>
               ) : (
@@ -1807,36 +2174,37 @@ function FullScreenODRecipient({ code, onExit }) {
               <PopCharacterArt variant={cardTheme} />
               <span className="pop-pill-black">FOR {who.toUpperCase()}</span>
               <h1 className="pop-fs-headline">{data.payload.title}</h1>
-              {dodges > 0 ? (
-                <div className="pop-stamp-badge">
-                  {DODGE_TAUNTS[Math.min(dodges - 1, DODGE_TAUNTS.length - 1)]}
-                </div>
-              ) : (
-                <p className="pop-fs-sub">Bet you can't press No 👀</p>
-              )}
+              <p className="pop-fs-sub">
+                {confirmSure
+                  ? "Are you sure? 👀 Not even gonna try No?"
+                  : dodges > 0
+                    ? "Haha, can't catch it! 😂"
+                    : "Bet you can't press No 👀"}
+              </p>
 
               <div className="pop-fs-actions">
                 <button
                   type="button"
                   className="pop-btn lime lg"
-                  style={{ transform: `scale(${1 + Math.min(dodges, 5) * 0.06})` }}
-                  onClick={confirmTrapYes}
+                  style={{ transform: `scale(${1 + Math.min(dodges, 4) * 0.06})` }}
+                  onClick={handleYesTap}
                 >
-                  {data.payload.yesLabel}
+                  {confirmSure ? "Yes, 100% sure! ⚡" : data.payload.yesLabel}
                 </button>
                 <button
                   type="button"
                   className={converted ? "pop-btn lime lg" : `pop-btn pink lg ${noPos ? "pop-fs-free-no" : ""}`}
                   style={noPos && !converted ? { left: `${noPos.left}px`, top: `${noPos.top}px` } : {}}
-                  onMouseEnter={() => { if (!converted && dodges < 2) handleFullScreenDodge(); }}
+                  onMouseEnter={() => { if (!converted && dodges < 1) handleFullScreenDodge(); }}
                   onClick={handleFullScreenDodge}
                 >
-                  {converted ? data.payload.yesLabel : data.payload.noLabel}
+                  {noButtonText}
                 </button>
               </div>
             </>
           )
         ) : (
+          /* OD - TRICK (3-STEP) */
           (() => {
             const p = data.payload;
             const qs = p.questions || [];
@@ -1871,13 +2239,20 @@ function FullScreenODRecipient({ code, onExit }) {
                   <PopCharacterArt variant={cardTheme} />
                   <span className="pop-pill-black">FINAL QUESTION</span>
                   <h1 className="pop-fs-headline">{p.finalQuestion}</h1>
+                  {confirmSure && <p className="pop-fs-sub">Are you 100% sure? 👀</p>}
                   <div className="pop-fs-actions">
                     <button
                       type="button"
                       className="pop-btn lime lg"
                       onClick={() => {
+                        if (!confirmSure) {
+                          fx("tap", 14);
+                          setConfirmSure(true);
+                          return;
+                        }
                         fx("win", [25, 40, 25]);
                         setOutcome("yes");
+                        onPendingUpdate?.(null);
                         pushLiveEvent(`💞 ${who} ACCEPTED your OD - Trick!`);
                         signInPlayer().catch(() => null).finally(() => {
                           push(ref(database, `replies/${code}`), { text: "Accepted! 💞", from: who, createdAt: Date.now() }).catch(() => {});
@@ -1886,7 +2261,7 @@ function FullScreenODRecipient({ code, onExit }) {
                         setPropStep(qs.length + 1);
                       }}
                     >
-                      {p.yesLabel}
+                      {confirmSure ? "Yes, 100% sure! 💖" : p.yesLabel}
                     </button>
                     <button
                       type="button"
@@ -1894,6 +2269,7 @@ function FullScreenODRecipient({ code, onExit }) {
                       onClick={() => {
                         fx("prank", [30, 40, 30]);
                         setOutcome("pranked");
+                        onPendingUpdate?.(null);
                         pushLiveEvent(`💀 ${who} clicked NO & got caught in the OD - Trick!`);
                         setPropStep(qs.length + 2);
                       }}
@@ -1908,11 +2284,13 @@ function FullScreenODRecipient({ code, onExit }) {
               return (
                 <div className="pop-outcome">
                   <PopCharacterArt variant={cardTheme} />
-                  <div className="pop-comic-banner">I ACCEPTED! 💞</div>
-                  <p className="pop-fs-sub">{p.yesAckMessage}</p>
+                  <span className="pop-pill-black">💞 ACCEPTED</span>
+                  <div className="pop-sender-hero-msg">
+                    “{p.yesAckMessage}”
+                  </div>
                   {!reactionSent ? (
                     <form className="pop-react-form" onSubmit={sendReactionNote}>
-                      <input value={reactionText} onChange={e => setReactionText(e.target.value)} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
+                      <input value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
                       <button type="submit" className="pop-btn yellow sm" disabled={!reactionText.trim()}><Send size={14}/></button>
                     </form>
                   ) : (
@@ -1934,12 +2312,13 @@ function FullScreenODRecipient({ code, onExit }) {
             return (
               <div className="pop-outcome">
                 <PopCharacterArt variant={cardTheme} />
-                <div className="pop-comic-banner">GOT PRANKED! 😂</div>
-                <div className="pop-stamp-badge">PRANKED BY {data.creatorName?.toUpperCase()} 💀</div>
-                <p className="pop-fs-sub">{p.noTwistMessage}</p>
+                <span className="pop-pill-black">😂 PRANKED BY {data.creatorName?.toUpperCase()}</span>
+                <div className="pop-sender-hero-msg">
+                  “{p.noTwistMessage}”
+                </div>
                 {!reactionSent ? (
                   <form className="pop-react-form" onSubmit={sendReactionNote}>
-                    <input value={reactionText} onChange={e => setReactionText(e.target.value)} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
+                    <input value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Reply to ${data.creatorName}...`} maxLength={120} />
                     <button type="submit" className="pop-btn yellow sm" disabled={!reactionText.trim()}><Send size={14}/></button>
                   </form>
                 ) : (
@@ -1965,7 +2344,7 @@ function FullScreenODRecipient({ code, onExit }) {
 }
 
 /* ============================================================================
-   9. OD DUELS HUB
+   10. OD DUELS HUB
 ============================================================================ */
 function DuelsHub({ initialGame = "", initialCode = "", onClearRoute }) {
   const [game, setGame] = useState(initialGame || "xo");
@@ -2513,11 +2892,11 @@ function TapTrapArena({ initialCode = "" }) {
 }
 
 /* ============================================================================
-   10. COMMUNITY FLEX WALL
+   11. COMMUNITY FLEX WALL
 ============================================================================ */
 function FlexWall({ topCreators }) {
   const [posts, setPosts] = useState([
-    { id: "p1", name: "Kavya", mood: "💀", text: "Sent the OD - Trap to my bestie and watched her dodge 6 times live 😂" },
+    { id: "p1", name: "Kavya", mood: "💀", text: "Sent the OD - Trap to my bestie and watched her chase No 4 times live 😂" },
     { id: "p2", name: "Siddharth", mood: "🌍", text: "Me and my girlfriend in London play XO Best-of-5 every night!" },
     { id: "p3", name: "Neha", mood: "💘", text: "Dropped an OD - Trick link and he posted the receipt on his story!" }
   ]);
@@ -2551,8 +2930,8 @@ function FlexWall({ topCreators }) {
       <form className="pop-stack" onSubmit={postFlex}>
         <div className="pop-chips-row">{["🔥", "💀", "💘", "🌍", "😂"].map(m => <button key={m} type="button" className={mood === m ? "pop-chip active" : "pop-chip"} onClick={() => { fx("tap", 8); setMood(m); }}>{m}</button>)}</div>
         <div className="pop-grid-2">
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" maxLength={20}/>
-          <input value={text} onChange={e => setText(e.target.value)} placeholder="Drop your reaction..." maxLength={140}/>
+          <input value={name} onChange={e => setName(e.target.value)} onFocus={focusScrollCenter} placeholder="Your name" maxLength={20}/>
+          <input value={text} onChange={e => setText(e.target.value)} onFocus={focusScrollCenter} placeholder="Drop your reaction..." maxLength={140}/>
         </div>
         <button type="submit" className="pop-btn yellow full" disabled={!text.trim() || sending}><Send size={15}/> {sending ? "Posting..." : "Post Flex"}</button>
       </form>

@@ -1,0 +1,10 @@
+{
+  "name": "ODDORA · DO OD",
+  "short_name": "ODDORA",
+  "description": "Links they can't say No to — OD Trap, OD Trick & 1v1 OD Duels.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8EE",
+  "theme_color": "#FFF8EE",
+  "orientation": "portrait"
+}
