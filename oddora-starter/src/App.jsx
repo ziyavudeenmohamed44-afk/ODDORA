@@ -1410,7 +1410,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
   const [q2Opts, setQ2Opts] = useState(["", "", ""]);
 
   // Dynamic 2-word demo placeholders & smart fallbacks
-  const demoQPlaceholder = mode === "invite" ? "Coffee tonight?" : "Saapda polama?";
+  const demoQPlaceholder = mode === "invite" ? "Coffee tonight?" : "Dinner tonight?";
   const defaultQ = mode === "invite" ? TRAP_SPARKS[0].title : "Will you go on a date with me? 💘";
   const effectiveQ = questionInput.trim() || defaultQ;
   const smartOut = generateSmartOutcomes(effectiveQ, senderName.trim() || "your friend");
@@ -1450,6 +1450,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
       setAiLoading(false);
     }
     setStep(1);
+    setTimeout(() => { document.querySelector(".pop-fs-stage")?.scrollTo({ top: 0, behavior: "smooth" }); }, 50);
   }
 
   async function shuffleWarmups() {
@@ -1603,7 +1604,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                   value={senderName}
                   onChange={e => setSenderName(e.target.value)}
                   onFocus={focusScrollCenter}
-                  placeholder="Karthik"
+                  placeholder="Alex"
                   maxLength={24}
                 />
               </label>
@@ -1613,7 +1614,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                   value={recipientName}
                   onChange={e => setRecipientName(e.target.value)}
                   onFocus={focusScrollCenter}
-                  placeholder="Ananya"
+                  placeholder="Sam"
                   maxLength={24}
                 />
               </label>
@@ -1687,8 +1688,8 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                 <span className="pop-mini-tag">TAP ANY BOX TO EDIT (OPTIONAL)</span>
 
                 <div className="pop-grid-2">
-                  <label className="pop-field">
-                    <span>YES BUTTON</span>
+                  <label className={`pop-field ${!yesLabelInput.trim() ? "pop-soft-highlight" : ""}`}>
+                    <span>YES BUTTON TEXT</span>
                     <input
                       className="pop-dashed-input"
                       value={yesLabelInput}
@@ -1698,8 +1699,8 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                       maxLength={28}
                     />
                   </label>
-                  <label className="pop-field">
-                    <span>NO BUTTON (RUNS!)</span>
+                  <label className={`pop-field ${yesLabelInput.trim() && !noLabelInput.trim() ? "pop-soft-highlight" : ""}`}>
+                    <span>NO BUTTON TEXT (RUNS!)</span>
                     <input
                       className="pop-dashed-input"
                       value={noLabelInput}
@@ -1711,7 +1712,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                   </label>
                 </div>
 
-                <label className="pop-field">
+                <label className={`pop-field ${yesLabelInput.trim() && noLabelInput.trim() && !yesMsgInput.trim() ? "pop-soft-highlight" : ""}`}>
                   <span>POP-UP MESSAGE AFTER THEY TAP YES</span>
                   <input
                     className="pop-dashed-input"
@@ -1785,8 +1786,33 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                   </div>
                 </div>
 
-                <label className="pop-field">
-                  <span>IF THEY TAP YES</span>
+                <div className="pop-grid-2">
+                  <label className={`pop-field ${!yesLabelInput.trim() ? "pop-soft-highlight" : ""}`}>
+                    <span>YES BUTTON TEXT</span>
+                    <input
+                      className="pop-dashed-input"
+                      value={yesLabelInput}
+                      onChange={e => setYesLabelInput(e.target.value)}
+                      onFocus={focusScrollCenter}
+                      placeholder={defaultYesBtn}
+                      maxLength={28}
+                    />
+                  </label>
+                  <label className={`pop-field ${yesLabelInput.trim() && !noLabelInput.trim() ? "pop-soft-highlight" : ""}`}>
+                    <span>NO BUTTON TEXT</span>
+                    <input
+                      className="pop-dashed-input"
+                      value={noLabelInput}
+                      onChange={e => setNoLabelInput(e.target.value)}
+                      onFocus={focusScrollCenter}
+                      placeholder={defaultNoBtn}
+                      maxLength={28}
+                    />
+                  </label>
+                </div>
+
+                <label className={`pop-field ${yesLabelInput.trim() && noLabelInput.trim() && !yesMsgInput.trim() ? "pop-soft-highlight" : ""}`}>
+                  <span>IF THEY TAP YES (REVEAL)</span>
                   <input
                     className="pop-dashed-input"
                     value={yesMsgInput}
@@ -1797,7 +1823,7 @@ function FullScreenCreatorWizard({ initialMode = "invite", onLinkCreated, onClos
                   />
                 </label>
 
-                <label className="pop-field">
+                <label className={`pop-field ${yesMsgInput.trim() && !noTwistInput.trim() ? "pop-soft-highlight" : ""}`}>
                   <span>IF THEY TAP NO (PRANK REVEAL 😂)</span>
                   <input
                     className="pop-dashed-input"

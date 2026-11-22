@@ -1453,3 +1453,15 @@ textarea::placeholder {
   padding: 7px 9px;
   font-size: 11px;
 }
+
+/* ============================================================================
+   V9 POLISH: SCREEN 2 STEP HIGHLIGHTER & TOPBAR CLEARANCE
+============================================================================ */
+.pop-fs-stage {
+  padding-top: calc(78px + env(safe-area-inset-top, 0px)) !important;
+}
+
+.pop-soft-highlight input {
+  border-color: var(--coral) !important;
+  box-shadow: 0 0 0 3px rgba(255, 90, 95, 0.18), 3px 3px 0 var(--ink) !important;
+}
