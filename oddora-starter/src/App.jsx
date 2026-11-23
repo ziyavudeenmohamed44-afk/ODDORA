@@ -671,7 +671,256 @@ function generateSmartTrapOutcome(questionText, senderName) {
    4. MODERN 9:16 FULL-BLEED STORY POSTER (1080 x 1920 — NO NOTICE PAPER!)
    + Auto-attaches clickable website link & caption when sharing!
 ============================================================================ */
-async function createPoster916({ kicker, bannerWord = "CAUGHT!", bigTitle, subText, statPill, actorName, avatarId = "shades", cardColor = "lime", footerUrl }) {
+function drawTornPaperPath(ctx, x, y, w, h, seed = 1, jag = 10) {
+  const rand = n => {
+    const v = Math.sin(seed * 9301 + n * 49297) * 233280;
+    return v - Math.floor(v);
+  };
+  ctx.beginPath();
+  const topSteps = 18;
+  const sideSteps = 10;
+  ctx.moveTo(x, y);
+  for (let i = 1; i <= topSteps; i += 1) {
+    const px = x + (w * i) / topSteps;
+    const py = y + (rand(i) - 0.5) * jag * 1.4;
+    ctx.lineTo(px, py);
+  }
+  for (let i = 1; i <= sideSteps; i += 1) {
+    const px = x + w + (rand(100 + i) - 0.5) * jag * 1.5;
+    const py = y + (h * i) / sideSteps;
+    ctx.lineTo(px, py);
+  }
+  for (let i = topSteps - 1; i >= 0; i -= 1) {
+    const px = x + (w * i) / topSteps;
+    const py = y + h + (rand(200 + i) - 0.5) * jag * 1.5;
+    ctx.lineTo(px, py);
+  }
+  for (let i = sideSteps - 1; i >= 1; i -= 1) {
+    const px = x + (rand(300 + i) - 0.5) * jag * 1.5;
+    const py = y + (h * i) / sideSteps;
+    ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+function drawHeroPosterAvatar(ctx, avatarId, cx, cy, r, accentColor = "#C6FF2E") {
+  const a = getAvatarObj(avatarId);
+  const s = r / 50;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Bold neon-lime sticker cutout silhouette behind the character!
+  ctx.save();
+  ctx.translate(10, -4);
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.arc(0, -4 * s, 26.5 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(0, 44 * s, 44 * s, 32 * s, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Dark backdrop aura circle behind avatar bust
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 6 * s, 48 * s, 0, Math.PI * 2);
+  ctx.fillStyle = "#1A1D24";
+  ctx.fill();
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = accentColor;
+  ctx.stroke();
+  ctx.clip();
+
+  // Subtle halftone dots inside portrait backdrop
+  ctx.fillStyle = `${accentColor}26`;
+  for (let gx = -46 * s; gx <= 46 * s; gx += 16) {
+    for (let gy = -46 * s; gy <= 52 * s; gy += 16) {
+      ctx.beginPath();
+      ctx.arc(gx, gy, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Oversized Streetwear Hoodie / Shoulders
+  ctx.fillStyle = a.shirt;
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 4.2 * s;
+  ctx.beginPath();
+  ctx.ellipse(0, 50 * s, 40 * s, 30 * s, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Hoodie collar highlight
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2.2 * s;
+  ctx.beginPath();
+  ctx.arc(0, 25 * s, 14 * s, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+
+  // Back hair layers
+  if (a.style === "bob") {
+    ctx.fillStyle = a.hair;
+    ctx.strokeStyle = "#111216";
+    ctx.lineWidth = 3.2 * s;
+    drawRoundRect(ctx, -27 * s, -8 * s, 54 * s, 36 * s, 14 * s);
+    ctx.fill();
+    ctx.stroke();
+  } else if (a.style === "curls") {
+    ctx.fillStyle = a.hair;
+    ctx.strokeStyle = "#111216";
+    ctx.lineWidth = 2.6 * s;
+    [[-26, -2], [26, -2], [-23, -18], [23, -18], [0, -27]].forEach(([hx, hy]) => {
+      ctx.beginPath();
+      ctx.arc(hx * s, hy * s, 12.5 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+  } else if (a.style === "bun") {
+    ctx.fillStyle = a.hair;
+    ctx.strokeStyle = "#111216";
+    ctx.lineWidth = 3.2 * s;
+    ctx.beginPath();
+    ctx.arc(0, -32 * s, 13 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Neck
+  ctx.fillStyle = a.skin;
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 3 * s;
+  drawRoundRect(ctx, -7 * s, 12 * s, 14 * s, 14 * s, 5 * s);
+  ctx.fill();
+  ctx.stroke();
+
+  // Head
+  ctx.fillStyle = a.skin;
+  ctx.lineWidth = 3.8 * s;
+  ctx.beginPath();
+  ctx.arc(0, -4 * s, 22 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Streetwear shadow cheek contour
+  ctx.fillStyle = "rgba(17, 18, 22, 0.14)";
+  ctx.beginPath();
+  ctx.arc(-5 * s, -4 * s, 21 * s, 0.65 * Math.PI, 1.35 * Math.PI);
+  ctx.fill();
+
+  // Hair / Cap / Beanie
+  if (a.style === "cap") {
+    ctx.fillStyle = "#FFD166";
+    ctx.beginPath();
+    ctx.arc(0, -10 * s, 23 * s, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#111216";
+    ctx.fillRect(-25 * s, -12 * s, 56 * s, 6.5 * s);
+  } else if (a.style === "beanie") {
+    ctx.fillStyle = "#111216";
+    ctx.beginPath();
+    ctx.arc(0, -10 * s, 23 * s, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#FFD166";
+    ctx.fillRect(-24 * s, -16 * s, 48 * s, 8.5 * s);
+    ctx.strokeRect(-24 * s, -16 * s, 48 * s, 8.5 * s);
+  } else if (a.style === "spiky") {
+    ctx.fillStyle = a.hair;
+    ctx.beginPath();
+    ctx.moveTo(-22 * s, -8 * s);
+    ctx.lineTo(-16 * s, -28 * s);
+    ctx.lineTo(-6 * s, -20 * s);
+    ctx.lineTo(2 * s, -32 * s);
+    ctx.lineTo(10 * s, -21 * s);
+    ctx.lineTo(20 * s, -27 * s);
+    ctx.lineTo(22 * s, -8 * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = a.hair;
+    ctx.beginPath();
+    ctx.arc(0, -10 * s, 23 * s, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Signature Neon-Rimmed Streetwear Shades on EVERY hero card!
+  ctx.fillStyle = "#111216";
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2.4 * s;
+  drawRoundRect(ctx, -19 * s, -10 * s, 16.5 * s, 11 * s, 3 * s);
+  ctx.fill();
+  ctx.stroke();
+  drawRoundRect(ctx, 2.5 * s, -10 * s, 16.5 * s, 11 * s, 3 * s);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(-2.5 * s, -6.5 * s, 5 * s, 2.5 * s);
+  // Crisp white lens glare
+  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  ctx.lineWidth = 1.6 * s;
+  ctx.beginPath();
+  ctx.moveTo(-15 * s, -7 * s);
+  ctx.lineTo(-9 * s, -7 * s);
+  ctx.moveTo(6.5 * s, -7 * s);
+  ctx.lineTo(12.5 * s, -7 * s);
+  ctx.stroke();
+
+  // Confident Smirk
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 3.2 * s;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(1 * s, 4 * s, 8.5 * s, 0.12 * Math.PI, 0.82 * Math.PI);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Floating Hand-Drawn Neon Crown above top-left of head!
+  ctx.save();
+  ctx.translate(-32 * s, -48 * s);
+  ctx.rotate(-0.26);
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 11;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-48, 22);
+  ctx.lineTo(-56, -24);
+  ctx.lineTo(-20, 2);
+  ctx.lineTo(0, -34);
+  ctx.lineTo(20, 2);
+  ctx.lineTo(56, -24);
+  ctx.lineTo(48, 22);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+async function createPoster916({
+  kicker = "OFFICIAL RESULT",
+  topLine = "YOU GOT",
+  bigWord = "TRAPPED!",
+  challengeLabel = "OD - TRAP CHALLENGE",
+  noteLine1 = "You dodged the",
+  noteLine2 = "NO button",
+  bigStat = "4x",
+  highlightPrefix = "...but still said",
+  highlightWord = "YES!",
+  roastLine1 = "CERTIFIED",
+  roastLine2 = "EASY TARGET 😂",
+  statLeft = "Skill: 0/100",
+  statRight = "Chaos: 100%",
+  ctaLine = "I DID IT. YOUR TURN! 👀",
+  actorName = "",
+  avatarId = "shades",
+  cardColor = "lime",
+  footerUrl = "oddora-kappa.vercel.app"
+}) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1920;
@@ -679,215 +928,492 @@ async function createPoster916({ kicker, bannerWord = "CAUGHT!", bigTitle, subTe
   if (!ctx) throw new Error("Canvas unavailable");
 
   const palettes = {
-    lime: { bg1: "#14141A", bg2: "#1F2937", accent: "#A3E635", sec: "#FFD166", pill: "#FF5A5F", card: "#FFF8EE" },
-    pink: { bg1: "#1E1024", bg2: "#3B0D27", accent: "#FF7AB8", sec: "#FFD166", pill: "#3B82F6", card: "#FFF8EE" },
-    cyan: { bg1: "#0F172A", bg2: "#1E3A8A", accent: "#38BDF8", sec: "#A3E635", pill: "#FF5A5F", card: "#FFF8EE" },
-    gold: { bg1: "#1C1917", bg2: "#422006", accent: "#FFD166", sec: "#A3E635", pill: "#FF5A5F", card: "#FFF8EE" }
+    lime: { accent: "#C6FF2E", hot: "#FF2D78", yellow: "#FFE066" },
+    pink: { accent: "#FF7AB8", hot: "#FF2D78", yellow: "#FFE066" },
+    cyan: { accent: "#38BDF8", hot: "#FF2D78", yellow: "#FFE066" },
+    gold: { accent: "#FFD166", hot: "#FF5A5F", yellow: "#FFE066" }
   };
   const pal = palettes[cardColor] || palettes.lime;
 
-  // 1. Vibrant Multi-Layer Backdrop
-  const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
-  grad.addColorStop(0, pal.bg1);
-  grad.addColorStop(1, pal.bg2);
-  ctx.fillStyle = grad;
+  // 1. DEEP CHARCOAL STREETWEAR BACKDROP
+  const bgGrad = ctx.createRadialGradient(540, 760, 120, 540, 960, 1180);
+  bgGrad.addColorStop(0, "#1D2028");
+  bgGrad.addColorStop(1, "#0B0C10");
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 1080, 1920);
 
-  // Diagonal pop-art accent bands
-  ctx.save();
-  ctx.fillStyle = `${pal.accent}18`;
-  ctx.translate(540, 960);
-  ctx.rotate(-0.22);
-  ctx.fillRect(-900, -340, 1800, 220);
-  ctx.fillRect(-900, 180, 1800, 160);
-  ctx.restore();
-
-  // Halftone comic dot grid
-  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-  for (let x = 36; x < 1060; x += 44) {
-    for (let y = 36; y < 1900; y += 44) {
+  // Subtle gritty comic halftone grid across full canvas
+  ctx.fillStyle = "rgba(255, 255, 255, 0.045)";
+  for (let x = 22; x < 1080; x += 28) {
+    for (let y = 22; y < 1920; y += 28) {
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // 2. Top Floating Comic Stickers (9:16 Safe Top Zone)
-  ctx.save();
-  ctx.translate(250, 155);
-  ctx.rotate(-0.05);
-  ctx.fillStyle = pal.accent;
-  ctx.strokeStyle = "#14141A";
-  ctx.lineWidth = 6;
-  drawRoundRect(ctx, -155, -36, 310, 72, 36);
-  ctx.fill();
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#14141A";
-  ctx.font = "800 28px 'DM Mono', monospace";
-  ctx.fillText("⚡ ODDORA", 0, 10);
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(805, 160);
-  ctx.rotate(0.05);
-  ctx.fillStyle = pal.sec;
-  ctx.strokeStyle = "#14141A";
-  ctx.lineWidth = 6;
-  drawRoundRect(ctx, -185, -36, 370, 72, 36);
-  ctx.fill();
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#14141A";
-  ctx.font = "800 26px 'DM Mono', monospace";
-  ctx.fillText(kicker.toUpperCase(), 0, 10);
-  ctx.restore();
-
-  // 3. Bold Neo-Brutalist Collectible Card Frame
-  ctx.fillStyle = pal.accent;
-  drawRoundRect(ctx, 104, 266, 900, 1270, 52);
-  ctx.fill();
-
-  ctx.fillStyle = pal.card;
-  ctx.strokeStyle = "#14141A";
-  ctx.lineWidth = 10;
-  drawRoundRect(ctx, 82, 244, 900, 1270, 52);
-  ctx.fill();
-  ctx.stroke();
-
-  // Top Header Strip inside Card
-  ctx.fillStyle = "#14141A";
-  drawRoundRect(ctx, 122, 284, 820, 74, 24);
-  ctx.fill();
-  ctx.textAlign = "center";
-  ctx.fillStyle = pal.sec;
-  ctx.font = "800 28px 'DM Mono', monospace";
-  ctx.fillText(String(actorName || "ODDORA PLAYER").toUpperCase(), 532, 331);
-
-  // 4. 16-Point Comic Starburst behind Human Avatar
-  ctx.save();
-  ctx.translate(532, 555);
-  ctx.fillStyle = pal.sec;
-  ctx.strokeStyle = "#14141A";
-  ctx.lineWidth = 6;
-  const spikes = 16;
-  ctx.beginPath();
-  for (let i = 0; i < spikes * 2; i += 1) {
-    const rad = i % 2 === 0 ? 195 : 148;
-    const ang = (i * Math.PI) / spikes;
-    const px = Math.cos(ang) * rad;
-    const py = Math.sin(ang) * rad;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+  // Hot-pink halftone accent cluster (top-right)
+  for (let gx = 840; gx < 1080; gx += 24) {
+    for (let gy = 140; gy < 460; gy += 24) {
+      const dist = Math.hypot(gx - 1040, gy - 260);
+      if (dist < 220) {
+        const rad = Math.max(2, (1 - dist / 220) * 8.5);
+        ctx.fillStyle = `${pal.hot}99`;
+        ctx.beginPath();
+        ctx.arc(gx, gy, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
+
+  // Neon-lime halftone accent cluster (mid-right)
+  for (let gx = 830; gx < 1080; gx += 24) {
+    for (let gy = 1090; gy < 1500; gy += 24) {
+      const dist = Math.hypot(gx - 1050, gy - 1290);
+      if (dist < 240) {
+        const rad = Math.max(2, (1 - dist / 240) * 9);
+        ctx.fillStyle = `${pal.accent}B0`;
+        ctx.beginPath();
+        ctx.arc(gx, gy, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // 2. TOP HEADER BAR (9:16 Safe Zone)
+  // Left [O] Badge + ODDORA + INTERNET PLAYGROUND
+  ctx.fillStyle = "#111216";
+  ctx.strokeStyle = pal.accent;
+  ctx.lineWidth = 8;
+  drawRoundRect(ctx, 56, 86, 94, 94, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = pal.accent;
+  ctx.font = "900 56px 'Space Grotesk', sans-serif";
+  ctx.fillText("O", 103, 152);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "900 54px 'Space Grotesk', sans-serif";
+  ctx.fillText("ODDORA", 170, 142);
+
+  ctx.fillStyle = pal.accent;
+  ctx.font = "800 19px 'DM Mono', monospace";
+  ctx.fillText("INTERNET PLAYGROUND", 172, 174);
+
+  // Top-Right Tilted OFFICIAL RESULT Pill
+  ctx.save();
+  ctx.translate(855, 134);
+  ctx.rotate(-0.045);
+  ctx.fillStyle = "#111216";
+  ctx.strokeStyle = pal.accent;
+  ctx.lineWidth = 6;
+  drawRoundRect(ctx, -172, -36, 344, 72, 36);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = pal.accent;
+  ctx.font = "800 24px 'DM Mono', monospace";
+  ctx.fillText(String(kicker || "OFFICIAL RESULT").toUpperCase().slice(0, 16), -18, 9);
+
+  // Checkmark circle inside pill
+  ctx.fillStyle = pal.accent;
+  ctx.beginPath();
+  ctx.arc(132, 0, 21, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(122, 0);
+  ctx.lineTo(129, 8);
+  ctx.lineTo(143, -8);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. LEFT HERO CHARACTER BUST (Oversized Avatar + Neon Cutout + Crown)
+  drawHeroPosterAvatar(ctx, avatarId, 208, 720, 178, pal.accent);
+
+  // Subtle player matchup tag tucked below left character
+  if (actorName) {
+    ctx.save();
+    ctx.translate(212, 972);
+    ctx.rotate(-0.04);
+    ctx.fillStyle = "#111216";
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 4;
+    drawRoundRect(ctx, -148, -26, 296, 52, 26);
+    ctx.fill();
+    ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "800 22px 'DM Mono', monospace";
+    ctx.fillText(String(actorName).toUpperCase().slice(0, 20), 0, 8);
+    ctx.restore();
+  }
+
+  // 4. TOP-RIGHT TORN PAPER TITLE CUTOUT ("YOU GOT TRAPPED!")
+  ctx.save();
+  ctx.translate(715, 392);
+  ctx.rotate(-0.095);
+
+  // Paper shadow
+  ctx.fillStyle = "rgba(0, 0, 0, 0.52)";
+  drawTornPaperPath(ctx, -288, -132, 594, 282, 11, 12);
+  ctx.fill();
+
+  // Warm torn paper fill
+  ctx.fillStyle = "#F7F2E8";
+  drawTornPaperPath(ctx, -300, -144, 594, 282, 11, 12);
+  ctx.fill();
+
+  // Subtle vertical paper crease tint
+  ctx.fillStyle = "rgba(20, 20, 26, 0.04)";
+  ctx.fillRect(-120, -142, 46, 278);
+
+  // Top black line ("YOU GOT")
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111216";
+  ctx.font = "900 68px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(topLine || "YOU GOT").toUpperCase(), 0, -40);
+
+  // Giant hot-pink display word ("TRAPPED!") auto-fitted inside torn paper
+  const displayWord = String(bigWord || "TRAPPED!").toUpperCase();
+  let bigFontSize = 104;
+  ctx.font = `italic 900 ${bigFontSize}px 'Space Grotesk', sans-serif`;
+  while (ctx.measureText(displayWord).width > 520 && bigFontSize > 56) {
+    bigFontSize -= 4;
+    ctx.font = `italic 900 ${bigFontSize}px 'Space Grotesk', sans-serif`;
+  }
+  ctx.fillStyle = pal.hot;
+  ctx.fillText(displayWord, 0, 62);
+
+  // Hand-drawn hot-pink brush underline swoosh
+  ctx.strokeStyle = pal.hot;
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-210, 88);
+  ctx.quadraticCurveTo(0, 74, 215, 86);
+  ctx.stroke();
+  ctx.restore();
+
+  // 5. MID-RIGHT CHALLENGE PILL (⚡ OD - TRAP CHALLENGE)
+  ctx.save();
+  ctx.translate(710, 608);
+  ctx.rotate(-0.035);
+  ctx.fillStyle = "#111216";
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = 4;
+  drawRoundRect(ctx, -235, -34, 480, 68, 34);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "800 28px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(challengeLabel || "OD - TRAP CHALLENGE").toUpperCase(), 18, 10);
+
+  // Bold yellow lightning bolt overlapping left side of pill
+  ctx.fillStyle = pal.accent;
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 6;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(-225, -48);
+  ctx.lineTo(-262, 6);
+  ctx.lineTo(-226, 6);
+  ctx.lineTo(-244, 54);
+  ctx.lineTo(-190, -10);
+  ctx.lineTo(-226, -10);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
   ctx.restore();
 
-  // Large Human Avatar Medallion
-  drawHumanAvatarCanvas(ctx, avatarId, 532, 555, 136);
-
-  // 5. Tilted Impact Banner Stamp (e.g. "TRAPPED ME!" / "UNLOCKED!")
+  // 6. MID-RIGHT TORN NOTEBOOK PAPER CARD ("You dodged the NO button 4x ...but still said YES!")
   ctx.save();
-  ctx.translate(532, 815);
-  ctx.rotate(-0.035);
-  ctx.fillStyle = pal.accent;
-  drawRoundRect(ctx, -330, -48, 672, 98, 24);
+  ctx.translate(690, 892);
+  ctx.rotate(-0.025);
+
+  // Shadow
+  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  drawTornPaperPath(ctx, -320, -172, 668, 368, 29, 13);
   ctx.fill();
 
-  ctx.fillStyle = "#14141A";
-  drawRoundRect(ctx, -338, -56, 672, 98, 24);
+  // Ruled notebook torn paper
+  ctx.save();
+  drawTornPaperPath(ctx, -332, -184, 668, 368, 29, 13);
+  ctx.fillStyle = "#FAF6EC";
+  ctx.fill();
+  ctx.clip();
+
+  // Horizontal notebook lines
+  ctx.strokeStyle = "rgba(59, 130, 246, 0.14)";
+  ctx.lineWidth = 2;
+  for (let ly = -150; ly <= 170; ly += 36) {
+    ctx.beginPath();
+    ctx.moveTo(-340, ly);
+    ctx.lineTo(350, ly);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Left text inside notebook
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#111216";
+  ctx.font = "800 41px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(noteLine1 || "You dodged the").slice(0, 18), -292, -74);
+  ctx.fillText(String(noteLine2 || "NO button").slice(0, 18), -292, -20);
+
+  // Right neon-lime circled big stat ("4x")
+  ctx.save();
+  ctx.translate(185, -52);
+  ctx.strokeStyle = pal.accent;
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 108, 92, -0.06, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const statTxt = String(bigStat || "4x").slice(0, 5);
+  const statFontSz = statTxt.length <= 2 ? 108 : statTxt.length === 3 ? 84 : 66;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111216";
+  ctx.font = `900 ${statFontSz}px 'Space Grotesk', sans-serif`;
+  ctx.fillText(statTxt, 0, statFontSz * 0.34);
+  ctx.restore();
+
+  // 3 Yellow Comic Burst Rays at top-right of notebook
+  ctx.strokeStyle = pal.yellow;
+  ctx.lineWidth = 9;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(278, -162); ctx.lineTo(302, -214);
+  ctx.moveTo(310, -142); ctx.lineTo(352, -182);
+  ctx.moveTo(324, -108); ctx.lineTo(372, -124);
+  ctx.stroke();
+
+  // Bottom inside notebook: "...but still said [YES!]"
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#111216";
+  ctx.font = "800 40px 'Space Grotesk', sans-serif";
+  const prefStr = String(highlightPrefix || "...but still said").slice(0, 19);
+  ctx.fillText(prefStr, -292, 104);
+
+  const hlWord = String(highlightWord || "YES!").toUpperCase().slice(0, 11);
+  ctx.font = "900 50px 'Space Grotesk', sans-serif";
+  const hlW = Math.min(240, Math.max(152, ctx.measureText(hlWord).width + 44));
+  const hlX = 300 - hlW;
+  ctx.fillStyle = pal.accent;
+  drawRoundRect(ctx, hlX, 50, hlW, 76, 12);
   ctx.fill();
 
   ctx.textAlign = "center";
-  ctx.fillStyle = pal.accent;
-  ctx.font = "800 50px 'Space Grotesk', sans-serif";
-  ctx.fillText(String(bannerWord || "CAUGHT!").toUpperCase().slice(0, 18), 0, 12);
+  ctx.fillStyle = "#111216";
+  let hlFont = 50;
+  ctx.font = `900 ${hlFont}px 'Space Grotesk', sans-serif`;
+  while (ctx.measureText(hlWord).width > hlW - 22 && hlFont > 30) {
+    hlFont -= 3;
+    ctx.font = `900 ${hlFont}px 'Space Grotesk', sans-serif`;
+  }
+  ctx.fillText(hlWord, hlX + hlW / 2, 105);
+
   ctx.restore();
 
-  // 6. Big Bold Viral Headline (Zero private/secret text leaked!)
-  const drawHeroLines = (text, centerY, maxW, lh, font) => {
-    ctx.font = font;
-    ctx.fillStyle = "#14141A";
-    const words = String(text || "").split(" ");
-    let line = "";
-    const lines = [];
-    for (const w of words) {
-      const test = `${line} ${w}`.trim();
-      if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line);
-        line = w;
-      } else line = test;
-    }
-    if (line) lines.push(line);
-    const totalH = lines.length * lh;
-    let yy = centerY - totalH / 2 + lh * 0.72;
-    lines.slice(0, 3).forEach(l => {
-      ctx.fillText(l, 532, yy);
-      yy += lh;
-    });
-  };
-  drawHeroLines(bigTitle, 1015, 720, 62, "800 46px 'Space Grotesk', sans-serif");
+  // 7. HOT-PINK TROPHY ROAST BANNER ("🏆 CERTIFIED EASY TARGET 😂")
+  ctx.save();
+  ctx.translate(560, 1218);
+  ctx.rotate(-0.032);
 
-  // Sub-caption
-  if (subText) {
-    ctx.fillStyle = "#374151";
-    ctx.font = "700 32px 'Space Grotesk', sans-serif";
-    ctx.fillText(String(subText).slice(0, 46), 532, 1185);
-  }
+  // Drop shadow
+  ctx.fillStyle = "#000000";
+  drawRoundRect(ctx, -372, -70, 762, 152, 76);
+  ctx.fill();
 
-  // 7. Tilted Stat Sticker
-  if (statPill) {
-    ctx.save();
-    ctx.translate(532, 1300);
-    ctx.rotate(0.025);
-    ctx.fillStyle = "#14141A";
-    drawRoundRect(ctx, -340, -44, 692, 94, 47);
-    ctx.fill();
-
-    ctx.fillStyle = pal.pill;
-    ctx.strokeStyle = "#14141A";
-    ctx.lineWidth = 6;
-    drawRoundRect(ctx, -348, -52, 692, 94, 47);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = pal.pill === "#FFD166" ? "#14141A" : "#FFFFFF";
-    ctx.font = "800 34px 'Space Grotesk', sans-serif";
-    ctx.fillText(statPill, 0, 8);
-    ctx.restore();
-  }
-
-  // Perforated Ticket Divider + Bottom Stamp inside Card
-  ctx.strokeStyle = "#14141A";
-  ctx.lineWidth = 4;
-  ctx.setLineDash([14, 12]);
-  ctx.beginPath();
-  ctx.moveTo(130, 1395);
-  ctx.lineTo(934, 1395);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = "#14141A";
-  ctx.font = "800 24px 'DM Mono', monospace";
-  ctx.fillText("DO OD · ZERO ESCAPE · LIVE REACTIONS", 532, 1455);
-
-  // 8. Bottom Viral CTA Pill (9:16 Safe Bottom Zone)
-  ctx.fillStyle = "#14141A";
-  ctx.strokeStyle = pal.accent;
-  ctx.lineWidth = 6;
-  drawRoundRect(ctx, 120, 1595, 840, 165, 36);
+  // Pink pill with white outline
+  ctx.fillStyle = pal.hot;
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = 7;
+  drawRoundRect(ctx, -384, -80, 762, 152, 76);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "800 34px 'Space Grotesk', sans-serif";
-  ctx.fillText("CAN YOU ESCAPE? TRY ODDORA ⚡", 540, 1665);
+  // Drawn Golden Trophy Icon on left edge
+  ctx.save();
+  ctx.translate(-305, -2);
+  ctx.fillStyle = "#FFD166";
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 7;
+  ctx.lineJoin = "round";
+  // Handles
+  ctx.beginPath();
+  ctx.arc(-44, -14, 22, 0.4 * Math.PI, 1.6 * Math.PI);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(44, -14, 22, -0.6 * Math.PI, 0.6 * Math.PI);
+  ctx.stroke();
+  // Cup body
+  ctx.beginPath();
+  ctx.moveTo(-42, -46);
+  ctx.lineTo(42, -46);
+  ctx.quadraticCurveTo(40, 14, 0, 22);
+  ctx.quadraticCurveTo(-40, 14, -42, -46);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Stem & Base
+  ctx.fillRect(-10, 20, 20, 24);
+  ctx.strokeRect(-10, 20, 20, 24);
+  drawRoundRect(ctx, -36, 40, 72, 18, 6);
+  ctx.fill();
+  ctx.stroke();
+  // Trophy shine
+  ctx.fillStyle = "#FFF7CC";
+  ctx.fillRect(-24, -34, 10, 28);
+  ctx.restore();
 
+  // 2-line bold white roast text
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "900 48px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(roastLine1 || "CERTIFIED").toUpperCase().slice(0, 18), 46, -12);
+  ctx.font = "900 46px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(roastLine2 || "EASY TARGET 😂").toUpperCase().slice(0, 20), 46, 46);
+  ctx.restore();
+
+  // 8. TWO SIDE-BY-SIDE STAT PILLS ("Skill: 0/100" | "Chaos: 100%")
+  const drawStatPill = (px, py, label, iconKind) => {
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-0.02);
+
+    ctx.fillStyle = "#FFFFFF";
+    drawRoundRect(ctx, -206, -50, 424, 104, 52);
+    ctx.fill();
+
+    ctx.fillStyle = pal.yellow;
+    ctx.strokeStyle = "#111216";
+    ctx.lineWidth = 6;
+    drawRoundRect(ctx, -212, -54, 424, 104, 52);
+    ctx.fill();
+    ctx.stroke();
+
+    // Crisp vector icon on left
+    ctx.save();
+    ctx.translate(-154, -2);
+    if (iconKind === "target") {
+      ctx.strokeStyle = "#111216";
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = pal.hot;
+      ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(26, -26); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#FF5A5F";
+      ctx.strokeStyle = "#111216";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(0, -26);
+      ctx.quadraticCurveTo(22, -4, 16, 14);
+      ctx.quadraticCurveTo(0, 28, -16, 14);
+      ctx.quadraticCurveTo(-22, -4, 0, -26);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#FFD166";
+      ctx.beginPath();
+      ctx.arc(0, 8, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111216";
+    ctx.font = "800 34px 'Space Grotesk', sans-serif";
+    ctx.fillText(String(label || "").slice(0, 15), -114, 10);
+    ctx.restore();
+  };
+
+  drawStatPill(302, 1418, statLeft, "target");
+  drawStatPill(778, 1404, statRight, "flame");
+
+  // 9. BOTTOM TORN NEON-LIME STREETWEAR CTA STRIP
+  ctx.save();
+  ctx.translate(540, 1705);
+  ctx.rotate(-0.032);
+
+  // Ripped neon-lime band
   ctx.fillStyle = pal.accent;
-  ctx.font = "700 30px 'DM Mono', monospace";
-  ctx.fillText(footerUrl, 540, 1720);
+  drawTornPaperPath(ctx, -620, -172, 1240, 355, 77, 16);
+  ctx.fill();
+
+  // Checkered racing flag patch on bottom-left corner
+  ctx.save();
+  ctx.translate(-485, 65);
+  ctx.rotate(0.28);
+  const sq = 32;
+  for (let r = 0; r < 5; r += 1) {
+    for (let c = 0; c < 3; c += 1) {
+      ctx.fillStyle = (r + c) % 2 === 0 ? "#111216" : "#FFFFFF";
+      ctx.fillRect(c * sq - 48, r * sq - 80, sq, sq);
+    }
+  }
+  ctx.restore();
+
+  // Bold black CTA headline
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111216";
+  ctx.font = "900 56px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(ctaLine || "I DID IT. YOUR TURN! 👀").toUpperCase().slice(0, 26), 16, -64);
+
+  // White Clickable-Look URL Pill
+  ctx.fillStyle = "#111216";
+  drawRoundRect(ctx, -334, -8, 694, 106, 53);
+  ctx.fill();
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 6;
+  drawRoundRect(ctx, -344, -18, 694, 106, 53);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#111216";
+  ctx.font = "800 36px 'Space Grotesk', sans-serif";
+  ctx.fillText(`🔗  ${String(footerUrl || "oddora-kappa.vercel.app").slice(0, 28)}`, -8, 48);
+
+  // Sharp Pointer Cursor Arrow + Click Burst on Right Edge of URL Pill!
+  ctx.save();
+  ctx.translate(316, 48);
+  ctx.strokeStyle = "#111216";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-26, -16); ctx.lineTo(-42, -26);
+  ctx.moveTo(-14, -30); ctx.lineTo(-18, -48);
+  ctx.moveTo(4, -30);   ctx.lineTo(14, -46);
+  ctx.stroke();
+
+  ctx.fillStyle = "#111216";
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = 5;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(8, 72);
+  ctx.lineTo(28, 54);
+  ctx.lineTo(54, 62);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("Blob failed");
@@ -1092,18 +1618,45 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
     const rec = recipientName || "my friend";
     const me = senderName || "Me";
     await sharePosterWithLink({
-      posterArgs: {
-        kicker: isVault ? "SECRET VAULT" : "CAUGHT IN 4K",
-        bannerWord: isVault ? "LOCKED IT! 🔐" : "TRAPPED 'EM! 😂",
-        bigTitle: isVault
-          ? `I locked a secret for ${rec}!`
-          : `I trapped ${rec} using OD - Trap!`,
-        subText: isVault ? "Made them crack 2 puzzles to open it 👀" : "They couldn't even press No ⚡",
-        statPill: isVault ? "🔐 VAULT MASTER" : "⚡ MISSION SUCCESS",
-        actorName: me,
-        avatarId,
-        cardColor
-      },
+      posterArgs: isVault
+        ? {
+            kicker: "OFFICIAL RESULT",
+            topLine: "SECRET",
+            bigWord: "LOCKED! 🔐",
+            challengeLabel: "OD - VAULT CHALLENGE",
+            noteLine1: `Locked a vault`,
+            noteLine2: `for ${rec.slice(0, 12)}`,
+            bigStat: "2x",
+            highlightPrefix: "...puzzles to",
+            highlightWord: "UNLOCK!",
+            roastLine1: "CERTIFIED",
+            roastLine2: "VAULT KEEPER 🔐",
+            statLeft: "Secrecy: 100%",
+            statRight: "Hype: 100%",
+            ctaLine: "TRY LOCKING ONE! 👀",
+            actorName: `${me} → ${rec}`,
+            avatarId,
+            cardColor
+          }
+        : {
+            kicker: "OFFICIAL RESULT",
+            topLine: "MISSION",
+            bigWord: "SUCCESS!",
+            challengeLabel: "OD - TRAP CHALLENGE",
+            noteLine1: `Trapped ${rec.slice(0, 10)}`,
+            noteLine2: "with NO button",
+            bigStat: "4K",
+            highlightPrefix: "...they still said",
+            highlightWord: "YES!",
+            roastLine1: "CERTIFIED",
+            roastLine2: "MASTER TRAPPER 😈",
+            statLeft: "Success: 100%",
+            statRight: "Chaos: 100%",
+            ctaLine: "TRAP YOUR FRIENDS! 👀",
+            actorName: `${me} → ${rec}`,
+            avatarId,
+            cardColor
+          },
       caption: isVault
         ? `I locked a secret for ${rec} on ODDORA 🔐`
         : `I just trapped ${rec} using OD - Trap 😂⚡`,
@@ -3434,25 +3987,63 @@ function FullScreenODRecipient({ code, onRegisterReceived, onSaveToShelf, onPend
     await sharePosterWithLink({
       posterArgs: isVaultTeaser
         ? {
-            kicker: "SECRET CRACKED",
-            bannerWord: "UNLOCKED! 🔓",
-            bigTitle: `I cracked ${data.creatorName}'s secret vault!`,
-            subText: "Secret stays between us 🤫👀",
-            statPill: "🔓 2 LOCKS CRACKED",
+            kicker: "OFFICIAL RESULT",
+            topLine: "VAULT",
+            bigWord: "CRACKED!",
+            challengeLabel: "OD - VAULT CHALLENGE",
+            noteLine1: `Unlocked ${String(data.creatorName || "a").slice(0, 9)}'s`,
+            noteLine2: "secret vault",
+            bigStat: "2/2",
+            highlightPrefix: "...secret stays",
+            highlightWord: "SAFE! 🤫",
+            roastLine1: "CERTIFIED",
+            roastLine2: "VAULT BREAKER 🔓",
+            statLeft: "IQ: 200",
+            statRight: "Stealth: 100%",
+            ctaLine: "I DID IT. YOUR TURN! 👀",
             actorName: `${data.creatorName} ⚡ ${who}`,
             avatarId: data.avatarId || "shades",
             cardColor: cardTheme
           }
-        : {
-            kicker: "OFFICIAL PROOF",
-            bannerWord: dodges === 0 ? "INSTANT YES! ⚡" : "TRAPPED ME! 😂",
-            bigTitle: `${data.creatorName} trapped me on ODDORA!`,
-            subText: dodges === 0 ? "Zero hesitation — tapped YES right away 👀" : `Tried pressing No ${dodges}x… no escape 🔒`,
-            statPill: dodges === 0 ? "⚡ ZERO HESITATION" : `DODGED ${dodges}x · STILL YES`,
-            actorName: `${data.creatorName} ⚡ ${who}`,
-            avatarId: data.avatarId || "shades",
-            cardColor: cardTheme
-          },
+        : dodges === 0
+          ? {
+              kicker: "OFFICIAL RESULT",
+              topLine: "INSTANT",
+              bigWord: "LOCKED IN!",
+              challengeLabel: "OD - TRAP CHALLENGE",
+              noteLine1: "Didn't even try",
+              noteLine2: "the NO button",
+              bigStat: "0x",
+              highlightPrefix: "...straight up said",
+              highlightWord: "YES!",
+              roastLine1: "CERTIFIED",
+              roastLine2: "ZERO HESITATION ⚡",
+              statLeft: "Loyalty: 100%",
+              statRight: "Speed: 0.2s",
+              ctaLine: "I DID IT. YOUR TURN! 👀",
+              actorName: `${data.creatorName} ⚡ ${who}`,
+              avatarId: data.avatarId || "shades",
+              cardColor: cardTheme
+            }
+          : {
+              kicker: "OFFICIAL RESULT",
+              topLine: "YOU GOT",
+              bigWord: "TRAPPED!",
+              challengeLabel: "OD - TRAP CHALLENGE",
+              noteLine1: "You dodged the",
+              noteLine2: "NO button",
+              bigStat: `${dodges}x`,
+              highlightPrefix: "...but still said",
+              highlightWord: "YES!",
+              roastLine1: "CERTIFIED",
+              roastLine2: "EASY TARGET 😂",
+              statLeft: "Skill: 0/100",
+              statRight: "Chaos: 100%",
+              ctaLine: "I DID IT. YOUR TURN! 👀",
+              actorName: `${data.creatorName} ⚡ ${who}`,
+              avatarId: data.avatarId || "shades",
+              cardColor: cardTheme
+            },
       caption: isVaultTeaser
         ? `I just cracked ${data.creatorName}'s Secret Vault on ODDORA 🔐👀`
         : `${data.creatorName} got me with an OD - Trap 😂⚡ Can you escape?`,
