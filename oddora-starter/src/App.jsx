@@ -21,7 +21,17 @@ function safeGetStorage(key, fallback = "") {
 function safeSetStorage(key, value) {
   try {
     window.localStorage.setItem(key, value);
-  } catch {}
+  } catch {
+    // If localStorage is full (e.g., from large shelf photos), trim oldest shelf item and retry
+    try {
+      const shelf = JSON.parse(window.localStorage.getItem("oddora_treasure_shelf") || "[]");
+      if (Array.isArray(shelf) && shelf.length > 1) {
+        shelf.pop();
+        window.localStorage.setItem("oddora_treasure_shelf", JSON.stringify(shelf));
+        window.localStorage.setItem(key, value);
+      }
+    } catch {}
+  }
 }
 
 function safeRemoveStorage(key) {
@@ -46,32 +56,33 @@ function drawRoundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Live grey letter-by-letter typewriter hook for active input placeholders!
-function useTypewriter(text, active) {
-  const [typed, setTyped] = useState("");
+// Live grey letter-by-letter typewriter hook (lively cursor when active, subtle idle hint when inactive!)
+function useTypewriter(text, active, idleFallback = "") {
+  const [typed, setTyped] = useState(active ? "" : idleFallback);
   useEffect(() => {
     if (!active) {
-      setTyped(text);
+      setTyped(idleFallback);
       return undefined;
     }
     let idx = 0;
     let pauseTicks = 0;
-    setTyped("");
+    setTyped("|");
     const timer = setInterval(() => {
       if (idx < text.length) {
         idx += 1;
-        setTyped(text.slice(0, idx));
+        setTyped(`${text.slice(0, idx)}|`);
       } else {
         pauseTicks += 1;
-        if (pauseTicks > 14) {
+        setTyped(pauseTicks % 2 === 0 ? `${text}|` : text);
+        if (pauseTicks > 12) {
           idx = 0;
           pauseTicks = 0;
-          setTyped("");
+          setTyped("|");
         }
       }
-    }, 115);
+    }, 105);
     return () => clearInterval(timer);
-  }, [text, active]);
+  }, [text, active, idleFallback]);
   return typed;
 }
 
@@ -117,28 +128,36 @@ async function playPopSound(kind = "tap") {
     if (sharedAudioCtx.state === "suspended") await sharedAudioCtx.resume();
 
     const bank = {
-      tap: [{ f: 620, d: 0.055, v: 0.12, w: "triangle", slide: 900 }],
+      tap: [
+        { f: 580, d: 0.045, v: 0.11, w: "sine", slide: 840 },
+        { f: 1160, d: 0.03, v: 0.05, w: "triangle", delay: 0.01 }
+      ],
       pop: [
-        { f: 420, d: 0.06, v: 0.14, w: "sine", slide: 980 },
-        { f: 980, d: 0.08, v: 0.11, w: "triangle", delay: 0.04, slide: 1320 }
+        { f: 390, d: 0.065, v: 0.15, w: "sine", slide: 940 },
+        { f: 960, d: 0.09, v: 0.12, w: "triangle", delay: 0.035, slide: 1420 }
       ],
       seal: [
-        { f: 340, d: 0.08, v: 0.14, w: "sine", slide: 760 },
-        { f: 880, d: 0.14, v: 0.14, w: "triangle", delay: 0.06, slide: 1180 }
+        { f: 320, d: 0.09, v: 0.15, w: "sine", slide: 740 },
+        { f: 659.25, d: 0.11, v: 0.14, w: "triangle", delay: 0.05 },
+        { f: 1046.5, d: 0.18, v: 0.15, w: "sine", delay: 0.11 }
       ],
       dodge: [
-        { f: 300, d: 0.08, v: 0.13, w: "sine", slide: 720 },
-        { f: 760, d: 0.07, v: 0.09, w: "triangle", delay: 0.05, slide: 500 }
+        { f: 280, d: 0.07, v: 0.14, w: "sine", slide: 780 },
+        { f: 820, d: 0.08, v: 0.11, w: "triangle", delay: 0.045, slide: 460 }
       ],
       win: [
-        { f: 523.25, d: 0.11, v: 0.14, w: "triangle" },
-        { f: 659.25, d: 0.11, v: 0.14, w: "triangle", delay: 0.08 },
-        { f: 783.99, d: 0.13, v: 0.15, w: "triangle", delay: 0.16 },
-        { f: 1046.5, d: 0.3, v: 0.16, w: "sine", delay: 0.24 }
+        { f: 523.25, d: 0.11, v: 0.15, w: "triangle" },
+        { f: 659.25, d: 0.11, v: 0.15, w: "triangle", delay: 0.075 },
+        { f: 783.99, d: 0.13, v: 0.16, w: "triangle", delay: 0.15 },
+        { f: 1046.5, d: 0.32, v: 0.17, w: "sine", delay: 0.22 },
+        { f: 1567.98, d: 0.26, v: 0.08, w: "sine", delay: 0.24 }
       ],
       notify: [
-        { f: 880, d: 0.1, v: 0.14, w: "sine" },
-        { f: 1174.66, d: 0.2, v: 0.15, w: "triangle", delay: 0.09 }
+        // Native mobile messenger ping (warm dual-tone harmonic chime!)
+        { f: 783.99, d: 0.12, v: 0.17, w: "sine" },
+        { f: 1567.98, d: 0.1, v: 0.07, w: "sine" },
+        { f: 1046.5, d: 0.24, v: 0.18, w: "sine", delay: 0.085 },
+        { f: 2093.0, d: 0.18, v: 0.06, w: "triangle", delay: 0.085 }
       ]
     };
 
@@ -510,6 +529,48 @@ function PopCharacterArt({ variant = "lime" }) {
   );
 }
 
+
+function MobileNotificationBanner({ notif, onOpen, onDismiss }) {
+  if (!notif) return null;
+  const title = typeof notif === "string" ? "ODDORA Live" : (notif.title || "ODDORA Live");
+  const body = typeof notif === "string" ? notif : (notif.body || "");
+  const tag = typeof notif === "string" ? "LIVE" : (notif.tag || "MESSAGE");
+  const avatarId = typeof notif === "object" ? notif.avatarId : null;
+
+  return (
+    <div
+      className="pop-notif-banner"
+      role="status"
+      onClick={() => {
+        fx("tap", [15, 25]);
+        onOpen?.();
+      }}
+    >
+      <div className="pop-notif-icon">
+        {avatarId ? <HumanAvatarSVG avatarId={avatarId} size={38} /> : <span className="pop-notif-app-ico">⚡</span>}
+      </div>
+      <div className="pop-notif-body">
+        <div className="pop-notif-meta">
+          <strong>{title}</strong>
+          <span>{tag} · now</span>
+        </div>
+        <div className="pop-notif-text">{body}</div>
+      </div>
+      <div className="pop-notif-cta">
+        <span className="pop-notif-reply-pill">Chat ↓</span>
+        <button
+          type="button"
+          className="pop-notif-x"
+          aria-label="Dismiss notification"
+          onClick={e => { e.stopPropagation(); onDismiss?.(); }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function UniversalShareBar({ url, shareText, title = "ODDORA Link" }) {
   const [copied, setCopied] = useState(false);
 
@@ -574,15 +635,24 @@ const ODD_PUZZLES = [
 
 const TALKING_NO_EN = ["Catch me 👀", "Too slow 😜", "Almost! 🏃‍♂️", "Okay fine..."];
 const TALKING_NO_TA = ["Vandhu thodu 👀", "Mudinja va 🔥", "Ayyo miss! 😂", "Seri okay..."];
-const SENDER_QUICK_REPLIES = ["Caught in 4K 📸", "Treat locked 🍕", "Haha gotcha 😂", "No take-backs! ⚡"];
+const SENDER_QUICK_REPLIES_TRAP = ["Caught in 4K 📸", "Treat locked 🍕", "Haha gotcha 😂", "No take-backs! ⚡"];
+const SENDER_QUICK_REPLIES_VAULT = ["Check the clue 💡", "Haha gotcha 😂", "Secret safe? 🤫", "Tell me your reaction 👀"];
 
 function isTamilOrTanglish(text = "") {
-  const s = String(text || "");
+  const s = String(text || "").toLowerCase();
   if (/[\u0B80-\u0BFF]/.test(s)) return true;
-  if (/\b(da|di|va|vaa|vaada|venam|vendam|mudiyadhu|mudinja|pudichiruka|pudikuma|saapda|sapda|saapadu|sapadu|polama|pogalama|povoma|sandai|machan|machi|mapla|nanba|thala|unga|ungaluku|enna|ena|illa|aama|seri|vaangi|tharen|panra|idhu|nalla|iruku|sollu)\b/i.test(s)) {
+  if (/\b(da|di|d|va|vaa|vaada|vaadi|vada|vadi|poda|podi|po|venam|vendam|venuma|venduma|mudiyadhu|mudinja|pudichiruka|pudikuma|pudikum|pidikum|saapda|sapda|saapadu|sapadu|saapdaya|polam|polama|pogalam|pogalama|povoma|sandai|machan|machi|macha|mapla|nanba|thala|unga|ungaluku|enna|ena|illa|illai|aama|ama|seri|sari|vaangi|tharen|thara|thariya|panra|panna|panla|idhu|ithu|adhu|athu|nalla|iruka|iruku|irukudha|irukada|irukadi|sollu|solra|epdi|eppadi|enga|yaaru|yaru|enaku|enakku|unaku|unakku|namma|nama|nee|naan|innaiku|nalaiku|ippo|ipo|aprm|apram|paaru|paru|kudu|kudupa|kooda|kuda|sema|semma|romba|konjam|dhaan|dhan|dhane|arivu|venna|mavale|bathirama|vachiko|kadaiku|padathuku|veetuku|ooruku|paakalam|pakkalam|theriyum|theriyadhu|kandipa|kandippa|vandha|varen|poren|vaanga|vanga|kelambu)\b/i.test(s)) {
     return true;
   }
-  return /(lama|viya|riya|veenga|duven|poren|varen)\b/i.test(s);
+  if (/(iruka|iruku|irukada|irukadi|mavale|venna|polama|pogalama|lama|viya|riya|veenga|duven|poren|varen|thuku|daiku|tuku|kudha|kuda|aama|solra)\b/i.test(s)) {
+    return true;
+  }
+  return false;
+}
+
+function isLikelyEnglish(text = "") {
+  const s = String(text || "").toLowerCase();
+  return /\b(you|me|we|us|the|is|are|am|can|will|would|do|did|don't|cant|can't|tonight|today|tomorrow|coffee|movie|food|treat|date|miss|love|buy|pay|owe|come|go|let's|lets|watch|pizza|biryani|drive|yes|no|sure|okay|ok|please|friend|bestie|party|dinner|lunch|hangout|meet|call|reply)\b/i.test(s);
 }
 
 function generateSmartTrapOutcome(questionText, senderName) {
@@ -601,7 +671,7 @@ function generateSmartTrapOutcome(questionText, senderName) {
    4. MODERN 9:16 FULL-BLEED STORY POSTER (1080 x 1920 — NO NOTICE PAPER!)
    + Auto-attaches clickable website link & caption when sharing!
 ============================================================================ */
-async function createPoster916({ kicker, bigTitle, subText, statPill, actorName, avatarId = "shades", cardColor = "lime", footerUrl }) {
+async function createPoster916({ kicker, bannerWord = "CAUGHT!", bigTitle, subText, statPill, actorName, avatarId = "shades", cardColor = "lime", footerUrl }) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1920;
@@ -609,54 +679,137 @@ async function createPoster916({ kicker, bigTitle, subText, statPill, actorName,
   if (!ctx) throw new Error("Canvas unavailable");
 
   const palettes = {
-    lime: { bg1: "#0B1310", bg2: "#163020", accent: "#A3E635", pill: "#FF5A5F" },
-    pink: { bg1: "#180A14", bg2: "#3B0D27", accent: "#FF7AB8", pill: "#FFD166" },
-    cyan: { bg1: "#081226", bg2: "#142D5C", accent: "#38BDF8", pill: "#FFD166" },
-    gold: { bg1: "#1A1205", bg2: "#3D2607", accent: "#FFD166", pill: "#FF5A5F" }
+    lime: { bg1: "#14141A", bg2: "#1F2937", accent: "#A3E635", sec: "#FFD166", pill: "#FF5A5F", card: "#FFF8EE" },
+    pink: { bg1: "#1E1024", bg2: "#3B0D27", accent: "#FF7AB8", sec: "#FFD166", pill: "#3B82F6", card: "#FFF8EE" },
+    cyan: { bg1: "#0F172A", bg2: "#1E3A8A", accent: "#38BDF8", sec: "#A3E635", pill: "#FF5A5F", card: "#FFF8EE" },
+    gold: { bg1: "#1C1917", bg2: "#422006", accent: "#FFD166", sec: "#A3E635", pill: "#FF5A5F", card: "#FFF8EE" }
   };
   const pal = palettes[cardColor] || palettes.lime;
 
-  // Full-bleed sleek dark gradient poster
+  // 1. Vibrant Multi-Layer Backdrop
   const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
   grad.addColorStop(0, pal.bg1);
   grad.addColorStop(1, pal.bg2);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 1080, 1920);
 
-  // Big atmospheric radial glow behind Avatar & Headline
-  const glow1 = ctx.createRadialGradient(540, 620, 40, 540, 620, 560);
-  glow1.addColorStop(0, `${pal.accent}50`);
-  glow1.addColorStop(1, "transparent");
-  ctx.fillStyle = glow1;
-  ctx.fillRect(0, 0, 1080, 1920);
+  // Diagonal pop-art accent bands
+  ctx.save();
+  ctx.fillStyle = `${pal.accent}18`;
+  ctx.translate(540, 960);
+  ctx.rotate(-0.22);
+  ctx.fillRect(-900, -340, 1800, 220);
+  ctx.fillRect(-900, 180, 1800, 160);
+  ctx.restore();
 
-  // Subtle decorative rings
-  ctx.strokeStyle = `${pal.accent}22`;
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(540, 560, 290, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(540, 560, 410, 0, Math.PI * 2); ctx.stroke();
+  // Halftone comic dot grid
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  for (let x = 36; x < 1060; x += 44) {
+    for (let y = 36; y < 1900; y += 44) {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
-  // Top ODDORA Brand Pill
+  // 2. Top Floating Comic Stickers (9:16 Safe Top Zone)
+  ctx.save();
+  ctx.translate(250, 155);
+  ctx.rotate(-0.05);
   ctx.fillStyle = pal.accent;
-  drawRoundRect(ctx, 270, 145, 540, 74, 37);
+  ctx.strokeStyle = "#14141A";
+  ctx.lineWidth = 6;
+  drawRoundRect(ctx, -155, -36, 310, 72, 36);
   ctx.fill();
+  ctx.stroke();
   ctx.textAlign = "center";
   ctx.fillStyle = "#14141A";
-  ctx.font = "800 30px 'DM Mono', monospace";
-  ctx.fillText(`⚡ ODDORA · ${kicker.toUpperCase()}`, 540, 193);
+  ctx.font = "800 28px 'DM Mono', monospace";
+  ctx.fillText("⚡ ODDORA", 0, 10);
+  ctx.restore();
 
-  // Big Human-Style Illustrated Avatar (Personification!)
-  drawHumanAvatarCanvas(ctx, avatarId, 540, 515, 165);
+  ctx.save();
+  ctx.translate(805, 160);
+  ctx.rotate(0.05);
+  ctx.fillStyle = pal.sec;
+  ctx.strokeStyle = "#14141A";
+  ctx.lineWidth = 6;
+  drawRoundRect(ctx, -185, -36, 370, 72, 36);
+  ctx.fill();
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#14141A";
+  ctx.font = "800 26px 'DM Mono', monospace";
+  ctx.fillText(kicker.toUpperCase(), 0, 10);
+  ctx.restore();
 
-  // Person Name Tag under Avatar
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "800 42px 'Space Grotesk', sans-serif";
-  ctx.fillText(String(actorName || "ODDORA PLAYER").toUpperCase(), 540, 760);
+  // 3. Bold Neo-Brutalist Collectible Card Frame
+  ctx.fillStyle = pal.accent;
+  drawRoundRect(ctx, 104, 266, 900, 1270, 52);
+  ctx.fill();
 
-  // Huge Direct-on-Poster Hero Typography (NO boxy white paper!)
+  ctx.fillStyle = pal.card;
+  ctx.strokeStyle = "#14141A";
+  ctx.lineWidth = 10;
+  drawRoundRect(ctx, 82, 244, 900, 1270, 52);
+  ctx.fill();
+  ctx.stroke();
+
+  // Top Header Strip inside Card
+  ctx.fillStyle = "#14141A";
+  drawRoundRect(ctx, 122, 284, 820, 74, 24);
+  ctx.fill();
+  ctx.textAlign = "center";
+  ctx.fillStyle = pal.sec;
+  ctx.font = "800 28px 'DM Mono', monospace";
+  ctx.fillText(String(actorName || "ODDORA PLAYER").toUpperCase(), 532, 331);
+
+  // 4. 16-Point Comic Starburst behind Human Avatar
+  ctx.save();
+  ctx.translate(532, 555);
+  ctx.fillStyle = pal.sec;
+  ctx.strokeStyle = "#14141A";
+  ctx.lineWidth = 6;
+  const spikes = 16;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i += 1) {
+    const rad = i % 2 === 0 ? 195 : 148;
+    const ang = (i * Math.PI) / spikes;
+    const px = Math.cos(ang) * rad;
+    const py = Math.sin(ang) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Large Human Avatar Medallion
+  drawHumanAvatarCanvas(ctx, avatarId, 532, 555, 136);
+
+  // 5. Tilted Impact Banner Stamp (e.g. "TRAPPED ME!" / "UNLOCKED!")
+  ctx.save();
+  ctx.translate(532, 815);
+  ctx.rotate(-0.035);
+  ctx.fillStyle = pal.accent;
+  drawRoundRect(ctx, -330, -48, 672, 98, 24);
+  ctx.fill();
+
+  ctx.fillStyle = "#14141A";
+  drawRoundRect(ctx, -338, -56, 672, 98, 24);
+  ctx.fill();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = pal.accent;
+  ctx.font = "800 50px 'Space Grotesk', sans-serif";
+  ctx.fillText(String(bannerWord || "CAUGHT!").toUpperCase().slice(0, 18), 0, 12);
+  ctx.restore();
+
+  // 6. Big Bold Viral Headline (Zero private/secret text leaked!)
   const drawHeroLines = (text, centerY, maxW, lh, font) => {
     ctx.font = font;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = "#14141A";
     const words = String(text || "").split(" ");
     let line = "";
     const lines = [];
@@ -670,54 +823,71 @@ async function createPoster916({ kicker, bigTitle, subText, statPill, actorName,
     if (line) lines.push(line);
     const totalH = lines.length * lh;
     let yy = centerY - totalH / 2 + lh * 0.72;
-    lines.slice(0, 4).forEach(l => {
-      ctx.fillText(l, 540, yy);
+    lines.slice(0, 3).forEach(l => {
+      ctx.fillText(l, 532, yy);
       yy += lh;
     });
   };
-  drawHeroLines(`“${bigTitle}”`, 1030, 880, 92, "800 72px 'Space Grotesk', sans-serif");
+  drawHeroLines(bigTitle, 1015, 720, 62, "800 46px 'Space Grotesk', sans-serif");
 
   // Sub-caption
   if (subText) {
-    ctx.fillStyle = pal.accent;
-    ctx.font = "700 38px 'Space Grotesk', sans-serif";
-    ctx.fillText(String(subText).slice(0, 46), 540, 1295);
+    ctx.fillStyle = "#374151";
+    ctx.font = "700 32px 'Space Grotesk', sans-serif";
+    ctx.fillText(String(subText).slice(0, 46), 532, 1185);
   }
 
-  // Tilted Vibrant Stat Sticker
+  // 7. Tilted Stat Sticker
   if (statPill) {
     ctx.save();
-    ctx.translate(540, 1435);
-    ctx.rotate(-0.025);
+    ctx.translate(532, 1300);
+    ctx.rotate(0.025);
     ctx.fillStyle = "#14141A";
-    drawRoundRect(ctx, -360, -48, 732, 102, 51);
+    drawRoundRect(ctx, -340, -44, 692, 94, 47);
     ctx.fill();
 
     ctx.fillStyle = pal.pill;
-    ctx.strokeStyle = "#FFFFFF";
+    ctx.strokeStyle = "#14141A";
     ctx.lineWidth = 6;
-    drawRoundRect(ctx, -368, -56, 732, 102, 51);
+    drawRoundRect(ctx, -348, -52, 692, 94, 47);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = pal.pill === "#FFD166" ? "#14141A" : "#FFFFFF";
-    ctx.font = "800 38px 'Space Grotesk', sans-serif";
-    ctx.fillText(statPill, 0, 10);
+    ctx.font = "800 34px 'Space Grotesk', sans-serif";
+    ctx.fillText(statPill, 0, 8);
     ctx.restore();
   }
 
-  // Bottom Link Pill (9:16 Safe Zone)
-  ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
-  drawRoundRect(ctx, 140, 1625, 800, 150, 34);
+  // Perforated Ticket Divider + Bottom Stamp inside Card
+  ctx.strokeStyle = "#14141A";
+  ctx.lineWidth = 4;
+  ctx.setLineDash([14, 12]);
+  ctx.beginPath();
+  ctx.moveTo(130, 1395);
+  ctx.lineTo(934, 1395);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#14141A";
+  ctx.font = "800 24px 'DM Mono', monospace";
+  ctx.fillText("DO OD · ZERO ESCAPE · LIVE REACTIONS", 532, 1455);
+
+  // 8. Bottom Viral CTA Pill (9:16 Safe Bottom Zone)
+  ctx.fillStyle = "#14141A";
+  ctx.strokeStyle = pal.accent;
+  ctx.lineWidth = 6;
+  drawRoundRect(ctx, 120, 1595, 840, 165, 36);
   ctx.fill();
+  ctx.stroke();
 
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "800 34px 'Space Grotesk', sans-serif";
-  ctx.fillText("TRY IT YOURSELF ON ODDORA ⚡", 540, 1690);
+  ctx.fillText("CAN YOU ESCAPE? TRY ODDORA ⚡", 540, 1665);
 
   ctx.fillStyle = pal.accent;
   ctx.font = "700 30px 'DM Mono', monospace";
-  ctx.fillText(footerUrl, 540, 1742);
+  ctx.fillText(footerUrl, 540, 1720);
 
   const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("Blob failed");
@@ -756,6 +926,10 @@ async function sharePosterWithLink({ posterArgs, caption, onStatus }) {
 /* ============================================================================
    5B. PERSISTENT 2-WAY LIVE CHAT HISTORY (Survives Close, Reload & Late Replies!)
 ============================================================================ */
+function isSystemChatMsg(text = "") {
+  return /^(Unlocked your Secret Vault!|INSTANT YES!|Said YES after \d+ dodges!)/i.test(String(text || "").trim());
+}
+
 function useTwoWayChat(code) {
   const [rxMsgs, setRxMsgs] = useState([]);
   const [txMsgs, setTxMsgs] = useState([]);
@@ -771,7 +945,7 @@ function useTwoWayChat(code) {
           from: m.from || "Friend",
           text: m.text || "",
           ts: Number(m.createdAt || m.ts || 0)
-        })));
+        })).filter(m => m.text && !isSystemChatMsg(m.text)));
       },
       () => {}
     );
@@ -784,7 +958,7 @@ function useTwoWayChat(code) {
           from: m.from || "Sender",
           text: m.text || "",
           ts: Number(m.ts || m.createdAt || 0)
-        })));
+        })).filter(m => m.text && !isSystemChatMsg(m.text)));
       },
       () => {}
     );
@@ -792,19 +966,25 @@ function useTwoWayChat(code) {
   }, [code]);
 
   return [...rxMsgs, ...txMsgs]
-    .filter(m => m.text)
+    .filter(m => m.text && !isSystemChatMsg(m.text))
     .sort((a, b) => a.ts - b.ts);
 }
 
-function ChatHistoryBox({ messages, viewerSide = "receiver" }) {
-  const endRef = useRef(null);
+function ChatHistoryBox({ messages, viewerSide = "receiver", boxRef }) {
+  const innerRef = useRef(null);
+  const resolvedRef = boxRef || innerRef;
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = resolvedRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
   }, [messages.length]);
 
   if (!messages.length) return null;
   return (
-    <div className="pop-chat-history">
+    <div className="pop-chat-history" ref={resolvedRef}>
       {messages.map((m, idx) => {
         const isMe = m.side === viewerSide;
         return (
@@ -814,7 +994,6 @@ function ChatHistoryBox({ messages, viewerSide = "receiver" }) {
           </div>
         );
       })}
-      <div ref={endRef} />
     </div>
   );
 }
@@ -827,8 +1006,10 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
   const chatHistory = useTwoWayChat(code);
   const [replyText, setReplyText] = useState("");
   const [sentFlash, setSentFlash] = useState("");
-  const [liveToast, setLiveToast] = useState("");
+  const [liveNotif, setLiveNotif] = useState(null);
   const [sharingFlex, setSharingFlex] = useState(false);
+  const feedRef = useRef(null);
+  const replyInputRef = useRef(null);
 
   useEffect(() => {
     if (!code) return undefined;
@@ -839,18 +1020,50 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
         const list = snap.exists() ? Object.values(snap.val()) : [];
         if (initialCount !== -1 && list.length > initialCount) {
           const newest = list[list.length - 1];
-          fx("notify", [35, 50, 35]);
+          fx("notify", [30, 45, 55]);
           if (newest?.msg && !String(newest.msg).startsWith("📤")) {
-            setLiveToast(newest.msg);
-            setTimeout(() => setLiveToast(""), 5500);
+            setLiveNotif({
+              title: recipientName || "Friend",
+              body: newest.msg,
+              tag: isVault ? "🔐 VAULT" : "⚡ TRAP",
+              avatarId
+            });
+            setTimeout(() => setLiveNotif(null), 6500);
           }
         }
         initialCount = list.length;
-        setEvents(list.reverse());
+        setEvents(list);
       },
       () => {}
     );
-  }, [code]);
+  }, [code, recipientName, isVault, avatarId]);
+
+  // Merge Live Radar events + 2-way chat into ONE unified timeline!
+  const unifiedFeed = [
+    ...events
+      .filter(ev => ev?.msg && !String(ev.msg).startsWith("📤") && !String(ev.msg).includes("replied:"))
+      .map(ev => ({ kind: "event", text: ev.msg, ts: Number(ev.ts || 0) })),
+    ...chatHistory.map(m => ({ kind: "chat", ...m }))
+  ].sort((a, b) => a.ts - b.ts);
+
+  // Auto-scroll unified feed to bottom whenever a message or live event arrives!
+  useEffect(() => {
+    const el = feedRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+  }, [unifiedFeed.length]);
+
+  function jumpToChatbox() {
+    setLiveNotif(null);
+    const el = feedRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setTimeout(() => {
+      replyInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      replyInputRef.current?.focus();
+    }, 80);
+  }
 
   function sendLiveReply(textToSend) {
     const clean = String(textToSend || "").trim().slice(0, 120);
@@ -881,10 +1094,11 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
     await sharePosterWithLink({
       posterArgs: {
         kicker: isVault ? "SECRET VAULT" : "CAUGHT IN 4K",
+        bannerWord: isVault ? "LOCKED IT! 🔐" : "TRAPPED 'EM! 😂",
         bigTitle: isVault
-          ? `I locked a secret for ${rec} 🔐`
-          : `I trapped ${rec} using OD - Trap! 😂`,
-        subText: isVault ? "Made them solve 2 puzzles to see it" : "They couldn't even press No ⚡",
+          ? `I locked a secret for ${rec}!`
+          : `I trapped ${rec} using OD - Trap!`,
+        subText: isVault ? "Made them crack 2 puzzles to open it 👀" : "They couldn't even press No ⚡",
         statPill: isVault ? "🔐 VAULT MASTER" : "⚡ MISSION SUCCESS",
         actorName: me,
         avatarId,
@@ -901,26 +1115,35 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
     setSharingFlex(false);
   }
 
+  const quickReplies = isVault ? SENDER_QUICK_REPLIES_VAULT : SENDER_QUICK_REPLIES_TRAP;
+
   return (
     <>
-      {liveToast && (
-        <div className="pop-toast" onClick={() => setLiveToast("")}>
-          {liveToast}
-        </div>
-      )}
+      <MobileNotificationBanner
+        notif={liveNotif}
+        onOpen={jumpToChatbox}
+        onDismiss={() => setLiveNotif(null)}
+      />
       <div className="pop-radar-box">
       <div className="pop-radar-head">
         <span className="pop-radar-dot" />
-        📡 LIVE RADAR · WATCHING {String(recipientName || "FRIEND").toUpperCase()}
+        📡 LIVE FEED & CHAT · {String(recipientName || "FRIEND").toUpperCase()}
       </div>
 
-      <div className="pop-radar-feed">
-        {events.length === 0 ? (
-          <div className="pop-radar-event">⏳ Waiting for {recipientName || "them"} to open your link...</div>
+      <div className="pop-unified-feed" ref={feedRef}>
+        {unifiedFeed.length === 0 ? (
+          <div className="pop-feed-pill">⏳ Waiting for {recipientName || "them"} to open your link...</div>
         ) : (
-          events.map((ev, idx) => (
-            <div className="pop-radar-event" key={idx}>{ev.msg}</div>
-          ))
+          unifiedFeed.map((item, idx) =>
+            item.kind === "event" ? (
+              <div className="pop-feed-pill" key={`e-${idx}`}>{item.text}</div>
+            ) : (
+              <div key={`c-${idx}`} className={`pop-chat-bubble ${item.side === "sender" ? "me" : "them"}`}>
+                <small>{item.side === "sender" ? "You" : item.from}</small>
+                <span>{item.text}</span>
+              </div>
+            )
+          )
         )}
       </div>
 
@@ -940,9 +1163,8 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
       </button>
 
       <div className="pop-radar-reply-wrap">
-        <ChatHistoryBox messages={chatHistory} viewerSide="sender" />
         <div className="pop-chips-row">
-          {SENDER_QUICK_REPLIES.map(chip => (
+          {quickReplies.map(chip => (
             <button key={chip} type="button" className="pop-chip dark-chip" onClick={() => sendLiveReply(chip)}>
               {chip}
             </button>
@@ -950,6 +1172,7 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
         </div>
         <form className="pop-react-form" onSubmit={e => { e.preventDefault(); sendLiveReply(replyText); }}>
           <input
+            ref={replyInputRef}
             value={replyText}
             onChange={e => setReplyText(e.target.value)}
             onFocus={focusScrollCenter}
@@ -960,7 +1183,7 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
             <Send size={14}/>
           </button>
         </form>
-        {sentFlash && <small style={{ color: "#A3E635", fontWeight: 700 }}>{sentFlash}</small>}
+        {sentFlash && <small className="pop-sent-flash">{sentFlash}</small>}
       </div>
     </div>
     </>
@@ -970,6 +1193,243 @@ function LiveRadarPanel({ code, recipientName, senderName, avatarId = "shades", 
 /* ============================================================================
    6. MAIN APP SHELL (Top ODDORA Logo Always Goes Home + Shelf Full-Screen View)
 ============================================================================ */
+
+/* ============================================================================
+   5C. INTERACTIVE PHOTO CROP / FOCUS ADJUSTER (Drag + Zoom + Fill/Full Toggle)
+============================================================================ */
+function TrapPhotoCropper({ src, posX, posY, zoom, fit, onChange, onRemove }) {
+  const boxRef = useRef(null);
+  const dragRef = useRef(null);
+
+  function handlePointerDown(e) {
+    if (fit === "contain") return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: posX,
+      origY: posY
+    };
+  }
+
+  function handlePointerMove(e) {
+    if (!dragRef.current || !boxRef.current) return;
+    const rect = boxRef.current.getBoundingClientRect();
+    const dx = ((e.clientX - dragRef.current.startX) / Math.max(rect.width, 1)) * 100;
+    const dy = ((e.clientY - dragRef.current.startY) / Math.max(rect.height, 1)) * 100;
+    const nextX = Math.round(Math.min(100, Math.max(0, dragRef.current.origX - dx * 1.15)));
+    const nextY = Math.round(Math.min(100, Math.max(0, dragRef.current.origY - dy * 1.15)));
+    onChange({ posX: nextX, posY: nextY });
+  }
+
+  function handlePointerUp() {
+    dragRef.current = null;
+  }
+
+  return (
+    <div className="pop-cropper-card">
+      <div className="pop-row-between">
+        <span className="pop-mini-tag">✂️ ADJUST PHOTO CROP</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            type="button"
+            className={`pop-ptab ${fit === "cover" ? "active" : ""}`}
+            onClick={() => { fx("tap", 10); onChange({ fit: "cover" }); }}
+          >
+            Fill
+          </button>
+          <button
+            type="button"
+            className={`pop-ptab ${fit === "contain" ? "active" : ""}`}
+            onClick={() => { fx("tap", 10); onChange({ fit: "contain", zoom: 1 }); }}
+          >
+            Full Fit
+          </button>
+          <button type="button" className="pop-btn pink sm" style={{ padding: "3px 8px", fontSize: 11 }} onClick={onRemove}>
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={boxRef}
+        className={`pop-crop-stage ${fit === "cover" ? "draggable" : ""}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        <img
+          src={src}
+          alt="Crop preview"
+          draggable={false}
+          style={{
+            objectFit: fit,
+            objectPosition: `${posX}% ${posY}%`,
+            transform: fit === "cover" ? `scale(${zoom})` : "none",
+            transformOrigin: `${posX}% ${posY}%`
+          }}
+        />
+        {fit === "cover" && (
+          <span className="pop-crop-hint">✋ Drag photo to frame</span>
+        )}
+      </div>
+
+      {fit === "cover" && (
+        <div className="pop-crop-sliders">
+          <label className="pop-slider-row">
+            <span>↕ Up / Down</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={posY}
+              onChange={e => onChange({ posY: Number(e.target.value) })}
+            />
+          </label>
+          <label className="pop-slider-row">
+            <span>🔍 Zoom ({zoom.toFixed(1)}x)</span>
+            <input
+              type="range"
+              min={1}
+              max={2.2}
+              step={0.1}
+              value={zoom}
+              onChange={e => onChange({ zoom: Number(e.target.value) })}
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================================
+   5D. WATCH LIVE SCREEN (Fetches & Displays Previous Vault/Trap Photo + Secret!)
+============================================================================ */
+function WatchLiveScreen({ item, onGoHome, onBack }) {
+  const [creation, setCreation] = useState(null);
+  const [showMedia, setShowMedia] = useState(true);
+
+  useEffect(() => {
+    if (!item?.code) return undefined;
+    let alive = true;
+    get(ref(database, `creations/${item.code}`))
+      .then(snap => {
+        if (alive && snap.exists()) setCreation(snap.val());
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [item?.code]);
+
+  const isVault = Boolean(
+    item.isVault ||
+    creation?.type === "vault" ||
+    String(item.title || "").toLowerCase().includes("vault")
+  );
+  const theme = creation?.theme || item.theme || (isVault ? "gold" : "lime");
+  const avatarId = creation?.avatarId || item.avatarId || "shades";
+  const shareUrl = (() => {
+    const u = new URL(window.location.href);
+    u.search = "";
+    u.searchParams.set("odc", item.code);
+    return u.toString();
+  })();
+
+  const photoSrc = isVault ? creation?.payload?.secretImage : creation?.payload?.bgImage;
+  const noteText = isVault ? creation?.payload?.secretText : creation?.payload?.title;
+  const bgPosX = creation?.payload?.bgPosX ?? 50;
+  const bgPosY = creation?.payload?.bgPosY ?? 20;
+  const bgZoom = creation?.payload?.bgZoom ?? 1;
+  const bgFit = creation?.payload?.bgFit || "cover";
+
+  return (
+    <div className={`pop-fs-stage theme-${theme}`}>
+      <div className="pop-fs-topbar">
+        <button type="button" className="pop-pill-black pop-pill-btn" onClick={onGoHome}>
+          ⚡ ODDORA · HOME
+        </button>
+        <button type="button" className="pop-btn pink sm" onClick={onBack}>
+          ✕ Back
+        </button>
+      </div>
+      <div className="pop-fs-content">
+        <div className="pop-ready-card pop-zoom-in" style={{ width: "100%" }}>
+          <HumanAvatarSVG avatarId={avatarId} size={54} />
+          <span className="pop-pill-black">
+            {isVault ? "🔐 SENT VAULT" : "⚡ SENT TRAP"} · TO {String(item.to || "FRIEND").toUpperCase()}
+          </span>
+          <h2>{item.title}</h2>
+
+          {/* Show the Vault / Trap Photo & Secret Content right inside Watch Live! */}
+          {(photoSrc || (isVault && noteText)) && (
+            <div className="pop-sent-media-box">
+              <div className="pop-row-between">
+                <span className="pop-mini-tag">
+                  {isVault ? "🔐 YOUR LOCKED VAULT CONTENT" : "📸 TRAP PHOTO PREVIEW"}
+                </span>
+                <button
+                  type="button"
+                  className="pop-ptab active"
+                  onClick={() => { fx("tap", 10); setShowMedia(s => !s); }}
+                >
+                  {showMedia ? "Hide" : "Show"}
+                </button>
+              </div>
+              {showMedia && (
+                <>
+                  {photoSrc && (
+                    <div className={`pop-watch-photo-frame ${isVault ? "vault-fit" : ""}`}>
+                      <img
+                        src={photoSrc}
+                        alt={isVault ? "Vault photo" : "Trap photo"}
+                        style={
+                          isVault
+                            ? { objectFit: "cover", objectPosition: "50% 15%" }
+                            : {
+                                objectFit: bgFit,
+                                objectPosition: `${bgPosX}% ${bgPosY}%`,
+                                transform: bgFit === "cover" ? `scale(${bgZoom})` : "none",
+                                transformOrigin: `${bgPosX}% ${bgPosY}%`
+                              }
+                        }
+                      />
+                    </div>
+                  )}
+                  {isVault && noteText && (
+                    <div className="pop-watch-secret-note">“{noteText}”</div>
+                  )}
+                  {isVault && creation?.payload?.pin && (
+                    <small className="pop-muted">🔑 Secret PIN: <strong>{creation.payload.pin}</strong></small>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          <UniversalShareBar
+            url={shareUrl}
+            shareText={
+              isVault
+                ? `${item.from || "Someone"} locked a Secret Vault for you 🔐 Solve 2 quick puzzles to open it!`
+                : `${item.from || "Someone"} sent you a Secret OD Card 👀⚡`
+            }
+            title="Secret OD Card"
+          />
+          <LiveRadarPanel
+            code={item.code}
+            recipientName={item.to}
+            senderName={item.from || "You"}
+            avatarId={avatarId}
+            cardColor={theme}
+            isVault={isVault}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MainApp() {
   const [tab, setTab] = useState("create"); // "create" | "shelf" | "wall"
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -985,12 +1445,23 @@ function MainApp() {
   const [logoSpin, setLogoSpin] = useState(false);
   const [odcCode, setOdcCode] = useState("");
   const [inboxOpen, setInboxOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState("");
-  const knownReplyCountRef = useRef(-1);
+  const [inboxFilter, setInboxFilter] = useState("all"); // "all" | "trap" | "vault"
+  const [homeNotif, setHomeNotif] = useState(null);
+  const lastNotifTsRef = useRef({});
   const needsFsReenterRef = useRef(false);
 
   const [pendingCard, setPendingCard] = useState(() => {
-    try { return JSON.parse(safeGetStorage("oddora_pending_card", "null")); } catch { return null; }
+    try {
+      const p = JSON.parse(safeGetStorage("oddora_pending_card", "null"));
+      if (p?.code) {
+        const rx = JSON.parse(safeGetStorage(`oddora_rx_${p.code}`, "null")) || {};
+        if (rx.outcome === "yes" || Number(rx.vaultStage || 0) >= 3) {
+          safeRemoveStorage("oddora_pending_card");
+          return null;
+        }
+      }
+      return p;
+    } catch { return null; }
   });
 
   const [myLinks, setMyLinks] = useState(() => {
@@ -1001,7 +1472,53 @@ function MainApp() {
     try { return JSON.parse(safeGetStorage("oddora_treasure_shelf", "[]")); } catch { return []; }
   });
 
-  const [repliesMap, setRepliesMap] = useState({});
+  // Combined 2-way chat messages map per link code + persistent last-read timestamps!
+  const [rxMap, setRxMap] = useState({});
+  const [txMap, setTxMap] = useState({});
+  const [readMap, setReadMap] = useState(() => {
+    try { return JSON.parse(safeGetStorage("oddora_read_ts", "{}")); } catch { return {}; }
+  });
+
+  const activeThreadCode = odcCode || watchLiveItem?.code || "";
+  const activeThreadCodeRef = useRef(activeThreadCode);
+  activeThreadCodeRef.current = activeThreadCode;
+  const readMapRef = useRef(readMap);
+  readMapRef.current = readMap;
+
+  function markThreadRead(code, ts = Date.now()) {
+    if (!code) return;
+    setReadMap(prev => {
+      const nextTs = Math.max(Number(prev[code] || 0), ts);
+      if (Number(prev[code] || 0) === nextTs) return prev;
+      const updated = { ...prev, [code]: nextTs };
+      safeSetStorage("oddora_read_ts", JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  // Whenever user enters or views a thread (Trap/Vault/WatchLive), immediately mark it as read!
+  useEffect(() => {
+    if (activeThreadCode) markThreadRead(activeThreadCode, Date.now());
+  }, [activeThreadCode]);
+
+  // Sync myLinks & readMap across multiple browser tabs / reloads automatically!
+  useEffect(() => {
+    const onStorage = e => {
+      if (e.key === "oddora_my_links") {
+        try {
+          const fresh = JSON.parse(safeGetStorage("oddora_my_links", "[]"));
+          if (Array.isArray(fresh)) setMyLinks(fresh);
+        } catch {}
+      } else if (e.key === "oddora_read_ts") {
+        try {
+          const freshRead = JSON.parse(safeGetStorage("oddora_read_ts", "{}"));
+          if (freshRead && typeof freshRead === "object") setReadMap(freshRead);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const [topCreators, setTopCreators] = useState([
     { id: "t1", name: "Aarav", label: "OD Trap ⚡", count: 42 },
@@ -1010,6 +1527,7 @@ function MainApp() {
   ]);
 
   function goHome() {
+    if (activeThreadCodeRef.current) markThreadRead(activeThreadCodeRef.current, Date.now());
     fx("tap", 12);
     setLogoSpin(false);
     requestAnimationFrame(() => setLogoSpin(true));
@@ -1060,29 +1578,101 @@ function MainApp() {
     if (createCode.length === 6) setOdcCode(createCode);
   }, []);
 
+  // Listen to BOTH replies (receiver->sender) AND senderReplies (sender->receiver) for every Inbox thread!
   useEffect(() => {
     if (!myLinks.length) return undefined;
-    const unsubs = myLinks.map(linkItem =>
-      onValue(
-        ref(database, `replies/${linkItem.code}`),
-        snap => {
-          const val = snap.exists() ? Object.values(snap.val()) : [];
-          setRepliesMap(prev => {
-            const nextMap = { ...prev, [linkItem.code]: val };
-            const total = Object.values(nextMap).reduce((s, a) => s + a.length, 0);
-            if (knownReplyCountRef.current !== -1 && total > knownReplyCountRef.current && val.length > 0) {
-              const latest = val[val.length - 1];
-              fx("notify", [40, 60, 80]);
-              setToastMsg(`📬 ${latest.from || "Friend"}: “${latest.text}”`);
-              setTimeout(() => setToastMsg(""), 4500);
+    const unsubs = [];
+
+    myLinks.forEach(linkItem => {
+      const code = linkItem.code;
+      const isReceiverThread = linkItem.role === "receiver";
+      const isV = Boolean(linkItem.isVault || String(linkItem.title || "").toLowerCase().includes("vault"));
+
+      // 1. Receiver replies stream (`replies/${code}`)
+      unsubs.push(
+        onValue(
+          ref(database, `replies/${code}`),
+          snap => {
+            const raw = snap.exists() ? Object.values(snap.val()) : [];
+            const list = raw.map(m => ({
+              side: "receiver",
+              from: m.from || linkItem.to || "Friend",
+              text: m.text || "",
+              ts: Number(m.createdAt || m.ts || 0)
+            })).filter(m => m.text && !isSystemChatMsg(m.text));
+
+            setRxMap(prev => ({ ...prev, [code]: list }));
+
+            // Notify if I am the SENDER of this link and a brand-new reply arrived while NOT already in that chat!
+            if (!isReceiverThread && list.length > 0) {
+              const latest = list[list.length - 1];
+              const key = `rx_${code}`;
+              const prevTs = lastNotifTsRef.current[key];
+              if (activeThreadCodeRef.current === code) {
+                markThreadRead(code, Math.max(Date.now(), latest.ts));
+              } else if (prevTs !== undefined && latest.ts > prevTs && latest.ts > Number(readMapRef.current[code] || 0)) {
+                fx("notify", [30, 45, 55]);
+                setHomeNotif({
+                  title: latest.from || linkItem.to || "Friend",
+                  body: latest.text,
+                  tag: isV ? "🔐 VAULT" : "⚡ TRAP",
+                  avatarId: linkItem.avatarId || "shades",
+                  linkItem
+                });
+                setTimeout(() => setHomeNotif(null), 6500);
+              }
+              lastNotifTsRef.current[key] = latest.ts;
+            } else if (!isReceiverThread && lastNotifTsRef.current[`rx_${code}`] === undefined) {
+              lastNotifTsRef.current[`rx_${code}`] = 0;
             }
-            knownReplyCountRef.current = total;
-            return nextMap;
-          });
-        },
-        () => {}
-      )
-    );
+          },
+          () => {}
+        )
+      );
+
+      // 2. Sender replies stream (`senderReplies/${code}`)
+      unsubs.push(
+        onValue(
+          ref(database, `senderReplies/${code}`),
+          snap => {
+            const raw = snap.exists() ? Object.values(snap.val()) : [];
+            const list = raw.map(m => ({
+              side: "sender",
+              from: m.from || linkItem.from || "Friend",
+              text: m.text || "",
+              ts: Number(m.ts || m.createdAt || 0)
+            })).filter(m => m.text && !isSystemChatMsg(m.text));
+
+            setTxMap(prev => ({ ...prev, [code]: list }));
+
+            // Notify if I am the RECEIVER of this link (even after exiting Trap/Vault to Home!)
+            if (isReceiverThread && list.length > 0) {
+              const latest = list[list.length - 1];
+              const key = `tx_${code}`;
+              const prevTs = lastNotifTsRef.current[key];
+              if (activeThreadCodeRef.current === code) {
+                markThreadRead(code, Math.max(Date.now(), latest.ts));
+              } else if (prevTs !== undefined && latest.ts > prevTs && latest.ts > Number(readMapRef.current[code] || 0)) {
+                fx("notify", [30, 45, 55]);
+                setHomeNotif({
+                  title: latest.from || linkItem.from || "Friend",
+                  body: latest.text,
+                  tag: isV ? "🔐 VAULT" : "⚡ TRAP",
+                  avatarId: linkItem.avatarId || "shades",
+                  linkItem
+                });
+                setTimeout(() => setHomeNotif(null), 6500);
+              }
+              lastNotifTsRef.current[key] = latest.ts;
+            } else if (isReceiverThread && lastNotifTsRef.current[`tx_${code}`] === undefined) {
+              lastNotifTsRef.current[`tx_${code}`] = 0;
+            }
+          },
+          () => {}
+        )
+      );
+    });
+
     return () => unsubs.forEach(fn => fn());
   }, [myLinks]);
 
@@ -1109,10 +1699,24 @@ function MainApp() {
 
   function handleSavedLink(newItem) {
     setMyLinks(prev => {
-      const updated = [newItem, ...prev.filter(x => x.code !== newItem.code)].slice(0, 15);
+      // Merge with latest localStorage in case another tab added a link!
+      let base = prev;
+      try {
+        const stored = JSON.parse(safeGetStorage("oddora_my_links", "[]"));
+        if (Array.isArray(stored) && stored.length > prev.length) base = stored;
+      } catch {}
+      const existing = base.find(x => x.code === newItem.code);
+      // Never overwrite a sender's own thread role with receiver if testing in the same browser!
+      const merged = existing
+        ? { ...existing, ...newItem, role: existing.role === "sender" ? "sender" : (newItem.role || existing.role || "sender") }
+        : { role: "sender", ...newItem };
+      const updated = [merged, ...base.filter(x => x.code !== newItem.code)].slice(0, 20);
       safeSetStorage("oddora_my_links", JSON.stringify(updated));
       return updated;
     });
+    if (newItem?.code && !readMapRef.current[newItem.code]) {
+      markThreadRead(newItem.code, Date.now());
+    }
   }
 
   function handleSaveToShelf(memoryItem) {
@@ -1140,11 +1744,25 @@ function MainApp() {
       safeSetStorage("oddora_my_links", JSON.stringify(updated));
       return updated;
     });
-    setRepliesMap(prev => {
-      const copy = { ...prev };
-      delete copy[codeToRemove];
-      return copy;
+    setRxMap(prev => { const c = { ...prev }; delete c[codeToRemove]; return c; });
+    setTxMap(prev => { const c = { ...prev }; delete c[codeToRemove]; return c; });
+    setReadMap(prev => {
+      const c = { ...prev };
+      delete c[codeToRemove];
+      safeSetStorage("oddora_read_ts", JSON.stringify(c));
+      return c;
     });
+  }
+
+  function openInboxThread(item) {
+    fx("tap", 12);
+    setInboxOpen(false);
+    markThreadRead(item.code, Date.now());
+    if (item.role === "receiver") {
+      setOdcCode(item.code);
+    } else {
+      setWatchLiveItem(item);
+    }
   }
 
   function sendAnotherTo(friendName) {
@@ -1175,6 +1793,7 @@ function MainApp() {
     return (
       <FullScreenODRecipient
         code={odcCode}
+        onRegisterReceived={handleSavedLink}
         onSaveToShelf={handleSaveToShelf}
         onPendingUpdate={cardObj => {
           setPendingCard(cardObj);
@@ -1183,6 +1802,7 @@ function MainApp() {
         }}
         onGoHome={goHome}
         onExit={creatorName => {
+          if (odcCode) markThreadRead(odcCode, Date.now());
           setOdcCode("");
           const u = new URL(window.location.href);
           u.searchParams.delete("odc");
@@ -1198,44 +1818,18 @@ function MainApp() {
     );
   }
 
-  // 2. FULL-SCREEN WATCH LIVE RECONNECT
+  // 2. FULL-SCREEN WATCH LIVE RECONNECT (Shows previous Vault/Trap photo & live chat!)
   if (watchLiveItem) {
-    const shareUrl = (() => {
-      const u = new URL(window.location.href);
-      u.search = "";
-      u.searchParams.set("odc", watchLiveItem.code);
-      return u.toString();
-    })();
     return (
-      <div className={`pop-fs-stage theme-${watchLiveItem.theme || (String(watchLiveItem.title || "").toLowerCase().includes("vault") ? "gold" : "lime")}`}>
-        <div className="pop-fs-topbar">
-          <button type="button" className="pop-pill-black pop-pill-btn" onClick={goHome}>
-            ⚡ ODDORA · HOME
-          </button>
-          <button type="button" className="pop-btn pink sm" onClick={() => { fx("tap", 10); setWatchLiveItem(null); }}>
-            ✕ Back
-          </button>
-        </div>
-        <div className="pop-fs-content">
-          <div className="pop-ready-card pop-zoom-in" style={{ width: "100%" }}>
-            <span className="pop-pill-black">TO: {String(watchLiveItem.to || "FRIEND").toUpperCase()}</span>
-            <h2>{watchLiveItem.title}</h2>
-            <UniversalShareBar
-              url={shareUrl}
-              shareText={`${watchLiveItem.from || "Someone"} sent you a Secret OD Card 👀⚡`}
-              title="Secret OD Card"
-            />
-            <LiveRadarPanel
-              code={watchLiveItem.code}
-              recipientName={watchLiveItem.to}
-              senderName={watchLiveItem.from || "You"}
-              avatarId={watchLiveItem.avatarId || "shades"}
-              cardColor={watchLiveItem.theme || (String(watchLiveItem.title || "").toLowerCase().includes("vault") ? "gold" : "lime")}
-              isVault={Boolean(watchLiveItem.isVault || String(watchLiveItem.title || "").toLowerCase().includes("vault"))}
-            />
-          </div>
-        </div>
-      </div>
+      <WatchLiveScreen
+        item={watchLiveItem}
+        onGoHome={goHome}
+        onBack={() => {
+          if (watchLiveItem?.code) markThreadRead(watchLiveItem.code, Date.now());
+          fx("tap", 10);
+          setWatchLiveItem(null);
+        }}
+      />
     );
   }
 
@@ -1250,15 +1844,30 @@ function MainApp() {
     );
   }
 
-  const totalReplies = Object.values(repliesMap).reduce((sum, arr) => sum + arr.length, 0);
+  const getThreadMessages = code =>
+    [...(rxMap[code] || []), ...(txMap[code] || [])].sort((a, b) => a.ts - b.ts);
+
+  const getUnreadCount = item => {
+    const lastRead = Number(readMap[item.code] || 0);
+    const incoming = item.role === "receiver" ? (txMap[item.code] || []) : (rxMap[item.code] || []);
+    return incoming.filter(m => m.ts > lastRead).length;
+  };
+
+  // Header badge shows ONLY the number of unread conversations (disappears cleanly once read!)
+  const unreadConvoCount = myLinks.filter(it => getUnreadCount(it) > 0).length;
 
   return (
     <div className="pop-shell">
-      {toastMsg && (
-        <div className="pop-toast" onClick={() => { fx("tap", 12); setToastMsg(""); setInboxOpen(true); }}>
-          {toastMsg}
-        </div>
-      )}
+      <MobileNotificationBanner
+        notif={homeNotif}
+        onOpen={() => {
+          const target = homeNotif?.linkItem;
+          setHomeNotif(null);
+          if (target) openInboxThread(target);
+          else setInboxOpen(true);
+        }}
+        onDismiss={() => setHomeNotif(null)}
+      />
 
       {/* FIXED TOP HEADER — ODDORA logo ALWAYS goes Home! */}
       <header className="pop-header">
@@ -1271,7 +1880,7 @@ function MainApp() {
         <div className="pop-header-actions">
           <button type="button" className="pop-btn white sm pop-inbox-btn" onClick={() => { fx("tap", 12); setInboxOpen(true); }}>
             <Inbox size={15}/> Inbox
-            {totalReplies > 0 && <span className="pop-inbox-badge">{totalReplies}</span>}
+            {unreadConvoCount > 0 && <span className="pop-inbox-badge">{unreadConvoCount}</span>}
           </button>
           <button type="button" className="pop-btn yellow sm" onClick={() => { fx("tap", 12); setPickerModalOpen(true); }}>
             ⚡ Create
@@ -1538,58 +2147,126 @@ function MainApp() {
         </div>
       )}
 
-      {/* REPLIES INBOX MODAL */}
-      {inboxOpen && (
-        <div className="pop-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setInboxOpen(false); }}>
-          <div className="pop-modal-box">
-            <button type="button" className="pop-modal-close" onClick={() => setInboxOpen(false)} aria-label="Close">
-              <X size={18}/>
-            </button>
-            <div className="pop-ready-card pop-zoom-in">
-              <span className="pop-pill-black">📬 YOUR INBOX</span>
-              <h2>Inbox</h2>
-              {myLinks.length === 0 ? (
-                <p className="pop-muted">Create & share a link—friend reactions will pop up here live!</p>
-              ) : (
-                <div className="pop-stack" style={{ width: "100%" }}>
-                  {myLinks.map(item => {
-                    const list = repliesMap[item.code] || [];
-                    return (
-                      <div className="pop-inbox-item" key={item.code}>
-                        <div className="pop-row-between">
-                          <strong>To: {item.to}</strong>
-                          <span className="pop-pill-black">{item.code}</span>
-                        </div>
-                        <small className="pop-muted">{item.title}</small>
-                        {list.length === 0 ? (
-                          <small className="pop-muted">Waiting for reply...</small>
-                        ) : (
-                          list.map((r, idx) => (
-                            <div className="pop-inbox-reply" key={idx}>
-                              💬 <strong>{r.from}:</strong> “{r.text}”
-                            </div>
-                          ))
-                        )}
-                        <div className="pop-inbox-actions">
-                          <button type="button" className="pop-btn blue sm" onClick={() => { fx("tap", 12); setInboxOpen(false); setWatchLiveItem(item); }}>
-                            <Radio size={13}/> Live
-                          </button>
-                          <button type="button" className="pop-btn yellow sm" onClick={() => sendAnotherTo(item.to)}>
-                            ⚡ New
-                          </button>
-                          <button type="button" className="pop-btn white sm" onClick={() => deleteInboxItem(item.code)}>
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+      {/* CATEGORIZED APP-STYLE INBOX MODAL */}
+      {inboxOpen && (() => {
+        const isItemVault = it => Boolean(it.isVault || String(it.title || "").toLowerCase().includes("vault"));
+        const trapCount = myLinks.filter(it => !isItemVault(it)).length;
+        const vaultCount = myLinks.filter(it => isItemVault(it)).length;
+        const filteredLinks = myLinks.filter(it =>
+          inboxFilter === "all" ? true : inboxFilter === "vault" ? isItemVault(it) : !isItemVault(it)
+        );
+        return (
+          <div className="pop-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setInboxOpen(false); }}>
+            <div className="pop-modal-box">
+              <button type="button" className="pop-modal-close" onClick={() => setInboxOpen(false)} aria-label="Close">
+                <X size={18}/>
+              </button>
+              <div className="pop-ready-card pop-zoom-in pop-inbox-sheet">
+                <div className="pop-row-between">
+                  <span className="pop-pill-black">📬 INBOX</span>
+                  <small className="pop-muted">Tap a chat to open Live</small>
                 </div>
-              )}
+
+                {/* App-Style Category Tabs */}
+                <div className="pop-inbox-tabs">
+                  <button
+                    type="button"
+                    className={inboxFilter === "all" ? "pop-itab active" : "pop-itab"}
+                    onClick={() => { fx("tap", 10); setInboxFilter("all"); }}
+                  >
+                    All ({myLinks.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={inboxFilter === "trap" ? "pop-itab active lime" : "pop-itab"}
+                    onClick={() => { fx("tap", 10); setInboxFilter("trap"); }}
+                  >
+                    ⚡ Traps ({trapCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={inboxFilter === "vault" ? "pop-itab active gold" : "pop-itab"}
+                    onClick={() => { fx("tap", 10); setInboxFilter("vault"); }}
+                  >
+                    🔐 Vaults ({vaultCount})
+                  </button>
+                </div>
+
+                {filteredLinks.length === 0 ? (
+                  <p className="pop-muted" style={{ padding: "18px 0" }}>
+                    {myLinks.length === 0
+                      ? "Create & share a link — live chats will appear here!"
+                      : `No ${inboxFilter === "vault" ? "Vault" : "Trap"} threads yet.`}
+                  </p>
+                ) : (
+                  <div className="pop-inbox-list">
+                    {filteredLinks.map(item => {
+                      const list = getThreadMessages(item.code);
+                      const unreadCount = getUnreadCount(item);
+                      const latest = list.length > 0 ? list[list.length - 1] : null;
+                      const isV = isItemVault(item);
+                      const isRx = item.role === "receiver";
+                      const partnerName = isRx ? (item.from || "Friend") : (item.to || "Friend");
+                      const latestIsMe = latest && ((isRx && latest.side === "receiver") || (!isRx && latest.side === "sender"));
+                      return (
+                        <div
+                          className={`pop-dm-row ${isV ? "vault-row" : "trap-row"} ${unreadCount > 0 ? "has-unread" : ""}`}
+                          key={item.code}
+                          onClick={() => openInboxThread(item)}
+                        >
+                          <div className="pop-dm-avatar-wrap">
+                            <HumanAvatarSVG avatarId={item.avatarId || "shades"} size={42} />
+                            <span className={`pop-dm-type-dot ${isV ? "vault" : "trap"}`}>
+                              {isV ? "🔐" : "⚡"}
+                            </span>
+                          </div>
+
+                          <div className="pop-dm-body">
+                            <div className="pop-dm-top">
+                              <strong>{partnerName}</strong>
+                              <span className={`pop-dm-tag ${isV ? "vault" : "trap"}`}>
+                                {isRx ? (isV ? "FROM · VAULT" : "FROM · TRAP") : (isV ? "VAULT" : "TRAP")}
+                              </span>
+                            </div>
+                            <div className="pop-dm-subject">{item.title}</div>
+                            <div className="pop-dm-preview">
+                              {latest
+                                ? (latestIsMe ? `You: ${latest.text}` : `💬 ${latest.text}`)
+                                : (isRx ? "✨ Tap to view & chat" : "📡 Tap to open Live Feed")}
+                            </div>
+                          </div>
+
+                          <div className="pop-dm-right" onClick={e => e.stopPropagation()}>
+                            {unreadCount > 0 && <span className="pop-dm-count">{unreadCount}</span>}
+                            <div className="pop-dm-mini-actions">
+                              <button
+                                type="button"
+                                className="pop-dm-ico-btn yellow"
+                                title={`Send new to ${partnerName}`}
+                                onClick={() => sendAnotherTo(partnerName)}
+                              >
+                                <Zap size={12}/>
+                              </button>
+                              <button
+                                type="button"
+                                className="pop-dm-ico-btn"
+                                title="Delete thread"
+                                onClick={() => deleteInboxItem(item.code)}
+                              >
+                                <Trash2 size={12}/>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -1695,6 +2372,10 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
   const [yesLabelInput, setYesLabelInput] = useState("");
   const [noLabelInput, setNoLabelInput] = useState("");
   const [yesMsgInput, setYesMsgInput] = useState("");
+  const [trapBgImage, setTrapBgImage] = useState("");
+  const [trapCrop, setTrapCrop] = useState({ posX: 50, posY: 20, zoom: 1, fit: "cover" });
+  const [previewTab, setPreviewTab] = useState("ask"); // "ask" | "reveal"
+  const [avatarNudge, setAvatarNudge] = useState(false);
 
   // OD - Vault fields
   const [secretText, setSecretText] = useState("");
@@ -1744,16 +2425,17 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
         ? "yesMsg"
         : "ready";
 
-  // Live grey letter-by-letter typewriter samples on BOTH Screen 1 & Screen 2!
-  const senderPlaceholder = useTypewriter("Sam", step === 0 && activeStep0 === "sender");
-  const recipientPlaceholder = useTypewriter("Alex", step === 0 && activeStep0 === "recipient");
+  // Live grey letter-by-letter typewriter samples (idle fields show subtle prompts so they never look pre-filled!)
+  const senderPlaceholder = useTypewriter("Sam", step === 0 && activeStep0 === "sender", "Enter your name...");
+  const recipientPlaceholder = useTypewriter("Alex", step === 0 && activeStep0 === "recipient", "Friend's name...");
   const mainPlaceholder = useTypewriter(
     mode === "trap" ? "Coffee tonight?" : "Don't tell anyone...",
-    step === 0 && activeStep0 === "main"
+    step === 0 && activeStep0 === "main",
+    mode === "trap" ? "Type your question..." : "Write your secret..."
   );
-  const yesBtnPlaceholder = useTypewriter("Yes, locked in ⚡", step === 1 && mode === "trap" && activeStep1 === "yesBtn");
-  const noBtnPlaceholder = useTypewriter("No way", step === 1 && mode === "trap" && activeStep1 === "noBtn");
-  const yesMsgPlaceholder = useTypewriter(smartTrapOut, step === 1 && mode === "trap" && activeStep1 === "yesMsg");
+  const yesBtnPlaceholder = useTypewriter("Yes, locked in ⚡", step === 1 && mode === "trap" && activeStep1 === "yesBtn", "Edit YES text...");
+  const noBtnPlaceholder = useTypewriter("No way", step === 1 && mode === "trap" && activeStep1 === "noBtn", "Edit NO text...");
+  const yesMsgPlaceholder = useTypewriter(smartTrapOut, step === 1 && mode === "trap" && activeStep1 === "yesMsg", "Reveal message...");
 
   function triggerStepChange(nextStep) {
     fx("pop", 14);
@@ -1771,13 +2453,14 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
     setYesMsgInput(p.yesMessage);
   }
 
-  async function handlePhotoUpload(e) {
+  async function handlePhotoUpload(e, target = "vault") {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingImg(true);
     try {
       const compressed = await compressImageFile(file, 680, 0.72);
-      setSecretImage(compressed);
+      if (target === "trap") { setTrapBgImage(compressed); setTrapCrop({ posX: 50, posY: 20, zoom: 1, fit: "cover" }); }
+      else setSecretImage(compressed);
       fx("pop", 14);
     } catch {
       alert("Could not read image. Try another photo.");
@@ -1822,6 +2505,11 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
             yesLabel: (yesLabelInput.trim() || "Yes, locked in ⚡").slice(0, 28),
             noLabel: (noLabelInput.trim() || "No").slice(0, 28),
             yesMessage: (yesMsgInput.trim() || smartTrapOut).slice(0, 240),
+            bgImage: trapBgImage || "",
+            bgPosX: trapCrop.posX,
+            bgPosY: trapCrop.posY,
+            bgZoom: trapCrop.zoom,
+            bgFit: trapCrop.fit,
             maxDodges: 3 + Math.floor(Math.random() * 2)
           }
         };
@@ -1852,6 +2540,7 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
 
       onLinkCreated?.({
         code,
+        role: "sender",
         from,
         to,
         avatarId,
@@ -1911,7 +2600,9 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
             <div className={`pop-avatar-section ${activeStep0 === "avatar" ? "pop-avatar-spotlight" : ""}`}>
               <div className="pop-row-between" style={{ justifyContent: "center", gap: 8 }}>
                 <span className="pop-mini-tag">1. PICK YOUR AVATAR</span>
-                {activeStep0 === "avatar" && <span className="pop-type-hint">👆 Tap one!</span>}
+                {(activeStep0 === "avatar" || avatarNudge) && (
+                  <span className="pop-type-hint">{avatarNudge ? "👆 Pick your avatar too!" : "👆 Tap one!"}</span>
+                )}
               </div>
               <div className="pop-avatar-picker">
                 {AVATARS.map(av => (
@@ -1927,6 +2618,9 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
                     title={av.label}
                   >
                     <HumanAvatarSVG avatarId={av.id} size={42} />
+                    {activeStep0 === "avatar" && avatarId === av.id && (
+                      <span className="pop-avatar-pointer" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#14141A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 13V4a1.5 1.5 0 0 1 3 0v5.5a1.5 1.5 0 0 1 3 0v1a1.5 1.5 0 0 1 3 0v1.5a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-2.5a6 6 0 0 1-4.8-2.4l-3.3-4.4a1.6 1.6 0 0 1 2.4-2.1L9 14.8Z"/><path d="M12 9.5v2M15 10.5v2M18 12v1.5"/></svg></span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1934,17 +2628,29 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
 
             <div className="pop-grid-2">
               <label className={`pop-field ${activeStep0 === "sender" ? "pop-highlight-field" : ""}`}>
-                <span>YOUR NAME</span>
+                <div className="pop-field-head">
+                  <span>YOUR NAME</span>
+                  {activeStep0 === "sender" && <span className="pop-step-tip">✏️ Type your name</span>}
+                </div>
                 <input
                   value={senderName}
-                  onChange={e => { setAvatarPicked(true); setSenderName(e.target.value); }}
-                  onFocus={focusScrollCenter}
+                  onChange={e => { setAvatarPicked(true); setAvatarNudge(false); setSenderName(e.target.value); }}
+                  onFocus={e => {
+                    if (!avatarPicked) {
+                      setAvatarNudge(true);
+                      setTimeout(() => setAvatarNudge(false), 3200);
+                    }
+                    focusScrollCenter(e);
+                  }}
                   placeholder={senderPlaceholder}
                   maxLength={24}
                 />
               </label>
               <label className={`pop-field ${activeStep0 === "recipient" ? "pop-highlight-field" : ""}`}>
-                <span>THEIR NAME</span>
+                <div className="pop-field-head">
+                  <span>THEIR NAME</span>
+                  {activeStep0 === "recipient" && <span className="pop-step-tip">✏️ Who is this for?</span>}
+                </div>
                 <input
                   value={recipientName}
                   onChange={e => setRecipientName(e.target.value)}
@@ -1965,7 +2671,10 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
                   ))}
                 </div>
                 <label className={`pop-field ${activeStep0 === "main" ? "pop-highlight-field" : ""}`}>
-                  <span>YOUR QUESTION</span>
+                  <div className="pop-field-head">
+                    <span>YOUR QUESTION</span>
+                    {activeStep0 === "main" && <span className="pop-step-tip">✏️ Ask your trap question</span>}
+                  </div>
                   <input
                     value={questionInput}
                     onChange={e => setQuestionInput(e.target.value)}
@@ -1974,11 +2683,38 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
                     maxLength={120}
                   />
                 </label>
+
+                <div className="pop-upload-row">
+                  <div className="pop-grid-2">
+                    <label className="pop-btn white sm full" style={{ cursor: "pointer" }}>
+                      <Camera size={14}/> {uploadingImg ? "..." : "📸 Snap Photo"}
+                      <input type="file" accept="image/*" capture="environment" onChange={e => handlePhotoUpload(e, "trap")} style={{ display: "none" }} />
+                    </label>
+                    <label className="pop-btn white sm full" style={{ cursor: "pointer" }}>
+                      <ImageIcon size={14}/> {uploadingImg ? "..." : "🖼️ Bg Photo"}
+                      <input type="file" accept="image/*" onChange={e => handlePhotoUpload(e, "trap")} style={{ display: "none" }} />
+                    </label>
+                  </div>
+                  {trapBgImage && (
+                    <TrapPhotoCropper
+                      src={trapBgImage}
+                      posX={trapCrop.posX}
+                      posY={trapCrop.posY}
+                      zoom={trapCrop.zoom}
+                      fit={trapCrop.fit}
+                      onChange={patch => setTrapCrop(prev => ({ ...prev, ...patch }))}
+                      onRemove={() => setTrapBgImage("")}
+                    />
+                  )}
+                </div>
               </>
             ) : (
               <>
                 <label className={`pop-field ${activeStep0 === "main" ? "pop-highlight-field" : ""}`}>
-                  <span>SECRET MESSAGE (TEXT)</span>
+                  <div className="pop-field-head">
+                    <span>SECRET MESSAGE (TEXT)</span>
+                    {activeStep0 === "main" && <span className="pop-step-tip">✏️ Write your secret</span>}
+                  </div>
                   <textarea
                     rows={2}
                     value={secretText}
@@ -2021,13 +2757,81 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
           </div>
         )}
 
-        {/* SCREEN 2 (2 OF 2): CUSTOMIZE & PRIVACY */}
+        {/* SCREEN 2 (2 OF 2): LIVE MINI PREVIEW CARD + CUSTOMIZE */}
         {step === 1 && (
           <div className="pop-wizard-card pop-zoom-in" style={{ width: "100%" }} key="w-1">
-            <div className="pop-pinned-q" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <HumanAvatarSVG avatarId={avatarId} size={30} />
-              <span>{mode === "trap" ? `“${effectiveQ}”` : secretImage ? "📸 Photo + Secret Note locked" : `“${secretText.trim() || "Secret Vault"}”`}</span>
-            </div>
+            {mode === "trap" ? (
+              <div className="pop-mini-preview-wrap">
+                <div className="pop-row-between">
+                  <span className="pop-mini-tag">👀 LIVE RECEIVER PREVIEW</span>
+                  <div className="pop-preview-tabs">
+                    <button type="button" className={previewTab === "ask" ? "pop-ptab active" : "pop-ptab"} onClick={() => setPreviewTab("ask")}>
+                      Question
+                    </button>
+                    <button type="button" className={previewTab === "reveal" ? "pop-ptab active" : "pop-ptab"} onClick={() => setPreviewTab("reveal")}>
+                      After YES
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className={`pop-mini-preview-card theme-${cardColor} ${previewTab === "reveal" && trapBgImage ? "has-bg" : ""}`}
+                  style={
+                    previewTab === "reveal" && trapBgImage
+                      ? {
+                          backgroundImage: `linear-gradient(rgba(14,14,20,0.56), rgba(14,14,20,0.74)), url(${trapBgImage})`,
+                          backgroundPosition: `${trapCrop.posX}% ${trapCrop.posY}%`
+                        }
+                      : undefined
+                  }
+                >
+                  {previewTab === "ask" ? (
+                    <>
+                      {trapBgImage && (
+                        <div className="pop-mini-photo-box">
+                          <img
+                            src={trapBgImage}
+                            alt="Preview"
+                            style={{
+                              objectFit: trapCrop.fit,
+                              objectPosition: `${trapCrop.posX}% ${trapCrop.posY}%`,
+                              transform: trapCrop.fit === "cover" ? `scale(${trapCrop.zoom})` : "none",
+                              transformOrigin: `${trapCrop.posX}% ${trapCrop.posY}%`
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <HumanAvatarSVG avatarId={avatarId} size={32} />
+                        <span className="pop-pill-black">FOR {String(recipientName.trim() || "FRIEND").toUpperCase()}</span>
+                      </div>
+                      <div className="pop-mini-q">{effectiveQ}</div>
+                      <div className="pop-mini-btns">
+                        <span className={`pop-btn lime sm ${activeStep1 === "yesBtn" ? "pop-sync-pulse" : ""}`}>
+                          {yesLabelInput.trim() || "Yes, locked in ⚡"}
+                        </span>
+                        <span className={`pop-btn pink sm ${activeStep1 === "noBtn" ? "pop-sync-pulse" : ""}`}>
+                          {noLabelInput.trim() || "No"}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <HumanAvatarSVG avatarId={avatarId} size={40} />
+                      <span className="pop-pill-black">🎉 LOCKED IN</span>
+                      <div className={`pop-mini-reveal ${activeStep1 === "yesMsg" ? "pop-sync-pulse" : ""}`}>
+                        “{yesMsgInput.trim() || smartTrapOut}”
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="pop-pinned-q" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <HumanAvatarSVG avatarId={avatarId} size={30} />
+                <span>{secretImage ? "📸 Photo + Secret Note locked" : `“${secretText.trim() || "Secret Vault"}”`}</span>
+              </div>
+            )}
 
             <div className="pop-chips-row center">
               {[
@@ -2051,17 +2855,26 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
               <div className="pop-live-preview-box">
                 <div className="pop-grid-2">
                   <label className={`pop-field ${activeStep1 === "yesBtn" ? "pop-highlight-field" : ""}`}>
-                    <span>YES BUTTON TEXT</span>
-                    <input className="pop-dashed-input" value={yesLabelInput} onChange={e => setYesLabelInput(e.target.value)} onFocus={focusScrollCenter} placeholder={yesBtnPlaceholder} maxLength={28} />
+                    <div className="pop-field-head">
+                      <span>YES BUTTON TEXT</span>
+                      {activeStep1 === "yesBtn" && <span className="pop-step-tip">✏️ Green button text</span>}
+                    </div>
+                    <input className="pop-dashed-input" value={yesLabelInput} onChange={e => setYesLabelInput(e.target.value)} onFocus={e => { setPreviewTab("ask"); focusScrollCenter(e); }} placeholder={yesBtnPlaceholder} maxLength={28} />
                   </label>
                   <label className={`pop-field ${activeStep1 === "noBtn" ? "pop-highlight-field" : ""}`}>
-                    <span>NO BUTTON TEXT</span>
-                    <input className="pop-dashed-input" value={noLabelInput} onChange={e => setNoLabelInput(e.target.value)} onFocus={focusScrollCenter} placeholder={noBtnPlaceholder} maxLength={28} />
+                    <div className="pop-field-head">
+                      <span>NO BUTTON TEXT</span>
+                      {activeStep1 === "noBtn" && <span className="pop-step-tip">✏️ Runaway button text</span>}
+                    </div>
+                    <input className="pop-dashed-input" value={noLabelInput} onChange={e => setNoLabelInput(e.target.value)} onFocus={e => { setPreviewTab("ask"); focusScrollCenter(e); }} placeholder={noBtnPlaceholder} maxLength={28} />
                   </label>
                 </div>
                 <label className={`pop-field ${activeStep1 === "yesMsg" ? "pop-highlight-field" : ""}`}>
-                  <span>REVEAL MESSAGE AFTER YES</span>
-                  <input className="pop-dashed-input" value={yesMsgInput} onChange={e => setYesMsgInput(e.target.value)} onFocus={focusScrollCenter} placeholder={yesMsgPlaceholder} maxLength={240} />
+                  <div className="pop-field-head">
+                    <span>REVEAL MESSAGE AFTER YES</span>
+                    {activeStep1 === "yesMsg" && <span className="pop-step-tip">✏️ Shows after YES</span>}
+                  </div>
+                  <input className="pop-dashed-input" value={yesMsgInput} onChange={e => setYesMsgInput(e.target.value)} onFocus={e => { setPreviewTab("reveal"); focusScrollCenter(e); }} placeholder={yesMsgPlaceholder} maxLength={240} />
                 </label>
               </div>
             ) : (
@@ -2115,7 +2928,7 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
               <button type="button" className="pop-btn white" onClick={() => triggerStepChange(0)}>
                 <ArrowLeft size={16}/> Back
               </button>
-              <button type="button" className="pop-btn lime" onClick={publishLink} disabled={busy}>
+              <button type="button" className={`pop-btn lime ${mode === "trap" && activeStep1 === "ready" ? "pop-next-glow" : ""}`} onClick={publishLink} disabled={busy}>
                 {busy ? "Locking..." : mode === "trap" ? "🚀 Arm & Share" : "🔐 Lock & Share"}
               </button>
             </div>
@@ -2159,6 +2972,7 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
                 triggerStepChange(0);
                 setLiveCode("");
                 setQuestionInput("");
+                setTrapBgImage("");
                 setSecretText("");
                 setSecretImage("");
                 setVaultPin("");
@@ -2180,16 +2994,17 @@ function FullScreenCreatorWizard({ initialMode = "trap", onLinkCreated, onClose 
    - PIN Screen Live Chat ("Ask [Sender] for PIN") + PIN Clue
    - Perspective-Based Proof Sharing (With Clickable Link!)
 ============================================================================ */
-function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome, onExit }) {
+function FullScreenODRecipient({ code, onRegisterReceived, onSaveToShelf, onPendingUpdate, onGoHome, onExit }) {
   const [data, setData] = useState(null);
   const [myUid, setMyUid] = useState("");
   const savedRx = (() => {
     try { return JSON.parse(safeGetStorage(`oddora_rx_${code}`, "null")) || {}; } catch { return {}; }
   })();
 
+  const alreadyDone = Boolean(savedRx.outcome === "yes" || Number(savedRx.vaultStage || 0) >= 3);
   const [loading, setLoading] = useState(true);
   const [sealed, setSealed] = useState(savedRx.sealed !== undefined ? Boolean(savedRx.sealed) : true);
-  const [burstKey, setBurstKey] = useState(1);
+  const [burstKey, setBurstKey] = useState(alreadyDone ? 0 : 1);
 
   // Trap state (resumes on reopen!)
   const [dodges, setDodges] = useState(Number(savedRx.dodges || 0));
@@ -2203,6 +3018,19 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
   const [vaultStage, setVaultStage] = useState(Number(savedRx.vaultStage || 0)); // 0=Lock1, 1=Lock2, 2=PIN, 3=Unlocked
   const [oddIdx] = useState(() => Math.floor(Math.random() * 9));
   const [crackTaps, setCrackTaps] = useState(Number(savedRx.crackTaps || 0));
+  const [decryptSpots] = useState(() => {
+    const spots = [
+      { left: "26%", top: "30%" },
+      { left: "73%", top: "70%" },
+      { left: "72%", top: "32%" },
+      { left: "28%", top: "70%" }
+    ];
+    for (let i = spots.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [spots[i], spots[j]] = [spots[j], spots[i]];
+    }
+    return spots;
+  });
 
   // Persistent 2-way chat history (Receiver sees late sender replies even after closing & reopening!)
   const chatHistory = useTwoWayChat(code);
@@ -2228,8 +3056,10 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
   const [lastSentReply, setLastSentReply] = useState("");
   const [savingCard, setSavingCard] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
-  const [liveSenderMsg, setLiveSenderMsg] = useState("");
+  const [liveSenderNotif, setLiveSenderNotif] = useState(null);
   const knownSenderCountRef = useRef(-1);
+  const rxChatInputRef = useRef(null);
+  const pinChatInputRef = useRef(null);
 
   // Re-clamp NO button if user switches tabs/windows or resizes so it NEVER disappears!
   useEffect(() => {
@@ -2263,10 +3093,27 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
       if (snap?.exists()) {
         const val = snap.val();
         setData(val);
-        onPendingUpdate?.({
+        const isV = val.type === "vault";
+        if (alreadyDone) {
+          onPendingUpdate?.(null);
+        } else {
+          onPendingUpdate?.({
+            code,
+            from: val.creatorName || "A friend",
+            title: isV ? "🔐 Secret Vault" : val.payload?.title
+          });
+        }
+        // Register in Receiver's Inbox so they keep chat history & push notifications after exiting!
+        onRegisterReceived?.({
           code,
-          from: val.creatorName || "A friend",
-          title: val.type === "vault" ? "🔐 Secret Vault" : val.payload?.title
+          role: "receiver",
+          from: val.creatorName || "Friend",
+          to: val.recipientName || "You",
+          avatarId: val.avatarId || "shades",
+          theme: val.theme || (isV ? "gold" : "lime"),
+          isVault: isV,
+          title: isV ? "🔐 Secret Vault" : (val.payload?.title || "⚡ OD - Trap"),
+          createdAt: val.createdAt || Date.now()
         });
       }
       setLoading(false);
@@ -2282,9 +3129,14 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
         const list = snap.exists() ? Object.values(snap.val()) : [];
         if (knownSenderCountRef.current !== -1 && list.length > knownSenderCountRef.current && list.length > 0) {
           const latest = list[list.length - 1];
-          fx("notify", [35, 50, 35]);
-          setLiveSenderMsg(`⚡ ${latest.from || "Friend"}: “${latest.text}”`);
-          setTimeout(() => setLiveSenderMsg(""), 8000);
+          fx("notify", [30, 45, 55]);
+          setLiveSenderNotif({
+            title: latest.from || "Friend",
+            body: latest.text,
+            tag: "LIVE CHAT",
+            avatarId: data?.avatarId || "shades"
+          });
+          setTimeout(() => setLiveSenderNotif(null), 8000);
         }
         knownSenderCountRef.current = list.length;
       },
@@ -2371,7 +3223,19 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
   /* ---- TRAP HANDLERS (Strict Safe-Zone Jump — Zero Overlap & Never Disappears!) ---- */
   const maxDodges = Math.min(4, data?.payload?.maxDodges || 4);
   const converted = dodges >= maxDodges;
-  const talkingList = isTamilOrTanglish(data?.payload?.title) ? TALKING_NO_TA : TALKING_NO_EN;
+  const trapCombinedText = [
+    data?.payload?.title,
+    data?.payload?.yesLabel,
+    data?.payload?.noLabel,
+    data?.payload?.yesMessage
+  ].filter(Boolean).join(" ");
+  const isTrapTa = !isVault && isTamilOrTanglish(trapCombinedText);
+  const isTrapEn = !isTrapTa && (isLikelyEnglish(trapCombinedText) || /^(no|no way|nope)$/i.test(String(data?.payload?.noLabel || "").trim()));
+  const talkingList = isTrapTa
+    ? TALKING_NO_TA
+    : isTrapEn
+      ? TALKING_NO_EN
+      : [data?.payload?.noLabel || "No"];
 
   function handleFullScreenDodge(e) {
     if (e) e.preventDefault();
@@ -2449,11 +3313,6 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
         : `🎉 ${who} gave in after ${dodges} dodges & said YES!`
     );
     signInPlayer().catch(() => null).finally(() => {
-      push(ref(database, `replies/${code}`), {
-        text: isInstant ? "INSTANT YES! ⚡" : `Said YES after ${dodges} dodges! 💜`,
-        from: who,
-        createdAt: Date.now()
-      }).catch(() => {});
       runTransaction(ref(database, `creations/${code}/yesCount`), c => (Number(c || 0) + 1)).catch(() => {});
     });
   }
@@ -2467,11 +3326,6 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
     onPendingUpdate?.(null);
     pushLiveEvent(`🔓 ${who} unlocked your Secret Vault!`);
     signInPlayer().catch(() => null).finally(() => {
-      push(ref(database, `replies/${code}`), {
-        text: "Unlocked your Secret Vault! 🔐✨",
-        from: who,
-        createdAt: Date.now()
-      }).catch(() => {});
       runTransaction(ref(database, `creations/${code}/yesCount`), c => (Number(c || 0) + 1)).catch(() => {});
       if (myUid && !data.receiverUid && myUid !== data.senderUid) {
         set(ref(database, `creations/${code}/receiverUid`), myUid).catch(() => {});
@@ -2576,30 +3430,32 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
     if (savingCard) return;
     setSavingCard(true);
     fx("tap", 14);
-    pushLiveEvent(`📸 ${who} shared the proof card!`);
+    pushLiveEvent(`📸 ${who} shared the status flex card!`);
     await sharePosterWithLink({
       posterArgs: isVaultTeaser
         ? {
             kicker: "SECRET CRACKED",
-            bigTitle: `I unlocked ${data.creatorName}'s secret vault! 🔐`,
-            subText: "Can't show the secret — it's private 👀",
-            statPill: "🔓 VAULT CRACKED",
-            actorName: `${data.creatorName} → ${who}`,
+            bannerWord: "UNLOCKED! 🔓",
+            bigTitle: `I cracked ${data.creatorName}'s secret vault!`,
+            subText: "Secret stays between us 🤫👀",
+            statPill: "🔓 2 LOCKS CRACKED",
+            actorName: `${data.creatorName} ⚡ ${who}`,
             avatarId: data.avatarId || "shades",
             cardColor: cardTheme
           }
         : {
             kicker: "OFFICIAL PROOF",
-            bigTitle: data.payload.yesMessage,
-            subText: `${who} said YES to ${data.creatorName}`,
+            bannerWord: dodges === 0 ? "INSTANT YES! ⚡" : "TRAPPED ME! 😂",
+            bigTitle: `${data.creatorName} trapped me on ODDORA!`,
+            subText: dodges === 0 ? "Zero hesitation — tapped YES right away 👀" : `Tried pressing No ${dodges}x… no escape 🔒`,
             statPill: dodges === 0 ? "⚡ ZERO HESITATION" : `DODGED ${dodges}x · STILL YES`,
-            actorName: `${data.creatorName} → ${who}`,
+            actorName: `${data.creatorName} ⚡ ${who}`,
             avatarId: data.avatarId || "shades",
             cardColor: cardTheme
           },
       caption: isVaultTeaser
         ? `I just cracked ${data.creatorName}'s Secret Vault on ODDORA 🔐👀`
-        : `${data.creatorName} got me with an OD - Trap 😂⚡`,
+        : `${data.creatorName} got me with an OD - Trap 😂⚡ Can you escape?`,
       onStatus: msg => {
         setShareStatus(msg);
         setTimeout(() => setShareStatus(""), 3500);
@@ -2616,17 +3472,39 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
 
   const puzzleObj = ODD_PUZZLES[(data.payload?.puzzleIdx || 0) % ODD_PUZZLES.length];
 
+
+  // Photo stays in a crisp top card during Question & Runaway No, then moves to full-screen background on final YES reveal!
+  const bgPosX = data.payload?.bgPosX ?? 50;
+  const bgPosY = data.payload?.bgPosY ?? 20;
+  const bgZoom = data.payload?.bgZoom ?? 1;
+  const bgFit = data.payload?.bgFit || "cover";
+
+  const trapBgStyle = !isVault && outcome === "yes" && data.payload?.bgImage
+    ? {
+        backgroundImage: `linear-gradient(rgba(14, 14, 20, 0.54), rgba(14, 14, 20, 0.76)), url(${data.payload.bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: `${bgPosX}% ${bgPosY}%`
+      }
+    : undefined;
+
   return (
-    <div className={`pop-fs-stage theme-${cardTheme}`}>
+    <div className={`pop-fs-stage theme-${cardTheme} ${trapBgStyle ? "has-photo-bg" : ""}`} style={trapBgStyle}>
       <BubbleBurst triggerKey={burstKey} />
       {outcome === "yes" && <ConfettiRain />}
 
-      {/* Live 2-Way Reply Toast from Sender (Works even on PIN screen!) */}
-      {liveSenderMsg && (
-        <div className="pop-toast" onClick={() => setLiveSenderMsg("")}>
-          {liveSenderMsg}
-        </div>
-      )}
+      {/* Native Mobile Top Push Notification Banner from Sender (Tap -> Jumps to Chatbox!) */}
+      <MobileNotificationBanner
+        notif={liveSenderNotif}
+        onOpen={() => {
+          setLiveSenderNotif(null);
+          const targetInput = rxChatInputRef.current || pinChatInputRef.current;
+          if (targetInput) {
+            targetInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => targetInput.focus(), 120);
+          }
+        }}
+        onDismiss={() => setLiveSenderNotif(null)}
+      />
 
       {/* Floating Runaway NO Button — direct child of stage so position:fixed NEVER traps inside animated card! */}
       {!sealed && !isVault && !outcome && !converted && noPos && (
@@ -2677,7 +3555,7 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
               <div className="pop-live-chat-wrap">
                 <ChatHistoryBox messages={chatHistory} viewerSide="receiver" />
                 <form className="pop-react-form" onSubmit={sendReactionNote}>
-                  <input value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Chat live with ${data.creatorName}...`} maxLength={120} />
+                  <input ref={rxChatInputRef} value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Chat live with ${data.creatorName}...`} maxLength={120} />
                   <button type="submit" className="pop-btn yellow sm" disabled={!reactionText.trim()}><Send size={14}/></button>
                 </form>
               </div>
@@ -2698,17 +3576,36 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
             </div>
           ) : (
             <div ref={trapCardRef} className="pop-outcome pop-zoom-in" key="trap-play">
-              <HumanAvatarSVG avatarId={data.avatarId} size={68} />
-              <span className="pop-pill-black">FOR {who.toUpperCase()}</span>
+              {data.payload?.bgImage ? (
+                <div className="pop-vault-photo-frame pop-trap-photo-box">
+                  <img
+                    src={data.payload.bgImage}
+                    alt="Trap visual"
+                    className="pop-trap-cropped-img"
+                    style={{
+                      objectFit: bgFit,
+                      objectPosition: `${bgPosX}% ${bgPosY}%`,
+                      transform: bgFit === "cover" ? `scale(${bgZoom})` : "none",
+                      transformOrigin: `${bgPosX}% ${bgPosY}%`
+                    }}
+                  />
+                </div>
+              ) : (
+                <HumanAvatarSVG avatarId={data.avatarId} size={68} />
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {data.payload?.bgImage && <HumanAvatarSVG avatarId={data.avatarId} size={32} />}
+                <span className="pop-pill-black">FOR {who.toUpperCase()}</span>
+              </div>
               <h1 className="pop-fs-headline">{data.payload.title}</h1>
               <p className="pop-fs-sub">
                 {converted
-                  ? "Plot twist: BOTH buttons are YES now! 😂⚡"
+                  ? (isTrapTa ? "Plot twist: Ippo RENDU button-um YES dhaan! 😂⚡" : "Plot twist: BOTH buttons are YES now! 😂⚡")
                   : confirmSure
-                    ? "Are you sure? 👀 Not even gonna try No?"
+                    ? (isTrapTa ? "Confirm-ah? 👀 No kooda try panna maatiya?" : "Are you sure? 👀 Not even gonna try No?")
                     : dodges > 0
-                      ? "Haha, can't catch it! 😂"
-                      : "Bet you can't press No 👀"}
+                      ? (isTrapTa ? "Haha, pidikka mudiyala la! 😂" : "Haha, can't catch it! 😂")
+                      : (isTrapTa ? "Mudinja No press pannu paakalam 👀" : "Bet you can't press No 👀")}
               </p>
 
               <div className="pop-fs-actions">
@@ -2718,7 +3615,7 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
                   style={!converted ? { transform: `scale(${1 + Math.min(dodges, 4) * 0.04})` } : undefined}
                   onClick={handleYesTap}
                 >
-                  {confirmSure ? "Yes, 100% sure! ⚡" : data.payload.yesLabel}
+                  {confirmSure ? (isTrapTa ? "Aama, 100% confirm! ⚡" : "Yes, 100% sure! ⚡") : data.payload.yesLabel}
                 </button>
                 {converted ? (
                   <button
@@ -2757,9 +3654,9 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
           ) : vaultStage === 1 ? (
             <div className="pop-seal-card pop-zoom-in" key="v-lock2">
               <span className="pop-pill-black">LOCK 2 OF 2 · PASSCODE BREAKDOWN</span>
-              <h2 className="pop-wizard-prompt">Decrypt the passcode 🔐</h2>
+              <h2 className="pop-wizard-prompt">Tap the moving spot to decrypt 🔐</h2>
 
-              <div className="pop-blur-vault-box" onClick={handleCrackTap} style={{ cursor: "pointer" }}>
+              <div className="pop-blur-vault-box pop-decrypt-zone">
                 {data.payload?.secretImage ? (
                   <img
                     src={data.payload.secretImage}
@@ -2772,9 +3669,26 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
                     {data.payload?.secretText || "Secret Message"}
                   </div>
                 )}
-                <span className="pop-crack-badge">
-                  <Lock size={14}/> {crackTaps === 0 ? "ENCRYPTED" : `DECRYPTING ${Math.min(100, crackTaps * 25)}%`}
+
+                <span className="pop-decrypt-status-chip">
+                  <Lock size={11}/> {crackTaps === 0 ? "ENCRYPTED" : `DECRYPTING ${Math.min(100, crackTaps * 25)}%`}
                 </span>
+
+                {/* Moving TAP HERE spot inside the blurred zone! */}
+                {crackTaps < 4 && (
+                  <button
+                    type="button"
+                    key={`spot-${crackTaps}`}
+                    className="pop-decrypt-spot"
+                    style={{
+                      left: decryptSpots[crackTaps % decryptSpots.length].left,
+                      top: decryptSpots[crackTaps % decryptSpots.length].top
+                    }}
+                    onClick={handleCrackTap}
+                  >
+                    ⚡ TAP HERE
+                  </button>
+                )}
               </div>
 
               {/* Passcode Breakdown Slots: _ _ _ _ turning into * * * * */}
@@ -2789,9 +3703,11 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
                 })}
               </div>
 
-              <button type="button" className="pop-btn yellow lg full pop-pulse-btn" onClick={handleCrackTap}>
-                ⚡ TAP HERE TO DECRYPT
-              </button>
+              <small className="pop-muted">
+                {crackTaps === 0
+                  ? "Hit the glowing spot inside the photo to crack each digit"
+                  : `${4 - crackTaps} ${4 - crackTaps === 1 ? "digit" : "digits"} left to decrypt…`}
+              </small>
             </div>
           ) : vaultStage === 2 ? (
             <div className="pop-seal-card pop-zoom-in" key="v-pin">
@@ -2831,6 +3747,7 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
                 </button>
                 <form className="pop-react-form" onSubmit={e => { e.preventDefault(); askSenderForPin(pinAskText); }}>
                   <input
+                    ref={pinChatInputRef}
                     value={pinAskText}
                     onChange={e => setPinAskText(e.target.value)}
                     onFocus={focusScrollCenter}
@@ -2888,7 +3805,7 @@ function FullScreenODRecipient({ code, onSaveToShelf, onPendingUpdate, onGoHome,
               <div className="pop-live-chat-wrap">
                 <ChatHistoryBox messages={chatHistory} viewerSide="receiver" />
                 <form className="pop-react-form" onSubmit={sendReactionNote}>
-                  <input value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Chat live with ${data.creatorName}...`} maxLength={120} />
+                  <input ref={rxChatInputRef} value={reactionText} onChange={e => setReactionText(e.target.value)} onFocus={focusScrollCenter} placeholder={`Chat live with ${data.creatorName}...`} maxLength={120} />
                   <button type="submit" className="pop-btn yellow sm" disabled={!reactionText.trim()}><Send size={14}/></button>
                 </form>
               </div>
