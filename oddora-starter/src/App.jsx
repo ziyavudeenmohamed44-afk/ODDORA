@@ -2086,6 +2086,294 @@ function WatchLiveScreen({ item, fromInbox = false, onGoHome, onBack }) {
 }
 
 
+
+/* ============================================================================
+   5E-0. REUSABLE ANIMATED MODE PREVIEW CARDS (Used in Explainer + Top Create!)
+============================================================================ */
+function ModePreviewCards({ onSelectMode }) {
+  return (
+    <div className="pop-explainer-grid">
+      <button
+        type="button"
+        className="pop-explainer-card lime"
+        onClick={() => {
+          fx("tap", 14);
+          safeSetStorage("oddora_fs_pref", "1");
+          requestAppFullscreen();
+          onSelectMode?.("trap");
+        }}
+      >
+        <div className="pop-explainer-head">
+          <strong>⚡ Trap a friend</strong>
+          <span className="pop-pill-black">OD - TRAP</span>
+        </div>
+
+        {/* Live Animated Mini Preview: Runaway NO Button */}
+        <div className="pop-mini-demo trap-demo" aria-hidden="true">
+          <span className="pop-mini-demo-q">“Coffee today? ☕”</span>
+          <div className="pop-mini-demo-btns">
+            <span className="pop-mini-pill yes">Yes ⚡</span>
+            <span className="pop-mini-pill no">No 😜</span>
+          </div>
+        </div>
+
+        <p className="pop-explainer-lines">
+          Runaway button they can’t catch. Watch them panic live 👀
+        </p>
+      </button>
+
+      <button
+        type="button"
+        className="pop-explainer-card gold"
+        onClick={() => {
+          fx("tap", 14);
+          safeSetStorage("oddora_fs_pref", "1");
+          requestAppFullscreen();
+          onSelectMode?.("vault");
+        }}
+      >
+        <div className="pop-explainer-head">
+          <strong>🔐 Lock a Vault</strong>
+          <span className="pop-pill-black">OD - VAULT</span>
+        </div>
+
+        {/* Live Animated Mini Preview: Blurred Secret + Passcode Decrypt */}
+        <div className="pop-mini-demo vault-demo" aria-hidden="true">
+          <div className="pop-mini-vault-blur">
+            <span className="pop-mini-vault-secret">📸 Secret pic</span>
+            <span className="pop-mini-vault-tap">⚡ TAP</span>
+          </div>
+          <div className="pop-mini-vault-codes">
+            <span className="pop-mini-slot s1">*</span>
+            <span className="pop-mini-slot s2">*</span>
+            <span className="pop-mini-slot s3">*</span>
+            <span className="pop-mini-slot s4">_</span>
+          </div>
+        </div>
+
+        <p className="pop-explainer-lines">
+          Hide a secret or selfie behind 2 quick locks &amp; a PIN 🤫
+        </p>
+      </button>
+    </div>
+  );
+}
+
+/* ============================================================================
+   5E-1. ABOUT, PRIVACY, TERMS & CONTACT/FEEDBACK MODAL (V22.4)
+============================================================================ */
+function InfoLegalModal({ activeTab, defaultName = "", onSwitchTab, onClose }) {
+  const [fbTag, setFbTag] = useState("💡 Idea");
+  const [fbName, setFbName] = useState(defaultName);
+  const [fbContact, setFbContact] = useState("");
+  const [fbMsg, setFbMsg] = useState("");
+  const [fbSending, setFbSending] = useState(false);
+  const [fbSent, setFbSent] = useState(false);
+
+  useEffect(() => {
+    if (activeTab) {
+      setFbName(prev => prev || defaultName);
+      setFbSent(false);
+    }
+  }, [activeTab, defaultName]);
+
+  if (!activeTab) return null;
+
+  async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+    const cleanMsg = fbMsg.trim().slice(0, 500);
+    if (!cleanMsg || fbSending) return;
+    setFbSending(true);
+    fx("tap", 14);
+    try {
+      await signInPlayer().catch(() => null);
+      await push(ref(database, "feedback"), {
+        tag: fbTag,
+        name: (fbName.trim() || "Anonymous").slice(0, 30),
+        contact: fbContact.trim().slice(0, 60),
+        message: cleanMsg,
+        deviceId: getDeviceId(),
+        createdAt: Date.now()
+      });
+      fx("win", [18, 28, 18]);
+      setFbMsg("");
+      setFbSent(true);
+    } catch {
+      alert("Couldn't send feedback right now. Please check your connection and try again.");
+    } finally {
+      setFbSending(false);
+    }
+  }
+
+  return (
+    <div
+      className="pop-modal-overlay"
+      style={{ zIndex: 2900 }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose?.(); }}
+    >
+      <div className="pop-modal-box">
+        <button type="button" className="pop-modal-close" onClick={onClose} aria-label="Close">
+          <X size={18}/>
+        </button>
+
+        <div className="pop-ready-card pop-zoom-in pop-legal-sheet">
+          <span className="pop-pill-black">⚡ ODDORA · INFO</span>
+
+          <div className="pop-legal-tabs">
+            {[
+              { id: "about", label: "About" },
+              { id: "privacy", label: "Privacy" },
+              { id: "terms", label: "Terms" },
+              { id: "contact", label: "Feedback" }
+            ].map(t => (
+              <button
+                key={t.id}
+                type="button"
+                className={activeTab === t.id ? "pop-ltab active" : "pop-ltab"}
+                onClick={() => { fx("tap", 10); onSwitchTab?.(t.id); }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="pop-legal-body">
+            {activeTab === "about" && (
+              <div className="pop-legal-section">
+                <h3>About ODDORA ⚡</h3>
+                <p>
+                  ODDORA is a free, zero-login internet playground built for quick laughs, playful traps, and secret moments shared over WhatsApp &amp; Instagram DMs.
+                </p>
+                <ul className="pop-legal-list">
+                  <li><strong>⚡ OD - Trap:</strong> Send a question with a runaway button that talks &amp; dodges until your friend gives in — watch every tap live and share a 9:16 result card.</li>
+                  <li><strong>🔐 OD - Vault:</strong> Lock a secret note or selfie behind 2 quick puzzles and an optional 4-digit PIN, with live chat and Burn After Read mode.</li>
+                  <li><strong>📱 Zero Signup:</strong> No passwords, no email spam, no app download required. Just pick a face, drop a link, and play.</li>
+                </ul>
+                <button
+                  type="button"
+                  className="pop-btn yellow sm full"
+                  onClick={() => { fx("tap", 10); onSwitchTab?.("contact"); }}
+                >
+                  💬 Got an idea or bug? Send Feedback
+                </button>
+              </div>
+            )}
+
+            {activeTab === "privacy" && (
+              <div className="pop-legal-section">
+                <h3>Privacy Policy 🔒</h3>
+                <p className="pop-legal-updated">Effective: November 2026</p>
+                <ul className="pop-legal-list">
+                  <li><strong>No Personal Accounts:</strong> ODDORA does not require your email, phone number, or password. Your chosen display name, avatar, Inbox list, and My Shelf memories are stored locally in your browser (<code>localStorage</code>).</li>
+                  <li><strong>Temporary Cloud Sync:</strong> Cards, compressed photos, live tap events, and 2-way chat messages are stored in Firebase Realtime Database using an anonymous session ID solely to sync between sender and receiver.</li>
+                  <li><strong>Vault Access &amp; Burn After Read:</strong> One-time Vaults lock to the first unlocker’s device so others cannot view the secret. When “Burn After Read” is enabled, the Vault is deleted from our database shortly after unlock.</li>
+                  <li><strong>Your Control:</strong> You can delete Inbox threads, remove saved memories from My Shelf, or clear your browser’s site data at any time.</li>
+                  <li><strong>No Data Selling:</strong> We do not sell your data or photos to third parties.</li>
+                </ul>
+              </div>
+            )}
+
+            {activeTab === "terms" && (
+              <div className="pop-legal-section">
+                <h3>Terms &amp; Conditions 📜</h3>
+                <p className="pop-legal-updated">Effective: November 2026</p>
+                <ul className="pop-legal-list">
+                  <li><strong>For Fun &amp; Friends:</strong> ODDORA is designed for lighthearted pranks, dares, and personal notes among friends.</li>
+                  <li><strong>Responsible Use:</strong> You agree not to upload or share illegal, abusive, harassing, explicit, harmful, or infringing content, or use ODDORA to spam or mislead strangers.</li>
+                  <li><strong>No Permanent Storage Guarantee:</strong> ODDORA is a free, lightweight web app. Links, chats, or media may expire or be cleared during maintenance — always save important photos to your device gallery.</li>
+                  <li><strong>As-Is Service:</strong> ODDORA is provided “as is” without warranties. We may update features, pause the service, or remove abusive links at any time.</li>
+                </ul>
+              </div>
+            )}
+
+            {activeTab === "contact" && (
+              <div className="pop-legal-section">
+                <h3>Contact &amp; Feedback 💬</h3>
+                <p>Found a bug, have a wild feature idea, or want to report a link? Drop it straight to the ODDORA team below!</p>
+
+                {fbSent ? (
+                  <div className="pop-fb-done">
+                    <strong>🎉 Thanks for the feedback!</strong>
+                    <small>We’ve received your note and will check it out soon.</small>
+                    <button
+                      type="button"
+                      className="pop-btn white sm"
+                      onClick={() => { fx("tap", 10); setFbSent(false); }}
+                    >
+                      Send another note
+                    </button>
+                  </div>
+                ) : (
+                  <form className="pop-stack" onSubmit={handleFeedbackSubmit}>
+                    <div className="pop-chips-row">
+                      {["💡 Idea", "🐛 Bug", "❤️ Love it", "⚠️ Report"].map(tag => (
+                        <button
+                          key={tag}
+                          type="button"
+                          className={fbTag === tag ? "pop-chip active" : "pop-chip"}
+                          onClick={() => { fx("tap", 8); setFbTag(tag); }}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pop-grid-2">
+                      <input
+                        value={fbName}
+                        onChange={e => setFbName(e.target.value)}
+                        onFocus={focusScrollCenter}
+                        placeholder="Your name"
+                        maxLength={30}
+                      />
+                      <input
+                        value={fbContact}
+                        onChange={e => setFbContact(e.target.value)}
+                        onFocus={focusScrollCenter}
+                        placeholder="Insta / Email (optional)"
+                        maxLength={60}
+                      />
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={fbMsg}
+                      onChange={e => setFbMsg(e.target.value)}
+                      onFocus={focusScrollCenter}
+                      placeholder="Tell us what you liked, what broke, or what we should build next..."
+                      maxLength={500}
+                      style={{
+                        width: "100%",
+                        border: "2.5px solid var(--ink)",
+                        background: "var(--cream)",
+                        color: "var(--ink)",
+                        borderRadius: 12,
+                        padding: "11px 13px",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        outline: "none",
+                        resize: "vertical"
+                      }}
+                    />
+
+                    <button
+                      type="submit"
+                      className="pop-btn yellow full"
+                      disabled={!fbMsg.trim() || fbSending}
+                    >
+                      <Send size={15}/> {fbSending ? "Sending..." : "Send Feedback 🚀"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ============================================================================
    5E. FIRST-TIME PROFILE SETUP + 2-LINE EXPLAINER MODAL (V22.1)
 ============================================================================ */
@@ -2285,70 +2573,7 @@ function OnboardingProfileModal({
               {targetLabel ? `Send one to ${targetLabel}?` : "Pick your chaos 🔥"}
             </h2>
 
-            <div className="pop-explainer-grid">
-              <button
-                type="button"
-                className="pop-explainer-card lime"
-                onClick={() => {
-                  fx("tap", 14);
-                  safeSetStorage("oddora_fs_pref", "1");
-                  requestAppFullscreen();
-                  onSelectMode?.("trap");
-                }}
-              >
-                <div className="pop-explainer-head">
-                  <strong>⚡ Trap a friend</strong>
-                  <span className="pop-pill-black">OD - TRAP</span>
-                </div>
-
-                {/* Live Animated Mini Preview: Runaway NO Button */}
-                <div className="pop-mini-demo trap-demo" aria-hidden="true">
-                  <span className="pop-mini-demo-q">“Coffee today? ☕”</span>
-                  <div className="pop-mini-demo-btns">
-                    <span className="pop-mini-pill yes">Yes ⚡</span>
-                    <span className="pop-mini-pill no">No 😜</span>
-                  </div>
-                </div>
-
-                <p className="pop-explainer-lines">
-                  Runaway button they can’t catch. Watch them panic live 👀
-                </p>
-              </button>
-
-              <button
-                type="button"
-                className="pop-explainer-card gold"
-                onClick={() => {
-                  fx("tap", 14);
-                  safeSetStorage("oddora_fs_pref", "1");
-                  requestAppFullscreen();
-                  onSelectMode?.("vault");
-                }}
-              >
-                <div className="pop-explainer-head">
-                  <strong>🔐 Lock a Vault</strong>
-                  <span className="pop-pill-black">OD - VAULT</span>
-                </div>
-
-                {/* Live Animated Mini Preview: Blurred Secret + Passcode Decrypt */}
-                <div className="pop-mini-demo vault-demo" aria-hidden="true">
-                  <div className="pop-mini-vault-blur">
-                    <span className="pop-mini-vault-secret">📸 Secret pic</span>
-                    <span className="pop-mini-vault-tap">⚡ TAP</span>
-                  </div>
-                  <div className="pop-mini-vault-codes">
-                    <span className="pop-mini-slot s1">*</span>
-                    <span className="pop-mini-slot s2">*</span>
-                    <span className="pop-mini-slot s3">*</span>
-                    <span className="pop-mini-slot s4">_</span>
-                  </div>
-                </div>
-
-                <p className="pop-explainer-lines">
-                  Hide a secret or selfie behind 2 quick locks &amp; a PIN 🤫
-                </p>
-              </button>
-            </div>
+            <ModePreviewCards onSelectMode={onSelectMode} />
 
             <button type="button" className="pop-btn white sm full" onClick={onClose}>
               Just browse Home →
@@ -2362,6 +2587,7 @@ function OnboardingProfileModal({
 function MainApp() {
   const [tab, setTab] = useState("create"); // "create" | "shelf" | "wall"
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState(""); // "" | "about" | "privacy" | "terms" | "contact"
   const [activeStudioMode, setActiveStudioMode] = useState(""); // "" | "trap" | "vault"
 
   // Persistent User Profile ({ name, avatarId }) — never auto-changes once picked!
@@ -2519,6 +2745,7 @@ function MainApp() {
     setLogoSpin(false);
     requestAnimationFrame(() => setLogoSpin(true));
     setPickerModalOpen(false);
+    setLegalModalTab("");
     setInboxOpen(false);
     setOpenedFromInbox(false);
     setViewingShelfItem(null);
@@ -3165,8 +3392,27 @@ function MainApp() {
       </main>
 
       <footer className="pop-footer">
-        <strong>⚡ ODDORA · DO OD</strong>
-        <span>Built for WhatsApp, Insta DMs & Secret Memories.</span>
+        <div className="pop-footer-top">
+          <strong>⚡ ODDORA · DO OD</strong>
+          <span>Built for WhatsApp, Insta DMs &amp; Secret Memories.</span>
+        </div>
+        <div className="pop-footer-links">
+          <button type="button" className="pop-footer-link" onClick={() => { fx("tap", 10); setLegalModalTab("about"); }}>
+            About
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" className="pop-footer-link" onClick={() => { fx("tap", 10); setLegalModalTab("privacy"); }}>
+            Privacy
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" className="pop-footer-link" onClick={() => { fx("tap", 10); setLegalModalTab("terms"); }}>
+            Terms
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" className="pop-footer-link highlight" onClick={() => { fx("tap", 10); setLegalModalTab("contact"); }}>
+            💬 Feedback / Contact
+          </button>
+        </div>
       </footer>
 
       {/* FULL-SCREEN SHELF MEMORY VIEWER MODAL */}
@@ -3212,24 +3458,17 @@ function MainApp() {
         </div>
       )}
 
-      {/* CLEAN MODE PICKER MODAL */}
+      {/* ANIMATED MODE PICKER MODAL (Top ⚡ Create Button!) */}
       {pickerModalOpen && (
         <div className="pop-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setPickerModalOpen(false); }}>
           <div className="pop-modal-box">
             <button type="button" className="pop-modal-close" onClick={() => setPickerModalOpen(false)} aria-label="Close">
               <X size={18}/>
             </button>
-            <div className="pop-ready-card pop-zoom-in">
-              <span className="pop-pill-black">⚡ ODDORA</span>
-              <h2>Pick your move ⚡</h2>
-              <div className="pop-stack" style={{ width: "100%" }}>
-                <button type="button" className="pop-btn lime lg full" onClick={() => launchWizard("trap")}>
-                  ⚡ OD - Trap (Runaway “No”)
-                </button>
-                <button type="button" className="pop-btn yellow lg full" onClick={() => launchWizard("vault")}>
-                  🔐 OD - Vault (Secret Lock)
-                </button>
-              </div>
+            <div className="pop-ready-card pop-zoom-in pop-onboard-card">
+              <span className="pop-pill-black">⚡ ODDORA · CREATE</span>
+              <h2 className="pop-onboard-title">Pick your chaos 🔥</h2>
+              <ModePreviewCards onSelectMode={m => launchWizard(m)} />
             </div>
           </div>
         </div>
@@ -3376,6 +3615,14 @@ function MainApp() {
           setActiveStudioMode(m);
         }}
         onClose={() => setOnboardState({ open: false, mode: "onboard", friendNamedContext: null, pendingWizardMode: "" })}
+      />
+
+      {/* ABOUT, PRIVACY, TERMS & FEEDBACK MODAL */}
+      <InfoLegalModal
+        activeTab={legalModalTab}
+        defaultName={userProfile?.name || ""}
+        onSwitchTab={setLegalModalTab}
+        onClose={() => setLegalModalTab("")}
       />
     </div>
   );
